@@ -1,0 +1,107 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+dist-ssr/
+*.local
+
+# Electron
+out/
+build/
+release/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Storybook
+storybook-static/
+
+# Misc
+.cache/
+.temp/
+*.tsbuildinfo
+.trae/
+
+# ==================== Backend ====================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+*.egg
+
+# Virtual environment
+backend/venv/
+backend/.venv/
+backend/ENV/
+backend/env/
+venv/
+.venv/
+ENV/
+env/
+
+# Python cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Downloaded files (keep directory)
+backend/downloads/*
+!backend/downloads/.gitkeep
+
+# Backend logs (keep directory)
+backend/logs/*
+!backend/logs/.gitkeep
+
+# Milvus data
+backend/volumes/
+
+# Backend PID
+backend/backend.pid
+
+# Backup files
+*_backup.json
+*.bak

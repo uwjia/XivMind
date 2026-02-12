@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  standalone:
+    container_name: milvus-standalone-lite
+    image: milvusdb/milvus:v2.6.4
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_USE_EMBED: "true"
+      MINIO_USE_EMBED: "true"
+      COMMON_GRACEFULTIME: "5"
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus-lite:/var/lib/milvus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 3
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    networks:
+      - milvus-network
+
+  attu:
+    container_name: milvus-attu-lite
+    image: zilliz/attu:v2.6.4
+    environment:
+      MILVUS_URL: standalone:19530
+    ports:
+      - "3000:3000"
+    depends_on:
+      - standalone
+    networks:
+      - milvus-network
+
+networks:
+  milvus-network:
+    driver: bridge
