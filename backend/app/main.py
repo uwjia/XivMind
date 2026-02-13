@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from app.routers import bookmarks, downloads
 from app.db.milvus.client import milvus_client
 from app.services import download_service
+from app.config import get_settings
 from contextlib import asynccontextmanager
 import os
 import logging
@@ -25,19 +26,25 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logging.info("Starting application lifespan...")
-    try:
-        logging.info("Creating Milvus collections...")
-        milvus_client.init_collections()
-        logging.info("Milvus collections created successfully")
-    except ConnectionError as e:
-        logging.error(f"Failed to start application: {e}")
-        logging.error("Exiting...")
-        import os
-        os._exit(1)
-    except Exception as e:
-        logging.error(f"Unexpected error during startup: {e}")
-        import os
-        os._exit(1)
+    settings = get_settings()
+    
+    if settings.DATABASE_TYPE.lower() == "milvus":
+        try:
+            logging.info("Creating Milvus collections...")
+            milvus_client.init_collections()
+            logging.info("Milvus collections created successfully")
+        except ConnectionError as e:
+            logging.error(f"Failed to start application: {e}")
+            logging.error("Exiting...")
+            import os
+            os._exit(1)
+        except Exception as e:
+            logging.error(f"Unexpected error during startup: {e}")
+            import os
+            os._exit(1)
+    else:
+        logging.info(f"Using {settings.DATABASE_TYPE} database, skipping Milvus initialization")
+    
     logging.info("Resetting incomplete download tasks...")
     reset_count = download_service.reset_incomplete_tasks()
     if reset_count > 0:

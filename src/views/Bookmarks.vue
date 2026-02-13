@@ -83,7 +83,7 @@
         <div class="bookmark-footer">
           <div class="bookmark-tags">
             <div class="paper-id-section">
-              <span class="paper-id">{{ bookmark.arxiv_id || bookmark.paper_id }}</span>
+              <span class="paper-id">{{ bookmark.paper_id || bookmark.arxiv_id }}</span>
             </div>
             <div class="paper-categories-section">
               <span v-for="cat in (bookmark.categories || []).slice(0, 3)" :key="cat" class="tag" :style="getTagStyle(cat)" :title="getCategoryFullName(cat)">

@@ -1,11 +1,11 @@
 from app.db.base import BookmarkRepository
-from app.db.milvus.bookmark_repo import MilvusBookmarkRepository
+from app.db.factory import get_bookmark_repository
 from typing import Dict, List, Optional, Tuple, Any
 
 
 class BookmarkService:
     def __init__(self, repository: Optional[BookmarkRepository] = None):
-        self._repository = repository or MilvusBookmarkRepository()
+        self._repository = repository or get_bookmark_repository()
 
     def add_bookmark(self, bookmark_data: Dict[str, Any]) -> Dict[str, Any]:
         return self._repository.add(bookmark_data)

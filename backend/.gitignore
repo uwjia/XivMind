@@ -31,3 +31,8 @@ backend.pid
 
 # Downloads
 downloads/
+
+# SQLite database
+data/
+*.db
+*.db-journal

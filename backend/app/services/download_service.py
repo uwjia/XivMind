@@ -1,11 +1,11 @@
 from app.db.base import DownloadRepository
-from app.db.milvus.download_repo import MilvusDownloadRepository
+from app.db.factory import get_download_repository
 from typing import Dict, List, Optional, Tuple, Any
 
 
 class DownloadService:
     def __init__(self, repository: Optional[DownloadRepository] = None):
-        self._repository = repository or MilvusDownloadRepository()
+        self._repository = repository or get_download_repository()
 
     def create_task(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
         return self._repository.add(task_data)
