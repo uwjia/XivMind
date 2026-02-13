@@ -35,64 +35,108 @@
       <div v-for="bookmark in bookmarks" :key="bookmark.id" class="bookmark-card">
         <div class="bookmark-header">
           <h3 class="bookmark-title" @click="goToDetail(bookmark.paper_id)">{{ bookmark.title }}</h3>
-          <button class="remove-btn" @click="removeBookmark(bookmark.paper_id)" title="Remove bookmark">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#F44336">
-              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="#FFD700" stroke="#FFD700"/>
-            </svg>
-          </button>
+          <div class="header-badges">
+            <span class="primary-category" :style="getCategoryStyle(bookmark.primary_category)">{{ bookmark.primary_category || 'CS' }}</span>
+            <button class="remove-btn" @click="removeBookmark(bookmark.paper_id)" title="Remove bookmark">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#F44336">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="#FFD700" stroke="#FFD700"/>
+              </svg>
+            </button>
+          </div>
         </div>
-        <p class="bookmark-authors">{{ bookmark.authors?.join(', ') || 'Unknown Authors' }}</p>
-        <p class="bookmark-abstract">{{ truncateAbstract(bookmark.abstract) }}</p>
+        
+        <p class="bookmark-authors">
+          <svg class="author-icon" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="7" r="4" fill="#0b8db4ff"/>
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="#0b8db4ff" stroke-width="2"/>
+          </svg>
+          <span>{{ bookmark.authors?.join(', ') || 'Unknown Authors' }}</span>
+        </p>
+        
+        <div class="bookmark-abstract">
+          <p>
+            <svg class="abstract-icon" viewBox="0 0 24 24" fill="none">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#2196F3" stroke-width="2"/>
+              <path d="M2 6h2" stroke="#2196F3" stroke-width="2"/>
+              <path d="M2 10h2" stroke="#2196F3" stroke-width="2"/>
+              <path d="M2 14h2" stroke="#2196F3" stroke-width="2"/>
+              <path d="M2 18h2" stroke="#2196F3" stroke-width="2"/>
+              <text x="8" y="16" font-size="6" fill="#2196F3" font-weight="bold">ABS</text>
+            </svg>
+            <span v-html="getRenderedAbstract(bookmark.abstract)"></span>
+          </p>
+        </div>
+        
+        <div v-if="bookmark.comment" class="bookmark-comments">
+          <p>
+            <svg class="comments-icon" viewBox="0 0 24 24" fill="none">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="#FF9800" stroke-width="2"/>
+              <path d="M8 6h.01" stroke="#FF9800" stroke-width="2"/>
+              <path d="M12 6h.01" stroke="#FF9800" stroke-width="2"/>
+              <path d="M16 6h.01" stroke="#FF9800" stroke-width="2"/>
+              <text x="8" y="16" font-size="6" fill="#FF9800" font-weight="bold">COM</text>
+            </svg>
+            <span v-html="getRenderedComment(bookmark.comment)"></span>
+          </p>
+        </div>
+        
         <div class="bookmark-footer">
-          <div class="bookmark-categories">
-            <span v-for="cat in (bookmark.categories || []).slice(0, 3)" :key="cat" class="tag" :style="getTagStyle(cat)" :title="getCategoryFullName(cat)">
-              {{ getCategoryShortName(cat) }}
-            </span>
+          <div class="bookmark-tags">
+            <div class="paper-id-section">
+              <span class="paper-id">{{ bookmark.arxiv_id || bookmark.paper_id }}</span>
+            </div>
+            <div class="paper-categories-section">
+              <span v-for="cat in (bookmark.categories || []).slice(0, 3)" :key="cat" class="tag" :style="getTagStyle(cat)" :title="getCategoryFullName(cat)">
+                {{ getCategoryShortName(cat) }}
+              </span>
+            </div>
+            <div class="paper-published-section">
+              <div class="paper-published">Published: {{ formatDate(bookmark.published) }}</div>
+              <div v-if="bookmark.updated && bookmark.updated !== bookmark.published" class="paper-updated">Updated: {{ formatDate(bookmark.updated) }}</div>
+            </div>
           </div>
           <div class="bookmark-actions">
-            <span class="action-link download-btn" :class="getDownloadStatus(bookmark.paper_id)" @click="handleDownload(bookmark)" :title="getDownloadTitle(bookmark.paper_id)">
-              <svg v-if="getDownloadStatus(bookmark.paper_id) === 'downloading'" viewBox="0 0 24 24" fill="none" stroke="#2196F3">
-                <circle cx="12" cy="12" r="10" stroke-width="2" fill="none"/>
-                <circle cx="12" cy="12" r="10" stroke-width="2" fill="none" stroke-dasharray="62.83" :stroke-dashoffset="62.83 - (62.83 * getDownloadProgress(bookmark.paper_id) / 100)" style="transform: rotate(-90deg); transform-origin: center;"/>
+            <span class="stat-link" @click="openAbsUrl(bookmark.abs_url)" title="Open arXiv page">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-3 3a5 5 0 0 0 .54 7.54z" stroke="#4CAF50" stroke-width="2"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l3-3a5 5 0 0 0-.54-7.54z" stroke="#4CAF50" stroke-width="2"/>
               </svg>
-              <svg v-else-if="getDownloadStatus(bookmark.paper_id) === 'completed'" viewBox="0 0 24 24" fill="none" stroke="#4CAF50">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
-              </svg>
-              <svg v-else-if="getDownloadStatus(bookmark.paper_id) === 'failed'" viewBox="0 0 24 24" fill="none" stroke="#F44336">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="15" y1="9" x2="9" y2="15"/>
-                <line x1="9" y1="9" x2="15" y2="15"/>
-              </svg>
-              <svg v-else viewBox="0 0 24 24" fill="none" :stroke="getDownloadStatus(bookmark.paper_id) === 'pending' ? '#FF9800' : '#2196F3'">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7,10 12,15 17,10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              <span v-if="getDownloadStatus(bookmark.paper_id) === 'downloading'">{{ getDownloadProgress(bookmark.paper_id) }}%</span>
-              <span v-else-if="getDownloadStatus(bookmark.paper_id) === 'completed'">Downloaded</span>
-              <span v-else-if="getDownloadStatus(bookmark.paper_id) === 'failed'">Retry</span>
-              <span v-else-if="getDownloadStatus(bookmark.paper_id) === 'pending'">Queued</span>
-              <span v-else>Download</span>
             </span>
-            <a v-if="bookmark.pdf_url" :href="bookmark.pdf_url" target="_blank" class="action-link">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#F44336">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <span class="stat-link" @click="openPdfUrl(bookmark.pdf_url)" title="Open PDF">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#F44336" stroke-width="2"/>
+                <path d="M2 6h2" stroke="#F44336" stroke-width="2"/>
+                <path d="M2 10h2" stroke="#F44336" stroke-width="2"/>
+                <path d="M2 14h2" stroke="#F44336" stroke-width="2"/>
+                <path d="M2 18h2" stroke="#F44336" stroke-width="2"/>
                 <text x="8" y="16" font-size="6" fill="#F44336" font-weight="bold">PDF</text>
               </svg>
-              PDF
-            </a>
-            <a v-if="bookmark.abs_url" :href="bookmark.abs_url" target="_blank" class="action-link">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#4CAF50">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-3 3a5 5 0 0 0 .54 7.54z"/>
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l3-3a5 5 0 0 0-.54-7.54z"/>
+            </span>
+            <span class="stat-link download-btn" :class="getDownloadStatus(bookmark.paper_id)" @click="handleDownload(bookmark)" :title="getDownloadTitle(bookmark.paper_id)">
+              <svg v-if="getDownloadStatus(bookmark.paper_id) === 'downloading'" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="#2196F3" stroke-width="2" fill="none"/>
+                <circle cx="12" cy="12" r="10" stroke="#64B5F6" stroke-width="2" fill="none" stroke-dasharray="62.83" :stroke-dashoffset="62.83 - (62.83 * getDownloadProgress(bookmark.paper_id) / 100)" style="transform: rotate(-90deg); transform-origin: center;"/>
+                <text x="12" y="16" font-size="8" fill="#2196F3" text-anchor="middle" font-weight="bold">{{ getDownloadProgress(bookmark.paper_id) }}%</text>
               </svg>
-              arXiv
-            </a>
+              <svg v-else-if="getDownloadStatus(bookmark.paper_id) === 'completed'" viewBox="0 0 24 24" fill="none">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="22 4 12 14.01 9 11.01" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <svg v-else-if="getDownloadStatus(bookmark.paper_id) === 'failed'" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="#F44336" stroke-width="2"/>
+                <line x1="15" y1="9" x2="9" y2="15" stroke="#F44336" stroke-width="2" stroke-linecap="round"/>
+                <line x1="9" y1="9" x2="15" y2="15" stroke="#F44336" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <svg v-else viewBox="0 0 24 24" fill="none">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" :stroke="getDownloadStatus(bookmark.paper_id) === 'pending' ? '#FF9800' : '#2196F3'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="7,10 12,15 17,10" :stroke="getDownloadStatus(bookmark.paper_id) === 'pending' ? '#FF9800' : '#2196F3'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <line x1="12" y1="15" x2="12" y2="3" :stroke="getDownloadStatus(bookmark.paper_id) === 'pending' ? '#FF9800' : '#2196F3'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
           </div>
         </div>
         <div class="bookmark-date">
-          Bookmarked: {{ formatDate(bookmark.created_at) }}
+          Bookmarked: {{ formatDateTime(bookmark.created_at) }}
         </div>
       </div>
     </div>
@@ -102,11 +146,23 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import MarkdownIt from 'markdown-it'
+import MarkdownItKatex from 'markdown-it-katex'
+import 'katex/dist/katex.min.css'
 import { useBookmarkStore } from '../stores/bookmark-store'
 import { useDownloadStore } from '../stores/download-store'
 import { useToastStore } from '../stores/toast-store'
-import { getTagStyle, getCategoryFullName, getCategoryShortName } from '../utils/categoryColors'
+import { getTagStyle, getCategoryFullName, getCategoryShortName, getCategoryColor } from '../utils/categoryColors'
 import { apiService } from '../services/api'
+
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true
+}).use(MarkdownItKatex, {
+  throwOnError: false,
+  displayMode: false
+})
 
 const router = useRouter()
 const route = useRoute()
@@ -117,6 +173,25 @@ const toastStore = useToastStore()
 const bookmarks = computed(() => bookmarkStore.bookmarks)
 const loading = ref(true)
 const searchQuery = ref('')
+
+const getRenderedAbstract = (abstract?: string) => {
+  if (!abstract) return '<p>No abstract available</p>'
+  return md.render(abstract)
+}
+
+const getRenderedComment = (comment?: string) => {
+  if (!comment) return ''
+  return md.render(comment)
+}
+
+const getCategoryStyle = (category?: string) => {
+  const color = getCategoryColor(category || 'cs.AI')
+  return {
+    backgroundColor: color + '20',
+    color: color,
+    border: `1px solid ${color}40`
+  }
+}
 
 const getDownloadStatus = (paperId: string) => {
   const task = downloadStore.tasks.find(t => t.paper_id === paperId)
@@ -143,6 +218,14 @@ const getDownloadTitle = (paperId: string) => {
     default:
       return 'Download PDF'
   }
+}
+
+const openAbsUrl = (url: string) => {
+  if (url) window.open(url, '_blank')
+}
+
+const openPdfUrl = (url: string) => {
+  if (url) window.open(url, '_blank')
 }
 
 const handleDownload = async (bookmark: any) => {
@@ -236,13 +319,21 @@ const goToDetail = (paperId: string) => {
   router.push({ name: 'PaperDetail', params: { id: paperId } })
 }
 
-const truncateAbstract = (abstract: string, maxLength: number = 200) => {
-  if (!abstract) return ''
-  if (abstract.length <= maxLength) return abstract
-  return abstract.substring(0, maxLength) + '...'
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return 'Unknown date'
+  try {
+    const date = new Date(dateStr)
+    if (isNaN(date.getTime())) return 'Invalid date'
+    const year = date.getUTCFullYear()
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+    const day = String(date.getUTCDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  } catch {
+    return String(dateStr)
+  }
 }
 
-const formatDate = (dateStr: string) => {
+const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return 'Unknown'
   try {
     const date = new Date(dateStr)
@@ -391,13 +482,13 @@ watch(
 .bookmark-card {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 24px;
   transition: all 0.3s ease;
 }
 
 .bookmark-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .bookmark-header {
@@ -405,20 +496,37 @@ watch(
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .bookmark-title {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.35rem;
+  font-weight: 700;
   color: var(--text-primary);
   margin: 0;
   cursor: pointer;
   flex: 1;
+  line-height: 1.4;
 }
 
 .bookmark-title:hover {
   color: var(--accent-color);
+}
+
+.header-badges {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.primary-category {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
 }
 
 .remove-btn {
@@ -441,15 +549,151 @@ watch(
 
 .bookmark-authors {
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  margin: 0 0 12px 0;
+  font-size: 0.95rem;
+  margin: 0 0 16px 0;
+}
+
+.author-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  margin-right: 8px;
+  float: left;
+  margin-top: 2px;
+}
+
+.bookmark-authors span {
+  display: block;
 }
 
 .bookmark-abstract {
-  color: var(--text-muted);
-  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-size: 1rem;
   line-height: 1.6;
-  margin: 0 0 16px 0;
+  margin-bottom: 20px;
+}
+
+.bookmark-abstract p {
+  margin: 0;
+}
+
+.bookmark-abstract span {
+  display: block;
+}
+
+.abstract-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  margin-right: 8px;
+  float: left;
+  margin-top: 2px;
+}
+
+.bookmark-abstract :deep(h1),
+.bookmark-abstract :deep(h2),
+.bookmark-abstract :deep(h3) {
+  margin: 16px 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.bookmark-abstract :deep(ul),
+.bookmark-abstract :deep(ol) {
+  margin: 8px 0 12px 0;
+  padding-left: 24px;
+}
+
+.bookmark-abstract :deep(li) {
+  margin: 4px 0;
+}
+
+.bookmark-abstract :deep(code) {
+  background: var(--bg-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+}
+
+.bookmark-abstract :deep(pre) {
+  background: var(--bg-secondary);
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.bookmark-abstract :deep(pre code) {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+.bookmark-comments {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.bookmark-comments p {
+  margin: 0;
+}
+
+.bookmark-comments span {
+  display: block;
+}
+
+.comments-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  margin-right: 8px;
+  float: left;
+  margin-top: 2px;
+}
+
+.bookmark-comments :deep(h1),
+.bookmark-comments :deep(h2),
+.bookmark-comments :deep(h3) {
+  margin: 16px 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.bookmark-comments :deep(ul),
+.bookmark-comments :deep(ol) {
+  margin: 8px 0 12px 0;
+  padding-left: 24px;
+}
+
+.bookmark-comments :deep(li) {
+  margin: 4px 0;
+}
+
+.bookmark-comments :deep(code) {
+  background: var(--bg-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+}
+
+.bookmark-comments :deep(pre) {
+  background: var(--bg-secondary);
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.bookmark-comments :deep(pre code) {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
 }
 
 .bookmark-footer {
@@ -457,13 +701,94 @@ watch(
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
 }
 
-.bookmark-categories {
+.bookmark-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.paper-id-section {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.paper-id {
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+  color: #00BCD4;
+  background-color: rgba(0, 188, 212, 0.1);
+  border-color: rgba(0, 188, 212, 0.3);
+}
+
+.paper-id:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.paper-categories-section {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  flex-shrink: 1;
+}
+
+.paper-published-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.paper-published {
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+  color: #9C27B0;
+  background-color: rgba(156, 39, 176, 0.1);
+  border-color: rgba(156, 39, 176, 0.3);
+  white-space: nowrap;
+}
+
+.paper-published:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.paper-updated {
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+  color: #FF9800;
+  background-color: rgba(255, 152, 0, 0.1);
+  border-color: rgba(255, 152, 0, 0.3);
+  white-space: nowrap;
+}
+
+.paper-updated:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .tag {
@@ -483,23 +808,29 @@ watch(
 .bookmark-actions {
   display: flex;
   gap: 12px;
+  flex-shrink: 0;
 }
 
-.action-link {
+.stat-link {
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  font-size: 0.85rem;
-  transition: color 0.3s ease;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
-.action-link:hover {
-  color: var(--text-primary);
+.stat-link:hover {
+  background: var(--bg-secondary);
+  transform: scale(1.1);
 }
 
-.action-link svg {
+.stat-link svg {
   width: 18px;
   height: 18px;
 }
@@ -512,15 +843,15 @@ watch(
   animation: pulse 1.5s infinite;
 }
 
-.download-btn.completed {
+.download-btn.completed svg {
   color: #4CAF50;
 }
 
-.download-btn.failed {
+.download-btn.failed svg {
   color: #F44336;
 }
 
-.download-btn.pending {
+.download-btn.pending svg {
   color: #FF9800;
 }
 
@@ -548,6 +879,11 @@ watch(
   }
 
   .bookmark-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .bookmark-tags {
     flex-direction: column;
     align-items: flex-start;
   }

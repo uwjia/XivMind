@@ -144,7 +144,7 @@ class MilvusBookmarkRepository(BookmarkRepository):
         collection = self._get_collection()
         collection.load()
         results = collection.query(
-            expr=f'title like "%{query}%" or abstract like "%{query}%"',
+            expr=f'paper_id like "%{query}%" or title like "%{query}%" or abstract like "%{query}%"',
             output_fields=["id", "paper_id", "arxiv_id", "title", "authors", "abstract",
                           "comment", "primary_category", "categories", "pdf_url", "abs_url",
                           "published", "updated", "created_at"],
