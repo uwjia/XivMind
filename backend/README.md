@@ -2,7 +2,7 @@
 
 [中文文档](README_CN.md)
 
-FastAPI + Milvus backend service for paper bookmark management and download task management.
+FastAPI backend service for paper bookmark management and download task management. Supports both Milvus (vector database) and SQLite (lightweight database).
 
 ## Directory Structure
 
@@ -13,7 +13,11 @@ backend/
 │   ├── main.py           # FastAPI application entry
 │   ├── config.py         # Configuration management
 │   ├── models.py         # Pydantic model definitions
-│   ├── database.py       # Milvus database service
+│   ├── db/
+│   │   ├── base.py       # Abstract repository interfaces
+│   │   ├── factory.py    # Database factory
+│   │   ├── milvus/       # Milvus implementations
+│   │   └── sqlite/       # SQLite implementations
 │   └── routers/
 │       ├── __init__.py
 │       ├── bookmarks.py  # Bookmark management API
@@ -29,13 +33,57 @@ backend/
 
 ## Requirements
 
+### SQLite Mode (Recommended for Development)
+- Python 3.10+
+- No Docker required
+
+### Milvus Mode (Recommended for Production)
 - Python 3.10+
 - Docker & Docker Compose
 - Milvus 2.3.6+
 
 ## Quick Start
 
-### 1. Start Milvus
+### Option 1: SQLite Mode (No Docker Required)
+
+SQLite mode is perfect for development, testing, or standalone use. No external database setup needed.
+
+**1. Configure Environment**
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` file:
+
+```env
+DATABASE_TYPE=sqlite
+SQLITE_DB_PATH=./data/xivmind.db
+DOWNLOAD_DIR=./downloads
+```
+
+**2. Start Backend Service**
+
+**Windows:**
+
+```cmd
+start.bat install   # Install dependencies (first time only)
+start.bat dev       # Development mode (foreground with hot reload)
+```
+
+**Linux/Mac:**
+
+```bash
+chmod +x start.sh
+./start.sh install   # Install dependencies (first time only)
+./start.sh dev       # Development mode (foreground with hot reload)
+```
+
+### Option 2: Milvus Mode (Production)
+
+Milvus mode provides better scalability and vector search capabilities for production use.
+
+**1. Start Milvus**
 
 Two deployment modes are available:
 
@@ -67,7 +115,7 @@ chmod +x milvus.sh
 ./milvus.sh clean          # Clean data (WARNING: deletes all data)
 ```
 
-### 2. Configure Environment
+**2. Configure Environment**
 
 ```bash
 cp .env.example .env
@@ -76,13 +124,14 @@ cp .env.example .env
 Edit `.env` file:
 
 ```env
+DATABASE_TYPE=milvus
 MILVUS_HOST=localhost
 MILVUS_PORT=19530
 DATABASE_NAME=xivmind
 DOWNLOAD_DIR=./downloads
 ```
 
-### 3. Start Backend Service
+**3. Start Backend Service**
 
 **Windows:**
 
@@ -113,9 +162,25 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
+## Database Comparison
+
+| Feature | SQLite | Milvus |
+|---------|--------|--------|
+| Setup | No setup required | Requires Docker |
+| Memory | Minimal | ~1-2GB |
+| Vector Search | Not supported | Supported |
+| Scalability | Single machine | Distributed |
+| Use Case | Development, standalone | Production |
+
 ## Service Components
 
-### Standard Mode
+### SQLite Mode
+
+| Service     | Port  | Description           |
+| ----------- | ----- | --------------------- |
+| **FastAPI** | 8000  | Backend API service   |
+
+### Milvus Standard Mode
 
 | Service     | Port      | Description                     |
 | ----------- | --------- | ------------------------------- |
@@ -125,7 +190,7 @@ uvicorn app.main:app --reload --port 8000
 | **etcd**    | 2379      | Metadata storage                |
 | **FastAPI** | 8000      | Backend API service             |
 
-### Lite Mode
+### Milvus Lite Mode
 
 | Service     | Port  | Description                           |
 | ----------- | ----- | ------------------------------------- |
@@ -137,9 +202,9 @@ uvicorn app.main:app --reload --port 8000
 
 - **API Docs (Swagger)**: http://localhost:8000/docs
 - **API Docs (ReDoc)**: http://localhost:8000/redoc
-- **Milvus**: `localhost:19530`
-- **Attu GUI**: http://localhost:3000
-- **MinIO Console** (Standard mode only): http://localhost:9001 (Username/Password: minioadmin/minioadmin)
+- **Milvus** (Milvus mode only): `localhost:19530`
+- **Attu GUI** (Milvus mode only): http://localhost:3000
+- **MinIO Console** (Milvus standard mode only): http://localhost:9001 (Username/Password: minioadmin/minioadmin)
 
 ## API Endpoints
 
@@ -190,10 +255,10 @@ services:
 
 ### Database Initialization
 
-The following collections are automatically created on startup:
-
-- `bookmarks` - Bookmarked papers
-- `downloads` - Download tasks
+- **SQLite**: Database file and tables are automatically created on startup
+- **Milvus**: The following collections are automatically created on startup:
+  - `bookmarks` - Bookmarked papers
+  - `downloads` - Download tasks
 
 ### Download Task Flow
 
@@ -214,7 +279,7 @@ All APIs return unified error format:
 
 ## Troubleshooting
 
-### Milvus Connection Failed
+### Milvus Connection Failed (Milvus mode only)
 
 Check if Milvus is running:
 
@@ -228,7 +293,8 @@ Modify port mappings in `docker-compose.yml` or `docker-compose.lite.yml` if def
 
 ### Data Persistence
 
-Data is stored in `./volumes` directory. To clean up:
+- **SQLite**: Data is stored in the file specified by `SQLITE_DB_PATH` (default: `./data/xivmind.db`)
+- **Milvus**: Data is stored in `./volumes` directory. To clean up:
 
 ```bash
 ./milvus.sh clean  # Linux/Mac

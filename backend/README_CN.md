@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-FastAPI + Milvus 后端服务，用于论文收藏管理和下载任务管理。
+FastAPI 后端服务，用于论文收藏管理和下载任务管理。支持 Milvus（向量数据库）和 SQLite（轻量级数据库）两种数据库模式。
 
 ## 目录结构
 
@@ -13,7 +13,11 @@ backend/
 │   ├── main.py           # FastAPI 应用入口
 │   ├── config.py         # 配置管理
 │   ├── models.py         # Pydantic 模型定义
-│   ├── database.py       # Milvus 数据库服务
+│   ├── db/
+│   │   ├── base.py       # 抽象仓库接口
+│   │   ├── factory.py    # 数据库工厂
+│   │   ├── milvus/       # Milvus 实现
+│   │   └── sqlite/       # SQLite 实现
 │   └── routers/
 │       ├── __init__.py
 │       ├── bookmarks.py  # 收藏管理 API
@@ -29,13 +33,57 @@ backend/
 
 ## 环境要求
 
+### SQLite 模式（推荐开发使用）
+- Python 3.10+
+- 无需 Docker
+
+### Milvus 模式（推荐生产使用）
 - Python 3.10+
 - Docker & Docker Compose
 - Milvus 2.3.6+
 
 ## 快速开始
 
-### 1. 启动 Milvus
+### 方式一：SQLite 模式（无需 Docker）
+
+SQLite 模式非常适合开发、测试或独立使用，无需外部数据库配置。
+
+**1. 配置环境变量**
+
+```bash
+cp .env.example .env
+```
+
+编辑 `.env` 文件：
+
+```env
+DATABASE_TYPE=sqlite
+SQLITE_DB_PATH=./data/xivmind.db
+DOWNLOAD_DIR=./downloads
+```
+
+**2. 启动后端服务**
+
+**Windows:**
+
+```cmd
+start.bat install   # 安装依赖（首次运行）
+start.bat dev       # 开发模式（前台运行，支持热重载）
+```
+
+**Linux/Mac:**
+
+```bash
+chmod +x start.sh
+./start.sh install   # 安装依赖（首次运行）
+./start.sh dev       # 开发模式（前台运行，支持热重载）
+```
+
+### 方式二：Milvus 模式（生产环境）
+
+Milvus 模式提供更好的扩展性和向量搜索能力，适合生产环境使用。
+
+**1. 启动 Milvus**
 
 提供两种部署模式：
 
@@ -45,6 +93,7 @@ backend/
 | **精简模式** | 2个 (Milvus, Attu) | ~1GB | 开发测试 |
 
 **Windows:**
+
 ```cmd
 milvus.bat start          # 标准模式（默认）
 milvus.bat start lite     # 精简模式（内嵌 etcd/MinIO）
@@ -55,6 +104,7 @@ milvus.bat clean          # 清理数据（警告：会删除所有数据）
 ```
 
 **Linux/Mac:**
+
 ```bash
 chmod +x milvus.sh
 ./milvus.sh start          # 标准模式（默认）
@@ -65,23 +115,26 @@ chmod +x milvus.sh
 ./milvus.sh clean          # 清理数据（警告：会删除所有数据）
 ```
 
-### 2. 配置环境变量
+**2. 配置环境变量**
 
 ```bash
 cp .env.example .env
 ```
 
 编辑 `.env` 文件：
+
 ```env
+DATABASE_TYPE=milvus
 MILVUS_HOST=localhost
 MILVUS_PORT=19530
 DATABASE_NAME=xivmind
 DOWNLOAD_DIR=./downloads
 ```
 
-### 3. 启动后端服务
+**3. 启动后端服务**
 
 **Windows:**
+
 ```cmd
 start.bat install   # 安装依赖（首次运行）
 start.bat start     # 启动服务（后台运行）
@@ -90,6 +143,7 @@ start.bat dev       # 开发模式（前台运行，支持热重载）
 ```
 
 **Linux/Mac:**
+
 ```bash
 chmod +x start.sh
 ./start.sh install   # 安装依赖（首次运行）
@@ -102,14 +156,31 @@ chmod +x start.sh
 ```
 
 **手动启动（备选方案）：**
+
 ```bash
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
+## 数据库对比
+
+| 特性 | SQLite | Milvus |
+|------|--------|--------|
+| 安装配置 | 无需配置 | 需要 Docker |
+| 内存占用 | 极小 | ~1-2GB |
+| 向量搜索 | 不支持 | 支持 |
+| 扩展性 | 单机 | 分布式 |
+| 适用场景 | 开发、独立使用 | 生产环境 |
+
 ## 服务组件
 
-### 标准模式
+### SQLite 模式
+
+| 服务 | 端口 | 说明 |
+|------|------|------|
+| **FastAPI** | 8000 | 后端 API 服务 |
+
+### Milvus 标准模式
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
@@ -119,7 +190,7 @@ uvicorn app.main:app --reload --port 8000
 | **etcd** | 2379 | 元数据存储 |
 | **FastAPI** | 8000 | 后端 API 服务 |
 
-### 精简模式
+### Milvus 精简模式
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
@@ -131,9 +202,9 @@ uvicorn app.main:app --reload --port 8000
 
 - **API 文档 (Swagger)**: http://localhost:8000/docs
 - **API 文档 (ReDoc)**: http://localhost:8000/redoc
-- **Milvus**: `localhost:19530`
-- **Attu GUI**: http://localhost:3000
-- **MinIO Console**（仅标准模式）: http://localhost:9001 (用户名/密码: minioadmin/minioadmin)
+- **Milvus**（仅 Milvus 模式）: `localhost:19530`
+- **Attu GUI**（仅 Milvus 模式）: http://localhost:3000
+- **MinIO Console**（仅 Milvus 标准模式）: http://localhost:9001 (用户名/密码: minioadmin/minioadmin)
 
 ## API 接口
 
@@ -184,9 +255,10 @@ services:
 
 ### 数据库初始化
 
-应用启动时会自动创建以下集合：
-- `bookmarks` - 收藏的论文
-- `downloads` - 下载任务
+- **SQLite**: 数据库文件和表会在启动时自动创建
+- **Milvus**: 应用启动时会自动创建以下集合：
+  - `bookmarks` - 收藏的论文
+  - `downloads` - 下载任务
 
 ### 下载任务流程
 
@@ -198,6 +270,7 @@ services:
 ### 错误处理
 
 所有 API 返回统一的错误格式：
+
 ```json
 {
   "detail": "错误信息"
@@ -206,9 +279,10 @@ services:
 
 ## 常见问题
 
-### Milvus 连接失败
+### Milvus 连接失败（仅 Milvus 模式）
 
 检查 Milvus 服务是否正常运行：
+
 ```bash
 curl http://localhost:9091/healthz
 ```
@@ -219,7 +293,9 @@ curl http://localhost:9091/healthz
 
 ### 数据持久化
 
-数据存储在 `./volumes` 目录下，删除容器不会丢失数据。如需清理：
+- **SQLite**: 数据存储在 `SQLITE_DB_PATH` 指定的文件中（默认：`./data/xivmind.db`）
+- **Milvus**: 数据存储在 `./volumes` 目录下，删除容器不会丢失数据。如需清理：
+
 ```bash
 ./milvus.sh clean  # Linux/Mac
 milvus.bat clean   # Windows
