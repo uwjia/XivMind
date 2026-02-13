@@ -119,10 +119,24 @@ async def get_download_task(task_id: str):
 @router.delete("/{task_id}", response_model=MessageResponse)
 async def delete_download_task(task_id: str):
     try:
+        task = download_service.get_task(task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
         if download_manager.is_task_running(task_id):
             await download_manager.cancel_download(task_id)
+        
+        file_path = task.get("file_path")
+        if file_path and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except OSError as e:
+                print(f"Warning: Failed to delete file {file_path}: {e}")
+        
         download_service.delete_task(task_id)
         return MessageResponse(message="Download task deleted successfully")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -123,14 +123,26 @@
         </div>
       </div>
     </div>
+
+    <ConfirmDialog
+      :visible="showDeleteConfirm"
+      title="Delete Download Task"
+      :message="deleteConfirmMessage"
+      type="danger"
+      confirmText="Delete"
+      cancelText="Cancel"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, computed } from 'vue'
+import { onMounted, onUnmounted, computed, ref } from 'vue'
 import { useDownloadStore } from '../stores/download-store'
 import { useToastStore } from '../stores/toast-store'
 import { apiService } from '../services/api'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 
 const downloadStore = useDownloadStore()
 const toastStore = useToastStore()
@@ -139,6 +151,17 @@ const tasks = computed(() => downloadStore.tasks)
 const loading = computed(() => downloadStore.loading)
 const wsConnected = computed(() => downloadStore.wsConnected)
 let refreshInterval: number | null = null
+
+const showDeleteConfirm = ref(false)
+const taskToDelete = ref<string | null>(null)
+const taskToDeleteTitle = ref<string>('')
+
+const deleteConfirmMessage = computed(() => {
+  if (taskToDeleteTitle.value) {
+    return `Are you sure you want to delete the download task for "${taskToDeleteTitle.value}"? This action cannot be undone.`
+  }
+  return 'Are you sure you want to delete this download task? This action cannot be undone.'
+})
 
 const fetchTasks = async () => {
   try {
@@ -173,14 +196,35 @@ const cancelTask = async (taskId: string) => {
   }
 }
 
-const deleteTask = async (taskId: string) => {
+const deleteTask = (taskId: string) => {
+  const task = tasks.value.find(t => t.id === taskId)
+  if (task) {
+    taskToDelete.value = taskId
+    taskToDeleteTitle.value = task.title
+    showDeleteConfirm.value = true
+  }
+}
+
+const confirmDelete = async () => {
+  if (!taskToDelete.value) return
+  
   try {
-    await downloadStore.deleteTask(taskId)
+    await downloadStore.deleteTask(taskToDelete.value)
     toastStore.showSuccess('Download task deleted')
   } catch (error) {
     console.error('Failed to delete task:', error)
     toastStore.showError('Failed to delete task')
+  } finally {
+    showDeleteConfirm.value = false
+    taskToDelete.value = null
+    taskToDeleteTitle.value = ''
   }
+}
+
+const cancelDelete = () => {
+  showDeleteConfirm.value = false
+  taskToDelete.value = null
+  taskToDeleteTitle.value = ''
 }
 
 const openFile = async (taskId: string) => {
