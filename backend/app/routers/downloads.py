@@ -6,10 +6,9 @@ from app.models import (
     MessageResponse,
     DownloadStatus,
 )
-from app.database import download_service
+from app.services import download_service
 from app.download_manager import download_manager
 import json
-import asyncio
 import subprocess
 import platform
 import os

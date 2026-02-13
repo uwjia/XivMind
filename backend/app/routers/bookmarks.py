@@ -5,8 +5,7 @@ from app.models import (
     BookmarkListResponse,
     MessageResponse,
 )
-from app.database import bookmark_service
-from typing import List
+from app.services import bookmark_service
 
 router = APIRouter(prefix="/bookmarks", tags=["bookmarks"])
 

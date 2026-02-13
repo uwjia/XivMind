@@ -3,12 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html
 from fastapi.staticfiles import StaticFiles
 from app.routers import bookmarks, downloads
-from app.database import milvus_service, download_service
-from app.download_manager import download_manager
+from app.db.milvus.client import milvus_client
+from app.services import download_service
 from contextlib import asynccontextmanager
 import os
 import logging
-import asyncio
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,7 +27,7 @@ async def lifespan(app: FastAPI):
     logging.info("Starting application lifespan...")
     try:
         logging.info("Creating Milvus collections...")
-        milvus_service.create_collections()
+        milvus_client.init_collections()
         logging.info("Milvus collections created successfully")
     except ConnectionError as e:
         logging.error(f"Failed to start application: {e}")

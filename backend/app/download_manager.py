@@ -7,7 +7,7 @@ import aiofiles
 from pathlib import Path
 import logging
 
-from app.database import download_service
+from app.services import download_service
 from app.config import get_settings
 from app.models import DownloadStatus
 
@@ -102,10 +102,7 @@ class DownloadManager:
         try:
             task.status = DownloadStatus.DOWNLOADING.value
             task.updated_at = datetime.utcnow().isoformat()
-            download_service.update_task(task.task_id, {
-                "status": task.status,
-                "progress": 0,
-            })
+            download_service.update_task_status(task.task_id, status=task.status, progress=0)
             await self._notify_progress(task.task_id, 0, task.status)
             
             async with httpx.AsyncClient(timeout=300.0, follow_redirects=True) as client:
@@ -145,9 +142,7 @@ class DownloadManager:
                                     task.updated_at = datetime.utcnow().isoformat()
                                     
                                     if progress % 5 == 0 or progress == 100:
-                                        download_service.update_task(task.task_id, {
-                                            "progress": progress,
-                                        })
+                                        download_service.update_task_status(task.task_id, status=task.status, progress=progress)
                                     
                                     await self._notify_progress(task.task_id, progress, task.status)
             
@@ -156,12 +151,13 @@ class DownloadManager:
             task.file_path = str(file_path)
             task.file_size = downloaded
             task.updated_at = datetime.utcnow().isoformat()
-            download_service.update_task(task.task_id, {
-                "status": task.status,
-                "progress": 100,
-                "file_path": task.file_path,
-                "file_size": task.file_size,
-            })
+            download_service.update_task_status(
+                task.task_id, 
+                status=task.status, 
+                progress=100,
+                file_path=task.file_path,
+                file_size=task.file_size
+            )
             await self._notify_progress(task.task_id, 100, task.status)
             logger.info(f"Download completed: {task.paper_id} ({task.file_size} bytes)")
             
@@ -169,10 +165,11 @@ class DownloadManager:
             task.status = DownloadStatus.FAILED.value
             task.error_message = str(e)
             task.updated_at = datetime.utcnow().isoformat()
-            download_service.update_task(task.task_id, {
-                "status": task.status,
-                "error_message": task.error_message,
-            })
+            download_service.update_task_status(
+                task.task_id, 
+                status=task.status, 
+                error_message=task.error_message
+            )
             await self._notify_progress(task.task_id, task.progress, task.status)
             logger.error(f"Download failed: {task.paper_id} - {e}")
         
@@ -192,10 +189,11 @@ class DownloadManager:
             task.error_message = "Download cancelled by user"
             task.updated_at = datetime.utcnow().isoformat()
             
-            download_service.update_task(task_id, {
-                "status": task.status,
-                "error_message": task.error_message,
-            })
+            download_service.update_task_status(
+                task_id, 
+                status=task.status, 
+                error_message=task.error_message
+            )
             
             return True
     
@@ -218,11 +216,12 @@ class DownloadManager:
         task.cancel_flag = False
         task.updated_at = datetime.utcnow().isoformat()
         
-        download_service.update_task(task_id, {
-            "status": task.status,
-            "progress": 0,
-            "error_message": "",
-        })
+        download_service.update_task_status(
+            task_id, 
+            status=task.status, 
+            progress=0,
+            error_message=""
+        )
         
         return await self.start_download(task_id, task.pdf_url, task.paper_id)
     
