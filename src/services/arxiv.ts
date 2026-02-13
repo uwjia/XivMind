@@ -20,6 +20,16 @@ interface Paper {
   downloads: number
 }
 
+function parseArxivId(fullId: string): string {
+  const id = fullId.split('/').pop() || ''
+  const match = id.match(/^(.+?)(v\d+)?$/)
+  return match ? match[1] : id
+}
+
+function getFullId(fullId: string): string {
+  return fullId.split('/').pop() || ''
+}
+
 interface FetchOptions {
   category?: string
   maxResults?: number
@@ -92,8 +102,10 @@ export const arxivAPI = {
           const primaryCategory = categories[0] || ''
           const categoryId = primaryCategory.split('.')[0] || 'cs'
 
+          const arxivId = parseArxivId(id)
+          const fullId = getFullId(id)
           const pdfUrl = entry.querySelector('link[title="pdf"]')?.getAttribute('href') || ''
-          const absUrl = id ? `https://arxiv.org/abs/${id.split('/').pop()}` : ''
+          const absUrl = id ? `https://arxiv.org/abs/${arxivId}` : ''
 
           if (!id || !title) {
             console.warn(`Skipping entry ${index}: missing id or title`)
@@ -101,8 +113,8 @@ export const arxivAPI = {
           }
 
           papers.push({
-            id: id.split('/').pop() || '',
-            arxivId: id.split('/').pop() || '',
+            id: fullId,
+            arxivId,
             title: title.trim(),
             abstract: summary.trim(),
             authors,
@@ -226,8 +238,10 @@ export const arxivAPI = {
           const primaryCategory = categories[0] || ''
           const categoryId = primaryCategory.split('.')[0] || 'cs'
 
+          const arxivId = parseArxivId(id)
+          const fullId = getFullId(id)
           const pdfUrl = entry.querySelector('link[title="pdf"]')?.getAttribute('href') || ''
-          const absUrl = id ? `https://arxiv.org/abs/${id.split('/').pop()}` : ''
+          const absUrl = id ? `https://arxiv.org/abs/${arxivId}` : ''
 
           if (!id || !title) {
             console.warn(`Skipping search entry ${index}: missing id or title`)
@@ -235,8 +249,8 @@ export const arxivAPI = {
           }
 
           papers.push({
-            id: id.split('/').pop() || '',
-            arxivId: id.split('/').pop() || '',
+            id: fullId,
+            arxivId,
             title: title.trim(),
             abstract: summary.trim(),
             authors,
@@ -333,17 +347,20 @@ export const arxivAPI = {
 
             const primaryCategory = categories[0] || ''
             const categoryId = primaryCategory.split('.')[0] || 'cs'
+            
+            const arxivId = parseArxivId(id)
+            const fullId = getFullId(id)
             const pdfUrl = entry.querySelector('link[title="pdf"]')?.getAttribute('href') || ''
-            const absUrl = id ? `https://arxiv.org/abs/${id.split('/').pop()}` : ''
+            const absUrl = id ? `https://arxiv.org/abs/${arxivId}` : ''
             
             if (!id || !title) {
               console.warn(`Skipping entry ${index}: missing id or title`)
               return
             }
-            
+
             papers.push({
-              id: id.split('/').pop() || '',
-              arxivId: id.split('/').pop() || '',
+              id: fullId,
+              arxivId,
               title: title.trim(),
               abstract: summary.trim(),
               authors,
@@ -425,8 +442,11 @@ export const arxivAPI = {
 
           const primaryCategory = categories[0] || ''
           const categoryId = primaryCategory.split('.')[0] || 'cs'
+
+          const arxivId = parseArxivId(id)
+          const fullId = getFullId(id)
           const pdfUrl = entry.querySelector('link[title="pdf"]')?.getAttribute('href') || ''
-          const absUrl = id ? `https://arxiv.org/abs/${id.split('/').pop()}` : ''
+          const absUrl = id ? `https://arxiv.org/abs/${arxivId}` : ''
 
           if (!id || !title) {
             console.warn(`Skipping entry ${index}: missing id or title`)
@@ -434,8 +454,8 @@ export const arxivAPI = {
           }
 
           papers.push({
-            id: id.split('/').pop() || '',
-            arxivId: id.split('/').pop() || '',
+            id: fullId,
+            arxivId,
             title: title.trim(),
             abstract: summary.trim(),
             authors,
