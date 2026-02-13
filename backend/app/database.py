@@ -14,6 +14,8 @@ from datetime import datetime
 import uuid
 import json
 import logging
+import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -25,15 +27,42 @@ class MilvusService:
         self.downloads_collection = None
         self._connected = False
 
-    def connect(self):
-        if self._connected:
-            return
+    def _do_connect(self):
         connections.connect(
             alias="default",
             host=self.settings.MILVUS_HOST,
             port=self.settings.MILVUS_PORT,
         )
-        self._connected = True
+
+    def connect(self, timeout: int = 10):
+        if self._connected:
+            return
+        
+        logger.info(f"Connecting to Milvus at {self.settings.MILVUS_HOST}:{self.settings.MILVUS_PORT}...")
+        
+        executor = ThreadPoolExecutor(max_workers=1)
+        try:
+            future = executor.submit(self._do_connect)
+            try:
+                future.result(timeout=timeout)
+                self._connected = True
+                logger.info("Connected to Milvus successfully")
+            except FuturesTimeoutError:
+                error_msg = f"Connection to Milvus timed out after {timeout} seconds. "
+                error_msg += f"Please ensure Milvus is running at {self.settings.MILVUS_HOST}:{self.settings.MILVUS_PORT}."
+                logger.error(error_msg)
+                executor.shutdown(wait=False, cancel_futures=True)
+                raise ConnectionError(error_msg)
+        except ConnectionError:
+            raise
+        except Exception as e:
+            error_msg = f"Failed to connect to Milvus: {e}. "
+            error_msg += f"Please ensure Milvus is running at {self.settings.MILVUS_HOST}:{self.settings.MILVUS_PORT}."
+            logger.error(error_msg)
+            executor.shutdown(wait=False, cancel_futures=True)
+            raise ConnectionError(error_msg)
+        finally:
+            executor.shutdown(wait=False)
 
         db_name = self.settings.DATABASE_NAME
         try:
@@ -47,13 +76,20 @@ class MilvusService:
         db.using_database(db_name)
 
     def create_collections(self):
-        self.connect()
+        logger.info("Starting create_collections...")
+        try:
+            self.connect()
+            logger.info("Milvus connection established")
+        except Exception as e:
+            logger.error(f"Failed to connect to Milvus: {e}")
+            raise
 
         BOOKMARK_SCHEMA_VERSION = 2
         DOWNLOAD_SCHEMA_VERSION = 2
 
         def get_schema_version(collection_name: str) -> int:
             try:
+                logger.debug(f"Checking schema version for {collection_name}...")
                 if utility.has_collection(f"{collection_name}_schema_version"):
                     version_collection = Collection(f"{collection_name}_schema_version")
                     version_collection.load()
@@ -69,6 +105,7 @@ class MilvusService:
 
         def set_schema_version(collection_name: str, version: int):
             try:
+                logger.debug(f"Setting schema version for {collection_name} to v{version}...")
                 if utility.has_collection(f"{collection_name}_schema_version"):
                     utility.drop_collection(f"{collection_name}_schema_version")
                 version_fields = [
@@ -90,6 +127,7 @@ class MilvusService:
             except Exception as e:
                 logger.error(f"Failed to set schema version for {collection_name}: {e}")
 
+        logger.info("Checking bookmarks collection...")
         bookmark_version = get_schema_version("bookmarks")
         if bookmark_version == 0 and utility.has_collection("bookmarks"):
             bookmark_version = BOOKMARK_SCHEMA_VERSION
@@ -101,6 +139,7 @@ class MilvusService:
                 utility.drop_collection("bookmarks")
 
         if not utility.has_collection("bookmarks"):
+            logger.info("Creating bookmarks collection...")
             bookmark_fields = [
                 FieldSchema(name="id", dtype=DataType.VARCHAR, max_length=64, is_primary=True),
                 FieldSchema(name="paper_id", dtype=DataType.VARCHAR, max_length=128),
@@ -129,8 +168,10 @@ class MilvusService:
             set_schema_version("bookmarks", BOOKMARK_SCHEMA_VERSION)
             logger.info("Bookmarks collection created with new schema")
         else:
+            logger.info("Using existing bookmarks collection")
             self.bookmarks_collection = Collection("bookmarks")
 
+        logger.info("Checking downloads collection...")
         download_version = get_schema_version("downloads")
         if download_version == 0 and utility.has_collection("downloads"):
             download_version = DOWNLOAD_SCHEMA_VERSION
@@ -142,6 +183,7 @@ class MilvusService:
                 utility.drop_collection("downloads")
 
         if not utility.has_collection("downloads"):
+            logger.info("Creating downloads collection...")
             download_fields = [
                 FieldSchema(name="id", dtype=DataType.VARCHAR, max_length=64, is_primary=True),
                 FieldSchema(name="paper_id", dtype=DataType.VARCHAR, max_length=128),
@@ -168,7 +210,10 @@ class MilvusService:
             set_schema_version("downloads", DOWNLOAD_SCHEMA_VERSION)
             logger.info("Downloads collection created with new schema")
         else:
+            logger.info("Using existing downloads collection")
             self.downloads_collection = Collection("downloads")
+
+        logger.info("create_collections completed successfully")
 
     def get_bookmarks_collection(self) -> Collection:
         if not self.bookmarks_collection:

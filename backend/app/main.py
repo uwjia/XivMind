@@ -10,6 +10,14 @@ import os
 import logging
 import asyncio
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+
 logging.getLogger("pymilvus").setLevel(logging.WARNING)
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
@@ -17,10 +25,25 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    milvus_service.create_collections()
+    logging.info("Starting application lifespan...")
+    try:
+        logging.info("Creating Milvus collections...")
+        milvus_service.create_collections()
+        logging.info("Milvus collections created successfully")
+    except ConnectionError as e:
+        logging.error(f"Failed to start application: {e}")
+        logging.error("Exiting...")
+        import os
+        os._exit(1)
+    except Exception as e:
+        logging.error(f"Unexpected error during startup: {e}")
+        import os
+        os._exit(1)
+    logging.info("Resetting incomplete download tasks...")
     reset_count = download_service.reset_incomplete_tasks()
     if reset_count > 0:
         logging.info(f"Reset {reset_count} incomplete download tasks to failed status")
+    logging.info("Application startup complete")
     yield
 
 
