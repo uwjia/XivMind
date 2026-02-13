@@ -305,16 +305,20 @@ class BookmarkService:
     def get_all_bookmarks(self, limit: int = 100, offset: int = 0) -> tuple:
         collection = self._get_collection()
         collection.load()
-        results = collection.query(
+        all_results = collection.query(
             expr='id != ""',
             output_fields=["id", "paper_id", "arxiv_id", "title", "authors", "abstract",
                           "comment", "primary_category", "categories", "pdf_url", "abs_url",
                           "published", "updated", "created_at"],
-            limit=limit,
-            offset=offset,
         )
-        total = len(collection.query(expr='id != ""', output_fields=["id"]))
-        return [self._entity_to_response(r) for r in results], total
+        total = len(all_results)
+        sorted_results = sorted(
+            all_results,
+            key=lambda x: x.get("created_at", ""),
+            reverse=True
+        )
+        paginated = sorted_results[offset:offset + limit]
+        return [self._entity_to_response(r) for r in paginated], total
 
     def search_bookmarks(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
         collection = self._get_collection()
@@ -452,14 +456,18 @@ class DownloadService:
     def get_all_tasks(self, limit: int = 100, offset: int = 0) -> tuple:
         collection = self._get_collection()
         collection.load()
-        results = collection.query(
+        all_results = collection.query(
             expr='id != ""',
             output_fields=["*"],
-            limit=limit,
-            offset=offset,
         )
-        total = len(collection.query(expr='id != ""', output_fields=["id"]))
-        return [self._entity_to_response(r) for r in results], total
+        total = len(all_results)
+        sorted_results = sorted(
+            all_results,
+            key=lambda x: x.get("created_at", ""),
+            reverse=True
+        )
+        paginated = sorted_results[offset:offset + limit]
+        return [self._entity_to_response(r) for r in paginated], total
 
     def delete_task(self, task_id: str) -> bool:
         collection = self._get_collection()
