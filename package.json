@@ -15,7 +15,7 @@
     "markdown-it": "^14.1.0",
     "markdown-it-katex": "^2.0.3",
     "pinia": "^2.1.0",
-    "pinia-plugin-persistedstate": "^4.7.1",
+    "pinia-plugin-persistedstate": "^3.2.3",
     "vue": "^3.4.0",
     "vue-router": "^4.2.0"
   },
