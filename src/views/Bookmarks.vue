@@ -1,18 +1,25 @@
 <template>
-  <div class="bookmarks-page">
+  <div class="bookmarks-page" :class="{ 'drawer-open': isDrawerOpen }">
     <div class="page-header">
       <h1>My Bookmarks</h1>
-      <div class="search-box">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search bookmarks..."
-          @keyup.enter="handleSearch"
-        />
-        <button @click="handleSearch" class="search-btn">
+      <div class="header-actions">
+        <div class="search-box">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search bookmarks..."
+            @keyup.enter="handleSearch"
+          />
+          <button @click="handleSearch" class="search-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="M21 21l-4.35-4.35"/>
+            </svg>
+          </button>
+        </div>
+        <button class="drawer-toggle" @click="toggleDrawer" :title="isDrawerOpen ? 'Hide categories' : 'Show categories'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="M21 21l-4.35-4.35"/>
+            <path d="M3 7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V17C21 18.1046 20.1046 19 19 19H5C3.89543 19 3 18.1046 3 17V7Z" fill="currentColor" fill-opacity="0.2"/>
           </svg>
         </button>
       </div>
@@ -23,16 +30,16 @@
       <p>Loading bookmarks...</p>
     </div>
 
-    <div v-else-if="bookmarks.length === 0" class="empty-state">
+    <div v-else-if="filteredBookmarks.length === 0" class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="#9E9E9E">
         <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
       </svg>
-      <p>No bookmarks yet</p>
-      <span>Start bookmarking papers you find interesting!</span>
+      <p>{{ selectedCategory ? 'No bookmarks in this category' : 'No bookmarks yet' }}</p>
+      <span>{{ selectedCategory ? 'Try selecting a different category' : 'Start bookmarking papers you find interesting!' }}</span>
     </div>
 
     <div v-else class="bookmarks-list">
-      <div v-for="bookmark in bookmarks" :key="bookmark.id" class="bookmark-card">
+      <div v-for="bookmark in filteredBookmarks" :key="bookmark.id" class="bookmark-card">
         <div class="bookmark-header">
           <h3 class="bookmark-title" @click="goToDetail(bookmark.paper_id)">{{ bookmark.title }}</h3>
           <div class="header-badges">
@@ -140,6 +147,29 @@
         </div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <Transition name="drawer">
+        <div v-if="isDrawerOpen" class="category-drawer">
+          <div class="drawer-header">
+            <h3>Categories</h3>
+            <button class="close-btn" @click="closeDrawer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <div class="drawer-content">
+            <CategoryTree
+              :selected-category="selectedCategory"
+              :category-counts="categoryCounts"
+              @select="handleCategorySelect"
+            />
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -152,8 +182,9 @@ import 'katex/dist/katex.min.css'
 import { useBookmarkStore } from '../stores/bookmark-store'
 import { useDownloadStore } from '../stores/download-store'
 import { useToastStore } from '../stores/toast-store'
-import { getTagStyle, getCategoryFullName, getCategoryShortName, getCategoryColor } from '../utils/categoryColors'
+import { getTagStyle, getCategoryFullName, getCategoryShortName, getCategoryColor, categories } from '../utils/categoryColors'
 import { apiService } from '../services/api'
+import CategoryTree from '../components/CategoryTree.vue'
 
 const md = new MarkdownIt({
   html: true,
@@ -173,6 +204,42 @@ const toastStore = useToastStore()
 const bookmarks = computed(() => bookmarkStore.bookmarks)
 const loading = ref(true)
 const searchQuery = ref('')
+const isDrawerOpen = ref(false)
+const selectedCategory = ref<string | null>(null)
+
+const categoryCounts = computed(() => {
+  const counts: Record<string, number> = {}
+  for (const bookmark of bookmarks.value) {
+    const category = bookmark.primary_category
+    if (category) {
+      counts[category] = (counts[category] || 0) + 1
+    }
+  }
+  return counts
+})
+
+const filteredBookmarks = computed(() => {
+  if (!selectedCategory.value || selectedCategory.value === 'cs*') {
+    return bookmarks.value
+  }
+  if (selectedCategory.value === 'other') {
+    const csCategoryIds = categories.map(cat => cat.id)
+    return bookmarks.value.filter(bookmark => !csCategoryIds.includes(bookmark.primary_category))
+  }
+  return bookmarks.value.filter(bookmark => bookmark.primary_category === selectedCategory.value)
+})
+
+const toggleDrawer = () => {
+  isDrawerOpen.value = !isDrawerOpen.value
+}
+
+const closeDrawer = () => {
+  isDrawerOpen.value = false
+}
+
+const handleCategorySelect = (categoryId: string | null) => {
+  selectedCategory.value = categoryId
+}
 
 const getRenderedAbstract = (abstract?: string) => {
   if (!abstract) return '<p>No abstract available</p>'
@@ -355,9 +422,12 @@ onMounted(() => {
 
 watch(
   () => route.path,
-  (newPath) => {
+  (newPath, oldPath) => {
     if (newPath === '/bookmarks') {
       fetchBookmarks()
+    }
+    if (oldPath === '/bookmarks' && newPath !== '/bookmarks') {
+      isDrawerOpen.value = false
     }
   }
 )
@@ -407,19 +477,23 @@ watch(
 }
 
 .search-btn {
-  padding: 10px 16px;
-  border: none;
-  border-radius: 8px;
-  background: var(--accent-color);
-  color: white;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #00BCD4 0%, #0097A7 100%);
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(0, 188, 212, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .search-btn:hover {
-  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(0, 188, 212, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .search-btn svg {
@@ -887,5 +961,105 @@ watch(
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.drawer-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(156, 39, 176, 0.3);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.1) 0%, rgba(103, 58, 183, 0.1) 100%);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.drawer-toggle:hover {
+  border-color: rgba(156, 39, 176, 0.6);
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.2) 0%, rgba(103, 58, 183, 0.2) 100%);
+  box-shadow: 0 0 20px rgba(156, 39, 176, 0.3), inset 0 0 20px rgba(156, 39, 176, 0.1);
+}
+
+.drawer-toggle svg {
+  width: 20px;
+  height: 20px;
+  color: #9C27B0;
+}
+
+.category-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 230px;
+  height: 100%;
+  background: var(--bg-primary);
+  border-left: 1px solid var(--border-color);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.drawer-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: linear-gradient(135deg, #F44336 0%, #D32F2F 100%);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+}
+
+.close-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+}
+
+.close-btn svg {
+  width: 18px;
+  height: 18px;
+  color: white;
+}
+
+.drawer-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.drawer-enter-active,
+.drawer-leave-active {
+  transition: all 0.3s ease;
+}
+
+.drawer-enter-from,
+.drawer-leave-to {
+  transform: translateX(100%);
 }
 </style>
