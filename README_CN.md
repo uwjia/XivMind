@@ -27,66 +27,69 @@ Built by AI, motivated by humans. The Mind of arXiv.
 
 ### 后端
 - **FastAPI** - 现代 Python Web 框架
-- **Milvus** - 向量数据库用于数据存储
+- **SQLite** - 轻量级数据库（默认，无需 Docker）
+- **Milvus** - 向量数据库（可选，用于生产环境）
 - **WebSocket** - 实时下载进度更新
-
-## 项目结构
-
-```
-XivMind/
-├── src/                      # 前端源码
-│   ├── components/           # 可复用组件
-│   │   ├── Header.vue
-│   │   ├── Sidebar.vue
-│   │   ├── PaperCard.vue
-│   │   ├── CategoryPicker.vue
-│   │   └── Toast.vue
-│   ├── views/               # 页面组件
-│   │   ├── Home.vue
-│   │   ├── Search.vue
-│   │   ├── PaperDetail.vue
-│   │   ├── Bookmarks.vue
-│   │   ├── Downloads.vue
-│   │   ├── Assistant.vue
-│   │   └── Settings.vue
-│   ├── stores/              # Pinia 状态管理
-│   │   ├── paper-store.ts
-│   │   ├── bookmark-store.ts
-│   │   ├── download-store.ts
-│   │   └── theme-store.ts
-│   ├── services/            # API 服务
-│   │   └── api.ts
-│   ├── utils/               # 工具函数
-│   │   └── categoryColors.ts
-│   └── router/              # Vue Router 配置
-│       └── index.ts
-├── backend/                 # 后端源码
-│   ├── app/
-│   │   ├── main.py          # FastAPI 入口
-│   │   ├── config.py        # 配置管理
-│   │   ├── models.py        # Pydantic 模型
-│   │   ├── database.py      # Milvus 服务
-│   │   ├── download_manager.py
-│   │   └── routers/
-│   │       ├── bookmarks.py
-│   │       └── downloads.py
-│   ├── downloads/           # 下载的 PDF
-│   ├── logs/               # 应用日志
-│   ├── docker-compose.yml  # Milvus 标准部署
-│   ├── docker-compose.lite.yml  # Milvus 精简部署
-│   └── requirements.txt
-└── package.json
-```
 
 ## 快速开始
 
 ### 环境要求
 
+#### SQLite 模式（推荐开发使用）
+- Node.js 18+
+- Python 3.10+
+- 无需 Docker
+
+#### Milvus 模式（推荐生产使用）
 - Node.js 18+
 - Python 3.10+
 - Docker & Docker Compose
 
-### 1. 启动 Milvus 数据库
+### 方式一：SQLite 模式（无需 Docker）
+
+SQLite 模式非常适合开发、测试或独立使用。
+
+**1. 配置后端**
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+编辑 `.env` 文件：
+
+```env
+DATABASE_TYPE=sqlite
+SQLITE_DB_PATH=./data/xivmind.db
+DOWNLOAD_DIR=./downloads
+```
+
+**2. 启动后端服务**
+
+**Windows:**
+```cmd
+start.bat install         # 仅首次安装依赖
+start.bat dev             # 开发模式
+```
+
+**Linux/Mac:**
+```bash
+./start.sh install        # 仅首次安装依赖
+./start.sh dev            # 开发模式
+```
+
+**3. 启动前端**
+
+```bash
+npm install
+npm run dev
+```
+
+### 方式二：Milvus 模式（生产环境）
+
+Milvus 模式提供更好的扩展性和向量搜索能力。
+
+**1. 启动 Milvus 数据库**
 
 **Windows:**
 ```cmd
@@ -103,23 +106,36 @@ chmod +x milvus.sh
 ./milvus.sh start lite    # 精简模式
 ```
 
-### 2. 启动后端服务
+**2. 配置并启动后端**
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+编辑 `.env` 文件：
+
+```env
+DATABASE_TYPE=milvus
+MILVUS_HOST=localhost
+MILVUS_PORT=19530
+DATABASE_NAME=xivmind
+DOWNLOAD_DIR=./downloads
+```
 
 **Windows:**
 ```cmd
-cd backend
 start.bat install         # 仅首次安装依赖
 start.bat start           # 启动服务
 ```
 
 **Linux/Mac:**
 ```bash
-cd backend
 ./start.sh install        # 仅首次安装依赖
 ./start.sh start          # 启动服务
 ```
 
-### 3. 启动前端
+**3. 启动前端**
 
 ```bash
 npm install
@@ -128,6 +144,16 @@ npm run dev
 
 应用将在 `http://localhost:5173` 可用
 
+## 数据库对比
+
+| 特性 | SQLite | Milvus |
+|------|--------|--------|
+| 安装配置 | 无需配置 | 需要 Docker |
+| 内存占用 | 极小 | ~1-2GB |
+| 向量搜索 | 不支持 | 支持 |
+| 扩展性 | 单机 | 分布式 |
+| 适用场景 | 开发、独立使用 | 生产环境 |
+
 ## 服务地址
 
 | 服务 | 地址 | 说明 |
@@ -135,7 +161,7 @@ npm run dev
 | 前端 | http://localhost:5173 | Vue 应用 |
 | API 文档 | http://localhost:8000/docs | Swagger UI |
 | API 文档 | http://localhost:8000/redoc | ReDoc |
-| Attu | http://localhost:3000 | Milvus GUI |
+| Attu | http://localhost:3000 | Milvus GUI（仅 Milvus 模式） |
 
 ## 功能概览
 

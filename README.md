@@ -27,66 +27,69 @@ A modern arXiv paper management application with bookmark, download, and AI assi
 
 ### Backend
 - **FastAPI** - Modern Python web framework
-- **Milvus** - Vector database for data storage
+- **SQLite** - Lightweight database (default, no Docker required)
+- **Milvus** - Vector database (optional, for production)
 - **WebSocket** - Real-time download progress updates
-
-## Project Structure
-
-```
-XivMind/
-├── src/                      # Frontend source
-│   ├── components/           # Reusable components
-│   │   ├── Header.vue
-│   │   ├── Sidebar.vue
-│   │   ├── PaperCard.vue
-│   │   ├── CategoryPicker.vue
-│   │   └── Toast.vue
-│   ├── views/               # Page components
-│   │   ├── Home.vue
-│   │   ├── Search.vue
-│   │   ├── PaperDetail.vue
-│   │   ├── Bookmarks.vue
-│   │   ├── Downloads.vue
-│   │   ├── Assistant.vue
-│   │   └── Settings.vue
-│   ├── stores/              # Pinia stores
-│   │   ├── paper-store.ts
-│   │   ├── bookmark-store.ts
-│   │   ├── download-store.ts
-│   │   └── theme-store.ts
-│   ├── services/            # API services
-│   │   └── api.ts
-│   ├── utils/               # Utility functions
-│   │   └── categoryColors.ts
-│   └── router/              # Vue Router configuration
-│       └── index.ts
-├── backend/                 # Backend source
-│   ├── app/
-│   │   ├── main.py          # FastAPI entry
-│   │   ├── config.py        # Configuration
-│   │   ├── models.py        # Pydantic models
-│   │   ├── database.py      # Milvus service
-│   │   ├── download_manager.py
-│   │   └── routers/
-│   │       ├── bookmarks.py
-│   │       └── downloads.py
-│   ├── downloads/           # Downloaded PDFs
-│   ├── logs/               # Application logs
-│   ├── docker-compose.yml  # Milvus standard
-│   ├── docker-compose.lite.yml  # Milvus lite
-│   └── requirements.txt
-└── package.json
-```
 
 ## Quick Start
 
 ### Prerequisites
 
+#### SQLite Mode (Recommended for Development)
+- Node.js 18+
+- Python 3.10+
+- No Docker required
+
+#### Milvus Mode (Recommended for Production)
 - Node.js 18+
 - Python 3.10+
 - Docker & Docker Compose
 
-### 1. Start Milvus Database
+### Option 1: SQLite Mode (No Docker Required)
+
+SQLite mode is perfect for development, testing, or standalone use.
+
+**1. Configure Backend**
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+Edit `.env` file:
+
+```env
+DATABASE_TYPE=sqlite
+SQLITE_DB_PATH=./data/xivmind.db
+DOWNLOAD_DIR=./downloads
+```
+
+**2. Start Backend Service**
+
+**Windows:**
+```cmd
+start.bat install         # First time only
+start.bat dev             # Development mode
+```
+
+**Linux/Mac:**
+```bash
+./start.sh install        # First time only
+./start.sh dev            # Development mode
+```
+
+**3. Start Frontend**
+
+```bash
+npm install
+npm run dev
+```
+
+### Option 2: Milvus Mode (Production)
+
+Milvus mode provides better scalability and vector search capabilities.
+
+**1. Start Milvus Database**
 
 **Windows:**
 ```cmd
@@ -103,23 +106,36 @@ chmod +x milvus.sh
 ./milvus.sh start lite    # Lite mode
 ```
 
-### 2. Start Backend Service
+**2. Configure and Start Backend**
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+Edit `.env` file:
+
+```env
+DATABASE_TYPE=milvus
+MILVUS_HOST=localhost
+MILVUS_PORT=19530
+DATABASE_NAME=xivmind
+DOWNLOAD_DIR=./downloads
+```
 
 **Windows:**
 ```cmd
-cd backend
 start.bat install         # First time only
 start.bat start           # Start service
 ```
 
 **Linux/Mac:**
 ```bash
-cd backend
 ./start.sh install        # First time only
 ./start.sh start          # Start service
 ```
 
-### 3. Start Frontend
+**3. Start Frontend**
 
 ```bash
 npm install
@@ -128,6 +144,16 @@ npm run dev
 
 The application will be available at `http://localhost:5173`
 
+## Database Comparison
+
+| Feature | SQLite | Milvus |
+|---------|--------|--------|
+| Setup | No setup required | Requires Docker |
+| Memory | Minimal | ~1-2GB |
+| Vector Search | Not supported | Supported |
+| Scalability | Single machine | Distributed |
+| Use Case | Development, standalone | Production |
+
 ## Service URLs
 
 | Service | URL | Description |
@@ -135,7 +161,7 @@ The application will be available at `http://localhost:5173`
 | Frontend | http://localhost:5173 | Vue application |
 | API Docs | http://localhost:8000/docs | Swagger UI |
 | API Docs | http://localhost:8000/redoc | ReDoc |
-| Attu | http://localhost:3000 | Milvus GUI |
+| Attu | http://localhost:3000 | Milvus GUI (Milvus mode only) |
 
 ## Features Overview
 
