@@ -21,49 +21,6 @@
           </div>
         </button>
       </div>
-      <div class="sidebar-section">
-        <button
-          class="picker-trigger-btn"
-          @click="toggleDatePicker"
-          :title="isCollapsed ? 'Calendar' : ''"
-        >
-          <svg v-if="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="#FF9800">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/>
-            <line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-          <div v-else class="picker-trigger-content">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#FF9800">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-            <span class="picker-label">Calendar</span>
-          </div>
-        </button>
-      </div>
-
-      <div class="sidebar-section">
-        <button
-          class="picker-trigger-btn"
-          @click="toggleCategoryPicker"
-          :title="isCollapsed ? 'Category' : ''"
-        >
-          <svg v-if="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="#9C27B0">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-          </svg>
-          <div v-else class="picker-trigger-content">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#9C27B0">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            </svg>
-            <span class="picker-label">Category</span>
-          </div>
-        </button>
-      </div>
 
       <div class="sidebar-section">
         <button
@@ -164,20 +121,6 @@
     </div>
 
     <div class="mobile-overlay" v-if="isMobileOpen" @click="closeMobileSidebar"></div>
-
-    <DatePicker
-          :is-open="isDatePickerOpen"
-          :model-value="selectedDate as string | Date | null"
-          @update:model-value="handleDateSelect"
-          @update:is-open="closeDatePicker"
-        />
-
-    <CategoryPicker
-      :is-open="isCategoryPickerOpen"
-      :model-value="selectedCategory"
-      @update:model-value="handleCategorySelect"
-      @update:is-open="closeCategoryPicker"
-    />
   </aside>
 </template>
 
@@ -185,29 +128,16 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSidebarStore } from '../stores/sidebar-store'
-import { usePaperStore } from '../stores/paper-store'
-import { useConfigStore } from '../stores/config-store'
-import { useToastStore } from '../stores/toast-store'
-import DatePicker from './DatePicker.vue'
-import CategoryPicker from './CategoryPicker.vue'
 import { useThemeStore } from '../stores/theme-store'
 
 const router = useRouter()
 const sidebarStore = useSidebarStore()
 const themeStore = useThemeStore()
-const paperStore = usePaperStore()
-const toastStore = useToastStore()
-const configStore = useConfigStore()
-
 const windowWidth = ref<number>(window.innerWidth)
 
 const isCollapsed = computed(() => sidebarStore.isCollapsed)
 const isMobileOpen = computed(() => sidebarStore.isMobileOpen)
 const isDark = computed(() => themeStore.isDark)
-const selectedCategory = computed(() => paperStore.selectedCategory)
-const selectedDate = computed(() => paperStore.selectedDate)
-const isDatePickerOpen = computed(() => sidebarStore.isDatePickerOpen)
-const isCategoryPickerOpen = computed(() => sidebarStore.isCategoryPickerOpen)
 
 const handleResize = () => {
   windowWidth.value = window.innerWidth
@@ -234,92 +164,6 @@ const goToHome = () => {
 
 const toggleTheme = () => {
   themeStore.toggleTheme()
-}
-
-const toggleDatePicker = () => {
-  sidebarStore.toggleDatePicker()
-}
-
-const toggleCategoryPicker = () => {
-  sidebarStore.toggleCategoryPicker()
-}
-
-const fetchPapersByFilter = async (category: string, dateValue: string | Date | { startDate: string; endDate: string }) => {
-  try {
-    toastStore.showLoading('Fetching papers...')
-    const startIndex = 0
-    if (dateValue === 'all') {
-      await paperStore.fetchPapers({ category, maxResults: configStore.maxResults, start: startIndex })
-    } else if (dateValue && (typeof dateValue === 'string' || dateValue instanceof Date || (dateValue as any).startDate)) {
-      let startDate: Date | null = null
-      let endDate: Date | null = null
-      
-      if (dateValue instanceof Date) {
-        const year = dateValue.getFullYear()
-        startDate = new Date(Date.UTC(year, dateValue.getMonth(), dateValue.getDate(), 0, 0, 0))
-        endDate = new Date(Date.UTC(year, dateValue.getMonth(), dateValue.getDate(), 23, 59, 59))
-      } else if ((dateValue as { startDate: string; endDate: string }).startDate && (dateValue as { startDate: string; endDate: string }).endDate) {
-        startDate = new Date((dateValue as { startDate: string; endDate: string }).startDate)
-        endDate = new Date((dateValue as { startDate: string; endDate: string }).endDate)
-        console.log('Date range object - startDate:', startDate, 'endDate:', endDate)
-      }
-      
-      if (startDate && endDate) {
-        const year = startDate.getFullYear()
-        const month = String(startDate.getMonth() + 1).padStart(2, '0')
-        const day = String(startDate.getDate()).padStart(2, '0')
-        
-        const startTimestamp = `${year}${month}${day}000000`
-        const endTimestamp = `${year}${month}${day}235959`
-        await paperStore.fetchPapersByDateRange(startTimestamp, endTimestamp, category, configStore.maxResults, startIndex)
-      } else {
-        await paperStore.fetchPapers({ category, maxResults: configStore.maxResults, start: startIndex })
-      }
-    } else {
-      await paperStore.fetchPapers({ category, maxResults: configStore.maxResults, start: startIndex })
-    }
-    toastStore.showSuccess('Papers fetched successfully!')
-    paperStore.setCurrentPage(0)
-    // Scroll to top after loading papers
-    window.scrollTo({ top: 0, behavior: 'instant' })
-  } catch (err) {
-    console.error('Error fetching papers:', err)
-    toastStore.showError('Failed to fetch papers. Please try again.')
-    throw err
-  }
-}
-
-const handleDateSelect = async (value: string | Date | { startDate: string; endDate: string }) => {
-  console.log('handleDateSelect called with:', value)
-  paperStore.setSelectedDate(value)
-  try {
-    const category = selectedCategory.value === 'all' ? 'cs*' : selectedCategory.value
-    await fetchPapersByFilter(category, value)
-    console.log('Papers fetched after date selection:', paperStore.papers.length)
-  } catch (err) {
-    console.error('Error fetching papers after date selection:', err)
-  }
-}
-
-const handleCategorySelect = async (value: string) => {
-  console.log('handleCategorySelect called with:', value)
-  paperStore.setSelectedCategory(value)
-  try {
-    const category = value
-    const dateValue = selectedDate.value
-    await fetchPapersByFilter(category, dateValue)
-    console.log('Papers fetched after category selection:', paperStore.papers.length)
-  } catch (err) {
-    console.error('Error fetching papers after category selection:', err)
-  }
-}
-
-const closeDatePicker = () => {
-  sidebarStore.closeDatePicker()
-}
-
-const closeCategoryPicker = () => {
-  sidebarStore.closeCategoryPicker()
 }
 
 const goToSettings = () => {

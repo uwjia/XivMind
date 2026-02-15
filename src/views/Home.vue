@@ -7,6 +7,22 @@
           <p v-if="filterDescription" class="section-description">{{ filterDescription }}</p>
         </div>
         <div class="header-actions">
+          <button class="action-btn date-btn" @click="toggleDatePicker" title="Calendar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#FF9800" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <span>Date</span>
+          </button>
+          <button class="action-btn category-btn" @click="toggleCategoryPicker" title="Category">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#9C27B0" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+            <span>Category</span>
+          </button>
           <button class="toggle-btn" @click="configStore.setUseSimpleCard(!configStore.useSimpleCard)" :title="configStore.useSimpleCard ? 'Switch to detailed view' : 'Switch to simple view'">
             <svg viewBox="0 0 24 24" fill="none" stroke="url(#toggleGradient)" stroke-width="2">
               <defs>
@@ -86,9 +102,9 @@
             class="pagination-input" 
             placeholder="num"
             min="1"
-            @keyup.enter="goToPage"
+            @keyup.enter="handleGoToPage"
           />
-          <button class="pagination-btn" @click="goToPage">Go</button>
+          <button class="pagination-btn" @click="handleGoToPage">Go</button>
         </div>
         <button class="pagination-btn" @click="goToNextPage">
           Next
@@ -105,61 +121,68 @@
         <p>No papers found matching your criteria</p>
       </div>
     </div>
+
+    <DatePicker
+      :is-open="isDatePickerOpen"
+      :model-value="selectedDate as string | Date | null"
+      @update:model-value="handleDateSelect"
+      @update:is-open="closeDatePicker"
+    />
+
+    <CategoryPicker
+      :is-open="isCategoryPickerOpen"
+      :model-value="selectedCategory"
+      @update:model-value="handleCategorySelect"
+      @update:is-open="closeCategoryPicker"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onActivated, toRefs, ref } from 'vue'
+import { computed, onMounted, onActivated, ref } from 'vue'
 import { usePaperStore } from '../stores/paper-store'
-import { useToastStore } from '../stores/toast-store'
 import { useConfigStore } from '../stores/config-store'
 import { categories } from '../utils/categoryColors'
 import PaperCard from '../components/PaperCard.vue'
 import PaperCardSimple from '../components/PaperCardSimple.vue'
+import DatePicker from '../components/DatePicker.vue'
+import CategoryPicker from '../components/CategoryPicker.vue'
+import { usePaperFilter } from '../composables/usePaperFilter'
 import type { Paper } from '../types'
 
 const paperStore = usePaperStore()
-const toastStore = useToastStore()
 const configStore = useConfigStore()
-
-const { currentPage } = toRefs(paperStore)
 const jumpPageInput = ref<string>('')
 
-const loading = computed(() => paperStore.loading)
-const error = computed(() => paperStore.error)
-const selectedCategory = computed(() => paperStore.selectedCategory)
-const selectedDate = computed(() => paperStore.selectedDate)
+const {
+  currentPage,
+  selectedCategory,
+  selectedDate,
+  loading,
+  error,
+  isDatePickerOpen,
+  isCategoryPickerOpen,
+  toggleDatePicker,
+  toggleCategoryPicker,
+  closeDatePicker,
+  closeCategoryPicker,
+  handleDateSelect,
+  handleCategorySelect,
+  loadPapers,
+  goToFirstPage,
+  goToPreviousPage,
+  goToNextPage,
+  goToPage
+} = usePaperFilter()
 
 const filteredPapers = computed<Paper[]>(() => {
   return paperStore.getFilteredPapers()
 })
 
-const goToFirstPage = () => {
-  paperStore.setCurrentPage(0)
-  loadPapers()
-  window.scrollTo({ top: 0, behavior: 'instant' })
-}
-
-const goToPreviousPage = () => {
-  if (currentPage.value > 0) {
-    paperStore.setCurrentPage(currentPage.value - 1)
-    loadPapers()
-    window.scrollTo({ top: 0, behavior: 'instant' })
-  }
-}
-
-const goToNextPage = () => {
-  paperStore.setCurrentPage(currentPage.value + 1)
-  loadPapers()
-  window.scrollTo({ top: 0, behavior: 'instant' })
-}
-
-const goToPage = () => {
+const handleGoToPage = () => {
   const targetPage = parseInt(jumpPageInput.value)
   if (targetPage && targetPage > 0) {
-    paperStore.setCurrentPage(targetPage - 1)
-    loadPapers()
-    window.scrollTo({ top: 0, behavior: 'instant' })
+    goToPage(targetPage - 1)
     jumpPageInput.value = ''
   }
 }
@@ -181,12 +204,8 @@ const filterDescription = computed(() => {
       const year = selectedDate.value.getFullYear()
       const month = String(selectedDate.value.getMonth() + 1).padStart(2, '0')
       const day = String(selectedDate.value.getDate()).padStart(2, '0')
-        
-      const dateStr = `${year}-${month}-${day}`
-      
-      parts.push(dateStr)
+      parts.push(`${year}-${month}-${day}`)
     } else {
-      console.log('filterDescription selectedDate...', selectedDate.value)
       parts.push(selectedDate.value)
     }
   }
@@ -195,58 +214,6 @@ const filterDescription = computed(() => {
   
   return parts.join(' · ')
 })
-
-const loadPapers = async () => {
-  try {
-    console.log('currentPage:', currentPage, 'currentPage.value:', currentPage.value, 'pageSize:', configStore.maxResults)
-    const startIndex = currentPage.value * configStore.maxResults
-    console.log('Loading papers...', selectedCategory.value, selectedDate.value, startIndex)
-    toastStore.showLoading('Loading papers...')
-    const category = selectedCategory.value === 'all' ? 'cs*' : selectedCategory.value
-    const dateValue = selectedDate.value
-    
-    if (dateValue === 'all') {
-      const result = await paperStore.fetchPapers({ category, maxResults: configStore.maxResults, start: startIndex })
-      console.log('Loaded papers:', result)
-    } else if (dateValue && (typeof dateValue === 'string' || dateValue instanceof Date || (typeof dateValue === 'object' && 'startDate' in dateValue && 'endDate' in dateValue))) {
-      let startDate: Date | null = null
-      let endDate: Date | null = null
-      
-      if (dateValue instanceof Date) {
-        const year = dateValue.getFullYear()
-        startDate = new Date(Date.UTC(year, dateValue.getMonth(), dateValue.getDate(), 0, 0, 0))
-        endDate = new Date(Date.UTC(year, dateValue.getMonth(), dateValue.getDate(), 23, 59, 59))
-      } else if (typeof dateValue === 'object' && 'startDate' in dateValue && 'endDate' in dateValue) {
-        startDate = new Date(dateValue.startDate)
-        endDate = new Date(dateValue.endDate)
-      }
-      
-      if (startDate && endDate) {
-        const year = startDate.getFullYear()
-        const month = String(startDate.getMonth() + 1).padStart(2, '0')
-        const day = String(startDate.getDate()).padStart(2, '0')
-        
-        const startTimestamp = `${year}${month}${day}000000`
-        const endTimestamp = `${year}${month}${day}235959`
-        const result = await paperStore.fetchPapersByDateRange(startTimestamp, endTimestamp, category, configStore.maxResults, startIndex)
-        console.log('Loaded papers by date range:', result)
-      } else {
-        const result = await paperStore.fetchPapers({ category, maxResults: configStore.maxResults, start: startIndex })
-        console.log('Loaded papers:', result)
-      }
-    } else {
-      const result = await paperStore.fetchPapers({ category, maxResults: configStore.maxResults, start: startIndex })
-      console.log('Loaded papers:', result)
-    }
-    console.log('Total papers in store:', paperStore.papers.length)
-    toastStore.showSuccess('Papers loaded successfully!')
-    // Scroll to top after loading papers
-    window.scrollTo({ top: 0, behavior: 'instant' })
-  } catch (err) {
-    console.error('Failed to load papers:', err)
-    toastStore.showError('Failed to load papers. Please try again.')
-  }
-}
 
 const refreshPapers = async () => {
   console.log('Refreshing papers...')
@@ -258,7 +225,7 @@ const checkAndLoadPapers = () => {
   console.log('Current papers count:', paperStore.papers.length)
   if (paperStore.papers.length === 0) {
     console.log('No papers in store, loading papers...')
-    loadPapers()
+    loadPapers(0)
   } else {
     console.log('Papers already loaded, skipping fetch')
   }
@@ -298,6 +265,57 @@ onActivated(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.action-btn svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.3s ease;
+}
+
+.action-btn:hover svg {
+  transform: scale(1.1);
+}
+
+.date-btn {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(245, 124, 0, 0.1) 100%);
+  color: #FF9800;
+}
+
+.date-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.2) 0%, rgba(245, 124, 0, 0.2) 100%);
+  color: #F57C00;
+  border-color: rgba(255, 152, 0, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 152, 0, 0.25);
+}
+
+.category-btn {
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.1) 0%, rgba(123, 31, 162, 0.1) 100%);
+  color: #9C27B0;
+}
+
+.category-btn:hover {
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.2) 0%, rgba(123, 31, 162, 0.2) 100%);
+  color: #7B1FA2;
+  border-color: rgba(156, 39, 176, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(156, 39, 176, 0.25);
 }
 
 .toggle-btn {

@@ -1,32 +1,16 @@
 import Sidebar from './Sidebar.vue'
 
 const mockSidebarStore = {
-  isCollapsed: () => false,
-  isMobileOpen: () => false,
-  isDatePickerOpen: () => false,
-  isCategoryPickerOpen: () => false,
+  isCollapsed: false,
+  isMobileOpen: false,
   toggleSidebar: () => {},
   toggleMobileSidebar: () => {},
-  toggleDatePicker: () => {},
-  toggleCategoryPicker: () => {},
-  closeDatePicker: () => {},
-  closeCategoryPicker: () => {}
+  closeMobileSidebar: () => {}
 }
 
 const mockThemeStore = {
-  isDark: () => false,
+  isDark: false,
   toggleTheme: () => {}
-}
-
-const mockPaperStore = {
-  selectedCategory: () => 'all',
-  selectedDate: () => 'all',
-  setSelectedCategory: () => {},
-  setSelectedDate: () => {}
-}
-
-const mockConfigStore = {
-  maxResults: () => 50
 }
 
 export default {
@@ -41,14 +25,6 @@ export default {
     isDark: {
       control: 'boolean',
       description: 'Whether dark mode is enabled'
-    },
-    selectedCategory: {
-      control: 'text',
-      description: 'Currently selected category'
-    },
-    selectedDate: {
-      control: 'text',
-      description: 'Currently selected date filter'
     }
   }
 }
@@ -56,9 +32,7 @@ export default {
 export const Default = {
   args: {
     isCollapsed: false,
-    isDark: false,
-    selectedCategory: 'all',
-    selectedDate: 'all'
+    isDark: false
   },
   parameters: {
     decorators: [
@@ -66,8 +40,6 @@ export const Default = {
         const { moduleParameters } = context
         moduleParameters.useSidebarStore = () => mockSidebarStore
         moduleParameters.useThemeStore = () => mockThemeStore
-        moduleParameters.usePaperStore = () => mockPaperStore
-        moduleParameters.useConfigStore = () => mockConfigStore
         return {
           component: Story,
           template: Story,
@@ -81,9 +53,7 @@ export const Default = {
 export const Collapsed = {
   args: {
     isCollapsed: true,
-    isDark: false,
-    selectedCategory: 'cs.AI',
-    selectedDate: 'all'
+    isDark: false
   },
   parameters: {
     decorators: [
@@ -91,33 +61,6 @@ export const Collapsed = {
         const { moduleParameters } = context
         moduleParameters.useSidebarStore = () => mockSidebarStore
         moduleParameters.useThemeStore = () => mockThemeStore
-        moduleParameters.usePaperStore = () => mockPaperStore
-        moduleParameters.useConfigStore = () => mockConfigStore
-        return {
-          component: Story,
-          template: Story,
-          moduleParameters
-        }
-      }
-    ]
-  }
-}
-
-export const WithCategory = {
-  args: {
-    isCollapsed: false,
-    isDark: false,
-    selectedCategory: 'cs.AI',
-    selectedDate: 'all'
-  },
-  parameters: {
-    decorators: [
-      (Story: any, context: { moduleParameters: any }) => {
-        const { moduleParameters } = context
-        moduleParameters.useSidebarStore = () => mockSidebarStore
-        moduleParameters.useThemeStore = () => mockThemeStore
-        moduleParameters.usePaperStore = () => mockPaperStore
-        moduleParameters.useConfigStore = () => mockConfigStore
         return {
           component: Story,
           template: Story,

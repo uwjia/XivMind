@@ -366,7 +366,7 @@ const getCategoryFullName = (category: string) => {
 }
 
 const getVersionFromId = () => {
-  const arxivId = props.paper.arxivId || props.paper.id || ''
+  const arxivId = props.paper.id || ''
   const versionMatch = arxivId.match(/v(\d+)$/)
   if (versionMatch && versionMatch[1]) {
     return parseInt(versionMatch[1])
