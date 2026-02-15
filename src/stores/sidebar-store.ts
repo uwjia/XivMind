@@ -72,6 +72,6 @@ export const useSidebarStore = defineStore('sidebar', () => {
   persist: {
     key: 'sidebar-store',
     storage: localStorage,
-    pick: ['isCollapsed']
+    paths: ['isCollapsed']
   }
 })
