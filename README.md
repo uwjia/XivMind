@@ -198,7 +198,28 @@ The application will be available at `http://localhost:5173`
 - Theme configuration
 - Application preferences
 
+### Data Manager Page
+- Yearly calendar view with monthly overview
+- Monthly detailed view with day-by-day statistics
+- Statistics panel showing total stored days, papers, and yearly breakdown
+- Fetch papers for specific dates from arXiv
+- Clear cache for specific dates
+- Visual status indicators (Stored, Fetching, No Papers, Future)
+- Navigate to paper list by clicking on stored dates
+
 ## API Endpoints
+
+### arXiv `/api/arxiv`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/query` | Query papers by date with optional category filter |
+| GET | `/paper/{paper_id}` | Get paper by ID |
+| POST | `/fetch/{date}` | Fetch papers for a specific date |
+| DELETE | `/cache/{date}` | Clear cache for a specific date |
+| DELETE | `/cache` | Clear all date index cache |
+| GET | `/indexes` | Get all date indexes |
+| GET | `/statistics` | Get storage statistics |
 
 ### Bookmarks `/api/bookmarks`
 
