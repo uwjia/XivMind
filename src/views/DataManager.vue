@@ -258,6 +258,18 @@ const selectedMonth = ref(0)
 const selectedDate = ref<string | null>(null)
 const fetchingDates = ref<Set<string>>(new Set())
 
+function addFetchingDate(date: string) {
+  const newSet = new Set(fetchingDates.value)
+  newSet.add(date)
+  fetchingDates.value = newSet
+}
+
+function removeFetchingDate(date: string) {
+  const newSet = new Set(fetchingDates.value)
+  newSet.delete(date)
+  fetchingDates.value = newSet
+}
+
 const { 
   dateIndexes, 
   dateIndexMap, 
@@ -470,7 +482,7 @@ function getSelectedDayInfo(): DayInfo | undefined {
 async function fetchDate(date: string) {
   if (fetchingDates.value.has(date)) return
   
-  fetchingDates.value.add(date)
+  addFetchingDate(date)
   
   try {
     toastStore.showLoading(`Fetching papers for ${date}...`)
@@ -487,7 +499,7 @@ async function fetchDate(date: string) {
     console.error('Failed to fetch papers:', error)
     toastStore.showError('Failed to fetch papers')
   } finally {
-    fetchingDates.value.delete(date)
+    removeFetchingDate(date)
   }
 }
 
