@@ -80,3 +80,63 @@ class DownloadRepository(BaseRepository):
     def reset_incomplete_tasks(self) -> int:
         """Reset all incomplete tasks to failed status."""
         pass
+
+
+class PaperRepository(BaseRepository):
+    """Abstract repository for papers."""
+
+    @abstractmethod
+    def insert_paper(self, data: Dict[str, Any]) -> None:
+        """Insert a single paper."""
+        pass
+
+    @abstractmethod
+    def insert_papers_batch(self, papers: List[Dict[str, Any]]) -> int:
+        """Insert multiple papers, return count of inserted papers."""
+        pass
+
+    @abstractmethod
+    def get_date_index(self, date: str) -> Optional[Dict[str, Any]]:
+        """Get date index by date string."""
+        pass
+
+    @abstractmethod
+    def insert_date_index(self, date: str, total_count: int) -> None:
+        """Insert or update date index."""
+        pass
+
+    @abstractmethod
+    def query_papers_by_date(
+        self,
+        date: str,
+        category: Optional[str] = None,
+        start: int = 0,
+        max_results: int = 50,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Query papers by date with optional category filter."""
+        pass
+
+    @abstractmethod
+    def get_paper_by_id(self, paper_id: str) -> Optional[Dict[str, Any]]:
+        """Get paper by ID."""
+        pass
+
+    @abstractmethod
+    def delete_date_index(self, date: str) -> None:
+        """Delete date index by date."""
+        pass
+
+    @abstractmethod
+    def delete_all_date_index(self) -> None:
+        """Delete all date indexes."""
+        pass
+
+    @abstractmethod
+    def get_all_date_indexes(self) -> List[Dict[str, Any]]:
+        """Get all date indexes."""
+        pass
+
+    @abstractmethod
+    def get_total_paper_count(self) -> int:
+        """Get total count of papers."""
+        pass

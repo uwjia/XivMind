@@ -3,15 +3,15 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 import re
 
-from app.db.sqlite.paper_repo import SQLitePaperRepository
+from app.db.factory import get_paper_repository
 from app.services.arxiv_client import ArxivClient
 
 logger = logging.getLogger(__name__)
 
 
 class PaperService:
-    def __init__(self, db_path: str):
-        self.paper_repo = SQLitePaperRepository(db_path)
+    def __init__(self):
+        self.paper_repo = get_paper_repository()
         self.arxiv_client = ArxivClient()
 
     def _normalize_date(self, date_str: str) -> str:

@@ -1,12 +1,13 @@
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 import json
 import sqlite3
 import os
 from contextlib import contextmanager
+from app.db.base import PaperRepository
 
 
-class SQLitePaperRepository:
+class SQLitePaperRepository(PaperRepository):
     def __init__(self, db_path: str):
         self._db_path = db_path
         self._ensure_db_dir()
@@ -249,3 +250,33 @@ class SQLitePaperRepository:
             cursor = conn.cursor()
             cursor.execute('SELECT COUNT(*) FROM papers')
             return cursor.fetchone()[0]
+
+    def add(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        self.insert_paper(data)
+        return self.get_paper_by_id(self._safe_str(data.get("id")))
+
+    def remove(self, id: str) -> bool:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM papers WHERE id = ?', (id,))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def get(self, id: str) -> Optional[Dict[str, Any]]:
+        return self.get_paper_by_id(id)
+
+    def get_all(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM papers')
+            total = cursor.fetchone()[0]
+            
+            cursor.execute('SELECT * FROM papers ORDER BY published DESC LIMIT ? OFFSET ?', (limit, offset))
+            rows = cursor.fetchall()
+            return [self._row_to_response(row) for row in rows], total
+
+    def exists(self, id: str) -> bool:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT 1 FROM papers WHERE id = ?', (id,))
+            return cursor.fetchone() is not None

@@ -2,15 +2,13 @@ from fastapi import APIRouter, Query, HTTPException
 from typing import Optional
 import logging
 
-from app.config import get_settings
 from app.services.paper_service import PaperService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/arxiv", tags=["arxiv"])
 
-_settings = get_settings()
-_paper_service = PaperService(_settings.SQLITE_DB_PATH)
+_paper_service = PaperService()
 
 
 @router.get("/query")

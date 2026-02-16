@@ -32,6 +32,8 @@ class MilvusClient:
         self.settings = get_settings()
         self.bookmarks_collection: Optional[Collection] = None
         self.downloads_collection: Optional[Collection] = None
+        self.papers_collection: Optional[Collection] = None
+        self.date_index_collection: Optional[Collection] = None
         self._connected = False
         MilvusClient._initialized = True
 
@@ -222,6 +224,85 @@ class MilvusClient:
             logger.info("Using existing downloads collection")
             self.downloads_collection = Collection("downloads")
 
+        PAPER_SCHEMA_VERSION = 2
+
+        logger.info("Checking papers collection...")
+        paper_version = get_schema_version("papers")
+        if paper_version == 0 and utility.has_collection("papers"):
+            paper_version = PAPER_SCHEMA_VERSION
+            set_schema_version("papers", PAPER_SCHEMA_VERSION)
+            logger.info("Existing papers collection found, setting schema version")
+        elif paper_version > 0 and paper_version < PAPER_SCHEMA_VERSION:
+            if utility.has_collection("papers"):
+                logger.info(f"Upgrading papers schema from v{paper_version} to v{PAPER_SCHEMA_VERSION}, dropping old collection...")
+                utility.drop_collection("papers")
+
+        if not utility.has_collection("papers"):
+            logger.info("Creating papers collection...")
+            paper_fields = [
+                FieldSchema(name="id", dtype=DataType.VARCHAR, max_length=128, is_primary=True),
+                FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=2048),
+                FieldSchema(name="abstract", dtype=DataType.VARCHAR, max_length=32768),
+                FieldSchema(name="authors", dtype=DataType.VARCHAR, max_length=16384),
+                FieldSchema(name="primary_category", dtype=DataType.VARCHAR, max_length=64),
+                FieldSchema(name="categories", dtype=DataType.VARCHAR, max_length=2048),
+                FieldSchema(name="published", dtype=DataType.VARCHAR, max_length=64),
+                FieldSchema(name="updated", dtype=DataType.VARCHAR, max_length=64),
+                FieldSchema(name="pdf_url", dtype=DataType.VARCHAR, max_length=512),
+                FieldSchema(name="abs_url", dtype=DataType.VARCHAR, max_length=512),
+                FieldSchema(name="comment", dtype=DataType.VARCHAR, max_length=8192),
+                FieldSchema(name="fetched_at", dtype=DataType.VARCHAR, max_length=64),
+                FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=8),
+            ]
+            paper_schema = CollectionSchema(fields=paper_fields, description="Papers")
+            self.papers_collection = Collection(name="papers", schema=paper_schema)
+            index_params = {
+                "metric_type": "COSINE",
+                "index_type": "IVF_FLAT",
+                "params": {"nlist": 128},
+            }
+            self.papers_collection.create_index(field_name="embedding", index_params=index_params)
+            set_schema_version("papers", PAPER_SCHEMA_VERSION)
+            logger.info("Papers collection created with new schema")
+        else:
+            logger.info("Using existing papers collection")
+            self.papers_collection = Collection("papers")
+
+        DATE_INDEX_SCHEMA_VERSION = 1
+
+        logger.info("Checking date_index collection...")
+        date_index_version = get_schema_version("date_index")
+        if date_index_version == 0 and utility.has_collection("date_index"):
+            date_index_version = DATE_INDEX_SCHEMA_VERSION
+            set_schema_version("date_index", DATE_INDEX_SCHEMA_VERSION)
+            logger.info("Existing date_index collection found, setting schema version")
+        elif date_index_version > 0 and date_index_version < DATE_INDEX_SCHEMA_VERSION:
+            if utility.has_collection("date_index"):
+                logger.info(f"Upgrading date_index schema from v{date_index_version} to v{DATE_INDEX_SCHEMA_VERSION}, dropping old collection...")
+                utility.drop_collection("date_index")
+
+        if not utility.has_collection("date_index"):
+            logger.info("Creating date_index collection...")
+            date_index_fields = [
+                FieldSchema(name="date", dtype=DataType.VARCHAR, max_length=32, is_primary=True),
+                FieldSchema(name="total_count", dtype=DataType.INT64),
+                FieldSchema(name="fetched_at", dtype=DataType.VARCHAR, max_length=64),
+                FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=8),
+            ]
+            date_index_schema = CollectionSchema(fields=date_index_fields, description="Date Index")
+            self.date_index_collection = Collection(name="date_index", schema=date_index_schema)
+            index_params = {
+                "metric_type": "COSINE",
+                "index_type": "IVF_FLAT",
+                "params": {"nlist": 8},
+            }
+            self.date_index_collection.create_index(field_name="embedding", index_params=index_params)
+            set_schema_version("date_index", DATE_INDEX_SCHEMA_VERSION)
+            logger.info("Date_index collection created with new schema")
+        else:
+            logger.info("Using existing date_index collection")
+            self.date_index_collection = Collection("date_index")
+
         logger.info("init_collections completed successfully")
 
     def get_bookmarks_collection(self) -> Collection:
@@ -233,6 +314,16 @@ class MilvusClient:
         if not self.downloads_collection:
             self.init_collections()
         return self.downloads_collection
+
+    def get_papers_collection(self) -> Collection:
+        if not self.papers_collection:
+            self.init_collections()
+        return self.papers_collection
+
+    def get_date_index_collection(self) -> Collection:
+        if not self.date_index_collection:
+            self.init_collections()
+        return self.date_index_collection
 
 
 milvus_client = MilvusClient()
