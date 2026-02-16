@@ -79,6 +79,30 @@
           </div>
         </button>
       </div>
+
+      <div class="sidebar-section">
+        <button
+          class="picker-trigger-btn"
+          @click="goToDataManager"
+          :title="isCollapsed ? 'Data Manager' : ''"
+        >
+          <svg v-if="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="#9C27B0">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <div v-else class="picker-trigger-content">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#9C27B0">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <span class="picker-label">Data Manager</span>
+          </div>
+        </button>
+      </div>
     </div>
 
     <div class="sidebar-footer">
@@ -189,6 +213,13 @@ const goToDownloads = () => {
 
 const goToAssistant = () => {
   router.push('/assistant')
+  if (isMobileOpen.value) {
+    sidebarStore.closeMobileSidebar()
+  }
+}
+
+const goToDataManager = () => {
+  router.push('/data-manager')
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }

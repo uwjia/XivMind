@@ -123,6 +123,13 @@ const handleSelect = (categoryId: string) => {
 .category-tree {
   padding: 12px 0;
   user-select: none;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.category-tree::-webkit-scrollbar {
+  display: none;
 }
 
 .tree-node {

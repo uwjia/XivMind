@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-// 导入 TypeScript 版本的配置文件
 import { config as defaultConfig } from '../config/app'
 
 export const useConfigStore = defineStore('config', () => {

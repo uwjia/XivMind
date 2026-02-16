@@ -125,6 +125,7 @@
     <DatePicker
       :is-open="isDatePickerOpen"
       :model-value="selectedDate as string | Date | null"
+      :stored-dates="storedDatesMap"
       @update:model-value="handleDateSelect"
       @update:is-open="closeDatePicker"
     />
@@ -142,16 +143,19 @@
 import { computed, onMounted, onActivated, ref } from 'vue'
 import { usePaperStore } from '../stores/paper-store'
 import { useConfigStore } from '../stores/config-store'
+import { useDownloadStore } from '../stores/download-store'
 import { categories } from '../utils/categoryColors'
 import PaperCard from '../components/PaperCard.vue'
 import PaperCardSimple from '../components/PaperCardSimple.vue'
 import DatePicker from '../components/DatePicker.vue'
 import CategoryPicker from '../components/CategoryPicker.vue'
 import { usePaperFilter } from '../composables/usePaperFilter'
+import { useDateIndexes } from '../composables/useDateIndexes'
 import type { Paper } from '../types'
 
 const paperStore = usePaperStore()
 const configStore = useConfigStore()
+const downloadStore = useDownloadStore()
 const jumpPageInput = ref<string>('')
 
 const {
@@ -175,9 +179,44 @@ const {
   goToPage
 } = usePaperFilter()
 
+const { storedDatesMap, dateIndexes, fetchDateIndexes } = useDateIndexes()
+
 const filteredPapers = computed<Paper[]>(() => {
   return paperStore.getFilteredPapers()
 })
+
+const getLatestStoredDate = (): string | null => {
+  if (dateIndexes.value.length === 0) return null
+  
+  const datesWithPapers = dateIndexes.value
+    .filter(idx => idx.total_count > 0)
+    .map(idx => idx.date)
+    .sort((a, b) => b.localeCompare(a))
+  
+  return datesWithPapers[0] || null
+}
+
+const checkAndLoadPapers = async () => {
+  console.log('Checking if papers need to be loaded...')
+  console.log('Current papers count:', paperStore.papers.length)
+  
+  if (paperStore.papers.length === 0) {
+    console.log('No papers in store, fetching date indexes first...')
+    await fetchDateIndexes()
+    
+    const latestDate = getLatestStoredDate()
+    
+    if (latestDate) {
+      console.log('Found latest stored date:', latestDate)
+      handleDateSelect(new Date(latestDate))
+    } else {
+      console.log('No stored dates found, loading default papers...')
+      loadPapers(0)
+    }
+  } else {
+    console.log('Papers already loaded, skipping fetch')
+  }
+}
 
 const handleGoToPage = () => {
   const targetPage = parseInt(jumpPageInput.value)
@@ -220,25 +259,17 @@ const refreshPapers = async () => {
   await loadPapers()
 }
 
-const checkAndLoadPapers = () => {
-  console.log('Checking if papers need to be loaded...')
-  console.log('Current papers count:', paperStore.papers.length)
-  if (paperStore.papers.length === 0) {
-    console.log('No papers in store, loading papers...')
-    loadPapers(0)
-  } else {
-    console.log('Papers already loaded, skipping fetch')
-  }
-}
-
-onMounted(() => {
+onMounted(async () => {
   console.log('Home mounted')
+  if (downloadStore.tasks.length === 0) {
+    await downloadStore.fetchTasks()
+  }
   checkAndLoadPapers()
 })
 
 onActivated(() => {
   console.log('Home activated (returned from another page)')
-  checkAndLoadPapers()
+  fetchDateIndexes()
 })
 </script>
 

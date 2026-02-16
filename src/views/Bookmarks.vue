@@ -149,6 +149,9 @@
     </div>
 
     <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="isDrawerOpen" class="drawer-overlay" @click="closeDrawer"></div>
+      </Transition>
       <Transition name="drawer">
         <div v-if="isDrawerOpen" class="category-drawer">
           <div class="drawer-header">
@@ -994,6 +997,26 @@ watch(
   color: #9C27B0;
 }
 
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: 999;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 .category-drawer {
   position: fixed;
   top: 0;
@@ -1051,6 +1074,12 @@ watch(
 .drawer-content {
   flex: 1;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.drawer-content::-webkit-scrollbar {
+  display: none;
 }
 
 .drawer-enter-active,

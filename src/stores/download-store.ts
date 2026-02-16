@@ -169,7 +169,7 @@ export const useDownloadStore = defineStore('download', () => {
     }
   }
 
-  const fetchTasks = async (limit: number = 100, offset: number = 0) => {
+  const fetchTasks = async (limit: number = 1000, offset: number = 0) => {
     try {
       setLoading(true)
       setError(null)

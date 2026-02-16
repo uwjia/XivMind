@@ -2,6 +2,7 @@ import { ref, computed, toRefs } from 'vue'
 import { usePaperStore } from '../stores/paper-store'
 import { useConfigStore } from '../stores/config-store'
 import { useToastStore } from '../stores/toast-store'
+import { useDateIndexes } from './useDateIndexes'
 
 const isDatePickerOpen = ref(false)
 const isCategoryPickerOpen = ref(false)
@@ -10,6 +11,7 @@ export function usePaperFilter() {
   const paperStore = usePaperStore()
   const configStore = useConfigStore()
   const toastStore = useToastStore()
+  const { refreshDateIndexes } = useDateIndexes()
 
   const { currentPage } = toRefs(paperStore)
   
@@ -114,6 +116,7 @@ export function usePaperFilter() {
     paperStore.setSelectedDate(value)
     paperStore.setCurrentPage(0)
     await loadPapers(0)
+    await refreshDateIndexes()
   }
 
   const handleCategorySelect = async (value: string) => {

@@ -76,7 +76,7 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     return bookmarkedIds.value.has(paperId)
   }
 
-  const fetchBookmarks = async (limit: number = 100, offset: number = 0) => {
+  const fetchBookmarks = async (limit: number = 1000, offset: number = 0) => {
     try {
       setLoading(true)
       setError(null)
@@ -92,7 +92,7 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     }
   }
 
-  const searchBookmarks = async (query: string, limit: number = 10) => {
+  const searchBookmarks = async (query: string, limit: number = 1000) => {
     try {
       setLoading(true)
       setError(null)

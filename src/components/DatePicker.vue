@@ -4,17 +4,63 @@
       <div class="date-picker-content">
         <div class="date-picker-left">
           <div class="date-picker-selector">
-            <select class="year-select" :class="{ 'dark': isDark }" v-model="selectedYear" @change="updateDateFromSelect">
-              <option v-for="year in yearRange" :key="year" :value="year">{{ year }}</option>
-            </select>
+            <div class="year-select-wrapper">
+              <button 
+                class="year-select-btn" 
+                :class="{ 'dark': isDark }"
+                @click="showYearDropdown = !showYearDropdown"
+                @blur="closeYearDropdown"
+              >
+                <span>{{ selectedYear }}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <div class="year-dropdown" v-show="showYearDropdown">
+                <div class="year-dropdown-content">
+                  <div 
+                    v-for="year in yearRange" 
+                    :key="year" 
+                    class="year-option"
+                    :class="{ 'selected': year === selectedYear, 'dark': isDark }"
+                    @mousedown="selectYear(year)"
+                  >
+                    {{ year }}
+                  </div>
+                </div>
+              </div>
+            </div>
             <button class="month-nav-btn" @click="prevMonth" title="Previous Month">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <polyline points="15 18 9 12 15 6"/>
               </svg>
             </button>
-            <select class="month-select" :class="{ 'dark': isDark }" v-model="selectedMonth" @change="updateDateFromSelect">
-              <option v-for="(month, index) in months" :key="index" :value="index">{{ month }}</option>
-            </select>
+            <div class="month-select-wrapper">
+              <button 
+                class="month-select-btn" 
+                :class="{ 'dark': isDark }"
+                @click="showMonthDropdown = !showMonthDropdown"
+                @blur="closeMonthDropdown"
+              >
+                <span>{{ months[selectedMonth] }}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <div class="month-dropdown" v-show="showMonthDropdown">
+                <div class="month-dropdown-content">
+                  <div 
+                    v-for="(month, index) in months" 
+                    :key="index" 
+                    class="month-option"
+                    :class="{ 'selected': index === selectedMonth, 'dark': isDark }"
+                    @mousedown="selectMonth(index)"
+                  >
+                    {{ month }}
+                  </div>
+                </div>
+              </div>
+            </div>
             <button class="month-nav-btn" @click="nextMonth" title="Next Month">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <polyline points="9 18 15 12 9 6"/>
@@ -38,12 +84,19 @@
                 'other-month': day.isOtherMonth,
                 'today': day.isToday,
                 'selected': day.isSelected,
-                'disabled': day.isDisabled
+                'disabled': day.isDisabled,
+                'stored': day.isStored
               }"
               :disabled="day.isDisabled"
+              :title="day.isStored ? `${day.paperCount} papers stored` : ''"
               @click="tempSelectDate(day.date)"
             >
-              {{ day.day }}
+              <span class="day-number">{{ day.day }}</span>
+              <span v-if="day.isStored" class="stored-indicator">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </span>
             </button>
           </div>
         </div>
@@ -81,6 +134,7 @@ const isDark = computed(() => themeStore.isDark)
 const props = defineProps<{
   isOpen: boolean
   modelValue: string | Date | null
+  storedDates?: Map<string, number>
 }>()
 
 const emit = defineEmits<{
@@ -91,6 +145,8 @@ const emit = defineEmits<{
 const currentDate = ref<Date>(new Date())
 const selectedYear = ref<number>(currentDate.value.getFullYear())
 const selectedMonth = ref<number>(currentDate.value.getMonth())
+const showYearDropdown = ref(false)
+const showMonthDropdown = ref(false)
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const months = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
 const tempSelectedDate = ref<string | Date | null>(null)
@@ -103,20 +159,47 @@ interface CalendarDay {
   isSelected: boolean
   isDisabled: boolean
   key: string | number
+  isStored: boolean
+  paperCount: number
 }
 
 const yearRange = computed<number[]>(() => {
   const currentYear = new Date().getFullYear()
+  const startYear = 1991
   const years: number[] = []
-  for (let year = currentYear - 5; year <= currentYear + 5; year++) {
+  for (let year = startYear; year <= currentYear; year++) {
     years.push(year)
   }
-  return years
+  return years.sort((a, b) => b - a)
 })
 
 const updateDateFromSelect = () => {
   currentDate.value = new Date(selectedYear.value, selectedMonth.value, 1)
   tempSelectedDate.value = new Date(selectedYear.value, selectedMonth.value, 1)
+}
+
+const selectYear = (year: number) => {
+  selectedYear.value = year
+  showYearDropdown.value = false
+  updateDateFromSelect()
+}
+
+const closeYearDropdown = () => {
+  setTimeout(() => {
+    showYearDropdown.value = false
+  }, 150)
+}
+
+const selectMonth = (month: number) => {
+  selectedMonth.value = month
+  showMonthDropdown.value = false
+  updateDateFromSelect()
+}
+
+const closeMonthDropdown = () => {
+  setTimeout(() => {
+    showMonthDropdown.value = false
+  }, 150)
 }
 
 const presetColors: Record<string, string> = {
@@ -167,8 +250,13 @@ const calendarDays = computed<CalendarDay[]>(() => {
   const days: CalendarDay[] = []
   const today = new Date()
   
+  const getDateStr = (y: number, m: number, d: number) => 
+    `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  
   for (let i = 0; i < firstDay; i++) {
     const day = daysInPrevMonth - firstDay + i + 1
+    const dateStr = getDateStr(year, month - 1, day)
+    const paperCount = props.storedDates?.get(dateStr) ?? 0
     days.push({
       day,
       date: new Date(year, month - 1, day),
@@ -176,7 +264,9 @@ const calendarDays = computed<CalendarDay[]>(() => {
       isToday: false,
       isSelected: false,
       isDisabled: true,
-      key: `prev-${i}`
+      key: `prev-${i}`,
+      isStored: paperCount > 0,
+      paperCount
     })
   }
   
@@ -184,6 +274,8 @@ const calendarDays = computed<CalendarDay[]>(() => {
     const date = new Date(year, month, i)
     const isTodayDate = date.toDateString() === today.toDateString()
     const isSelectedDate = tempSelectedDate.value && typeof tempSelectedDate.value === 'object' && date.toDateString() === tempSelectedDate.value.toDateString() || false
+    const dateStr = getDateStr(year, month, i)
+    const paperCount = props.storedDates?.get(dateStr) ?? 0
     days.push({
       day: i,
       date,
@@ -191,12 +283,16 @@ const calendarDays = computed<CalendarDay[]>(() => {
       isToday: isTodayDate,
       isSelected: isSelectedDate,
       isDisabled: date > today,
-      key: i
+      key: i,
+      isStored: paperCount > 0,
+      paperCount
     })
   }
   
   const remainingDays = 42 - days.length
   for (let i = 1; i <= remainingDays; i++) {
+    const dateStr = getDateStr(year, month + 1, i)
+    const paperCount = props.storedDates?.get(dateStr) ?? 0
     days.push({
       day: i,
       date: new Date(year, month + 1, i),
@@ -204,7 +300,9 @@ const calendarDays = computed<CalendarDay[]>(() => {
       isToday: false,
       isSelected: false,
       isDisabled: true,
-      key: `next-${i}`
+      key: `next-${i}`,
+      isStored: paperCount > 0,
+      paperCount
     })
   }
   
@@ -339,132 +437,341 @@ watch(() => props.isOpen, (newVal) => {
   border-radius: 12px;
 }
 
-.year-select {
-  padding: 8px 12px;
+.year-select-wrapper {
+  position: relative;
+}
+
+.year-select-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
   border: none;
+  border-radius: 10px;
   background: white;
-  border-radius: 12px;
   color: var(--text-primary);
   font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1;
   cursor: pointer;
-  transition: var(--transition);
-  min-width: 120px;
+  transition: all 0.2s ease;
+  min-width: 90px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.year-select:hover {
-  background: white;
+.year-select-btn span {
+  line-height: 1;
+}
+
+.year-select-btn:hover {
   color: #2196F3;
-  box-shadow: 0 2px 5px rgba(33, 150, 243, 0.2);
+  box-shadow: 0 2px 6px rgba(33, 150, 243, 0.2);
 }
 
-.year-select:focus {
+.year-select-btn:focus {
   outline: none;
-  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.3);
 }
 
-.month-select {
-  padding: 8px 12px;
-  border: none;
-  background: white;
-  border-radius: 12px;
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: var(--transition);
-  min-width: 120px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.month-select:hover {
-  background: white;
-  color: #2196F3;
-  box-shadow: 0 2px 5px rgba(33, 150, 243, 0.2);
-}
-
-.month-select:focus {
-  outline: none;
-  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
-}
-
-/* Dark mode styles */
-.year-select.dark,
-.month-select.dark {
+.year-select-btn.dark {
   background: #1e293b;
   color: #f1f5f9;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.year-select.dark:hover,
-.month-select.dark:hover {
-  background: #1e293b;
+.year-select-btn.dark:hover {
   color: #38bdf8;
-  box-shadow: 0 2px 5px rgba(56, 189, 248, 0.3);
+  box-shadow: 0 2px 6px rgba(56, 189, 248, 0.2);
 }
 
-.year-select.dark:focus,
-.month-select.dark:focus {
-  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.4);
+.year-select-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2.5;
+}
+
+.year-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.year-dropdown-content {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.year-dropdown-content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.year-dropdown-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.year-dropdown-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.year-option {
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.15s ease;
+}
+
+.year-option:hover {
+  background: #f1f5f9;
+  color: #2196F3;
+}
+
+.year-option.selected {
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.1));
+  color: #2196F3;
+  font-weight: 600;
+}
+
+.year-option.dark {
+  color: #94a3b8;
+}
+
+.year-option.dark:hover {
+  background: #334155;
+  color: #38bdf8;
+}
+
+.year-option.dark.selected {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(56, 189, 248, 0.1));
+  color: #38bdf8;
+}
+
+.year-dropdown-content:has(.year-option.dark) {
+  background: #1e293b;
+  border-color: #475569;
+}
+
+.month-select-wrapper {
+  position: relative;
+}
+
+.month-select-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 10px;
+  background: white;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 60px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.month-select-btn span {
+  line-height: 1;
+}
+
+.month-select-btn:hover {
+  color: #2196F3;
+  box-shadow: 0 2px 6px rgba(33, 150, 243, 0.2);
+}
+
+.month-select-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.3);
+}
+
+.month-select-btn.dark {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+.month-select-btn.dark:hover {
+  color: #38bdf8;
+  box-shadow: 0 2px 6px rgba(56, 189, 248, 0.2);
+}
+
+.month-select-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2.5;
+}
+
+.month-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.month-dropdown-content {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.month-dropdown-content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.month-dropdown-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.month-dropdown-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.month-option {
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.month-option:hover {
+  background: #f1f5f9;
+  color: #2196F3;
+}
+
+.month-option.selected {
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.1));
+  color: #2196F3;
+  font-weight: 600;
+}
+
+.month-option.dark {
+  color: #94a3b8;
+}
+
+.month-option.dark:hover {
+  background: #334155;
+  color: #38bdf8;
+}
+
+.month-option.dark.selected {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(56, 189, 248, 0.1));
+  color: #38bdf8;
+}
+
+.month-dropdown-content:has(.month-option.dark) {
+  background: #1e293b;
+  border-color: #475569;
 }
 
 .month-nav-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-tertiary);
-  border-radius: 6px;
+  height: 36px;
+  width: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: white;
   cursor: pointer;
-  color: var(--text-secondary);
-  transition: var(--transition);
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .month-nav-btn:hover {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  border-color: var(--accent-color);
+  color: #2196F3;
+  box-shadow: 0 2px 6px rgba(33, 150, 243, 0.2);
+}
+
+.month-nav-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.3);
 }
 
 .month-nav-btn svg {
   width: 16px;
   height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
 }
 
 .today-btn {
-  padding: 8px 16px;
-  border: 1px solid var(--border-color);
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 10px;
   background: white;
-  border-radius: 8px;
   color: var(--text-primary);
   font-size: 0.9rem;
   font-weight: 500;
+  line-height: 1;
   cursor: pointer;
-  transition: all 0.3s ease;
-  text-align: center;
+  transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .today-btn:hover {
-  background: var(--bg-secondary);
-  color: var(--accent-color);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  color: #2196F3;
+  box-shadow: 0 2px 6px rgba(33, 150, 243, 0.2);
 }
 
-/* Dark mode styles for today button */
+.today-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.3);
+}
+
 .today-btn.dark {
   background: #1e293b;
-  border-color: #475569;
   color: #f1f5f9;
 }
 
 .today-btn.dark:hover {
-  background: #334155;
   color: #38bdf8;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 6px rgba(56, 189, 248, 0.2);
+}
+
+.month-nav-btn.dark {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+.month-nav-btn.dark:hover {
+  color: #38bdf8;
+  box-shadow: 0 2px 6px rgba(56, 189, 248, 0.2);
 }
 
 .date-picker-weekdays {
@@ -491,6 +798,7 @@ watch(() => props.isOpen, (newVal) => {
 .day-btn {
   aspect-ratio: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--border-color);
@@ -500,6 +808,27 @@ watch(() => props.isOpen, (newVal) => {
   color: var(--text-secondary);
   cursor: pointer;
   transition: var(--transition);
+  position: relative;
+  gap: 2px;
+}
+
+.day-number {
+  line-height: 1;
+}
+
+.stored-indicator {
+  width: 10px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stored-indicator svg {
+  width: 10px;
+  height: 10px;
+  stroke: var(--success-color);
+  stroke-width: 3;
 }
 
 .day-btn:hover:not(.disabled) {
@@ -526,6 +855,10 @@ watch(() => props.isOpen, (newVal) => {
 .day-btn.disabled {
   opacity: 0.3;
   cursor: not-allowed;
+}
+
+.day-btn.stored {
+  background: linear-gradient(135deg, rgba(67, 233, 123, 0.1) 0%, rgba(56, 249, 215, 0.1) 100%);
 }
 
 .presets-title {
@@ -637,21 +970,28 @@ watch(() => props.isOpen, (newVal) => {
     padding: 8px;
   }
 
-  .year-select,
-  .month-select {
-    min-width: 100px;
-    padding: 6px 10px;
+  .year-select-btn,
+  .month-select-btn {
+    height: 32px;
+    min-width: 60px;
+    padding: 0 10px;
     font-size: 0.85rem;
   }
 
   .month-nav-btn {
-    width: 28px;
-    height: 28px;
+    height: 32px;
+    width: 32px;
   }
 
   .month-nav-btn svg {
     width: 14px;
     height: 14px;
+  }
+
+  .today-btn {
+    height: 32px;
+    padding: 0 10px;
+    font-size: 0.85rem;
   }
 
   .preset-btn {

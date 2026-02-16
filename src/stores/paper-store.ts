@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { arxivAPI } from '../services/arxiv'
+import { arxivBackendAPI } from '../services/arxivBackend'
 import { useConfigStore } from './config-store'
 import type { Paper } from '../types'
 
@@ -70,7 +71,7 @@ export const usePaperStore = defineStore('paper', () => {
       const configStore = useConfigStore()
       const { category = 'cs*', maxResults = configStore.maxResults, start = 0 } = options
 
-      const data = await arxivAPI.fetchPapers({ category, maxResults, start })
+      const data = await arxivBackendAPI.fetchPapers({ category, maxResults, start })
       setPapers(data)
 
       return data
@@ -114,7 +115,7 @@ export const usePaperStore = defineStore('paper', () => {
 
       const configStore = useConfigStore()
       const actualMaxResults = maxResults || configStore.maxResults
-      const data = await arxivAPI.fetchPapersByDateRange(startDateStr, endDateStr, category, actualMaxResults, start)
+      const data = await arxivBackendAPI.fetchPapersByDateRange(startDateStr, endDateStr, category, actualMaxResults, start)
       setPapers(data)
 
       console.log('Papers fetched after date range selection:', data.length)

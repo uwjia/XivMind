@@ -1,4 +1,4 @@
-const ARXIV_API_BASE = '/api/arxiv/api/query'
+const ARXIV_API_BASE = '/api/remote/api/query'
 
 interface Paper {
   id: string

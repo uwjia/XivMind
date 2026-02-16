@@ -6,6 +6,7 @@ import Settings from '../views/Settings.vue'
 import Bookmarks from '../views/Bookmarks.vue'
 import Downloads from '../views/Downloads.vue'
 import Assistant from '../views/Assistant.vue'
+import DataManager from '../views/DataManager.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -42,6 +43,11 @@ const routes: RouteRecordRaw[] = [
     path: '/assistant',
     name: 'Assistant',
     component: Assistant
+  },
+  {
+    path: '/data-manager',
+    name: 'DataManager',
+    component: DataManager
   }
 ]
 

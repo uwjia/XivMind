@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html
 from fastapi.staticfiles import StaticFiles
-from app.routers import bookmarks, downloads
+from app.routers import arxiv, bookmarks, downloads
 from app.db.milvus.client import milvus_client
 from app.services import download_service
 from app.config import get_settings
@@ -71,6 +71,7 @@ app.add_middleware(
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+app.include_router(arxiv.router, prefix="/api")
 app.include_router(bookmarks.router, prefix="/api")
 app.include_router(downloads.router, prefix="/api")
 

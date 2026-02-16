@@ -52,7 +52,7 @@ async def get_bookmarks(
 @router.get("/search", response_model=BookmarkListResponse)
 async def search_bookmarks(
     query: str = Query(..., min_length=1),
-    limit: int = Query(default=10, ge=1, le=100),
+    limit: int = Query(default=100, ge=1, le=1000),
 ):
     try:
         items = bookmark_service.search_bookmarks(query=query, limit=limit)

@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     DOWNLOAD_DIR: str = "./downloads"
     SQLITE_DB_PATH: str = "./data/xivmind.db"
 
+    ARXIV_MAX_RETRIES: int = 3
+    ARXIV_RETRY_BASE_DELAY: float = 1.0
+    ARXIV_BATCH_SIZE: int = 50
+
     class Config:
         env_file = ".env"
 

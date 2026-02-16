@@ -366,10 +366,15 @@ const getCategoryFullName = (category: string) => {
 }
 
 const getVersionFromId = () => {
-  const arxivId = props.paper.id || ''
-  const versionMatch = arxivId.match(/v(\d+)$/)
+  const pdfUrl = props.paper.pdfUrl || ''
+  const versionMatch = pdfUrl.match(/v(\d+)$/)
   if (versionMatch && versionMatch[1]) {
     return parseInt(versionMatch[1])
+  }
+  const arxivId = props.paper.id || ''
+  const idVersionMatch = arxivId.match(/v(\d+)$/)
+  if (idVersionMatch && idVersionMatch[1]) {
+    return parseInt(idVersionMatch[1])
   }
   return 1
 }
@@ -381,6 +386,8 @@ const getVersionFromId = () => {
   margin: 0px;
   width: 100%;
   max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .paper-card {
@@ -398,6 +405,8 @@ const getVersionFromId = () => {
   height: auto;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .paper-card::before {
@@ -414,10 +423,9 @@ const getVersionFromId = () => {
 
 .paper-card:hover {
   box-shadow: 
-    0 16px 48px rgba(0, 0, 0, 0.15),
-    0 4px 16px rgba(0, 0, 0, 0.1),
+    0 12px 36px rgba(0, 0, 0, 0.12),
+    0 4px 12px rgba(0, 0, 0, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  border-color: transparent;
 }
 
 .paper-header {
@@ -431,6 +439,8 @@ const getVersionFromId = () => {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .paper-index {
@@ -462,6 +472,8 @@ const getVersionFromId = () => {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .category-tag {
@@ -498,6 +510,9 @@ const getVersionFromId = () => {
   flex: 1;
   min-width: 0;
   cursor: pointer;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .paper-title:hover {
@@ -519,6 +534,8 @@ const getVersionFromId = () => {
   margin-bottom: 16px;
   z-index: 1;
   position: relative;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .author-icon {
@@ -538,10 +555,14 @@ const getVersionFromId = () => {
   z-index: 1;
   position: relative;
   flex: 1;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .paper-abstract p {
   margin: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .paper-abstract span {
@@ -582,6 +603,7 @@ const getVersionFromId = () => {
   border-radius: 4px;
   font-family: 'Courier New', monospace;
   font-size: 0.9rem;
+  word-break: break-all;
 }
 
 .paper-abstract pre {
@@ -590,12 +612,20 @@ const getVersionFromId = () => {
   border-radius: 8px;
   overflow-x: auto;
   margin: 12px 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .paper-abstract pre code {
   background: transparent;
   padding: 0;
   border-radius: 0;
+}
+
+.paper-abstract a,
+.paper-comments a {
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 .paper-comments {
@@ -606,10 +636,14 @@ const getVersionFromId = () => {
   z-index: 1;
   position: relative;
   flex: 1;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .paper-comments p {
   margin: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .paper-comments span {
@@ -647,6 +681,7 @@ const getVersionFromId = () => {
   border-radius: 4px;
   font-family: 'Courier New', monospace;
   font-size: 0.9rem;
+  word-break: break-all;
 }
 
 .paper-comments pre {
@@ -655,6 +690,8 @@ const getVersionFromId = () => {
   border-radius: 8px;
   overflow-x: auto;
   margin: 12px 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .paper-comments pre code {
@@ -672,6 +709,7 @@ const getVersionFromId = () => {
   z-index: 1;
   position: relative;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .paper-tags {
@@ -680,6 +718,8 @@ const getVersionFromId = () => {
   flex-wrap: wrap;
   gap: 8px;
   width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .paper-id-section {
@@ -693,6 +733,8 @@ const getVersionFromId = () => {
   gap: 8px;
   flex-wrap: wrap;
   flex-shrink: 1;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .paper-published-section {

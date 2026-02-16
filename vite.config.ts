@@ -18,11 +18,16 @@ export default defineConfig({
     port: 5173,
     open: true,
     proxy: {
-      '/api/arxiv': {
+      '/api/remote': {
         target: 'https://export.arxiv.org',
         changeOrigin: true,
         secure: true,
-        rewrite: (path) => path.replace(/^\/api\/arxiv/, '')
+        rewrite: (path) => path.replace(/^\/api\/remote/, '')
+      },
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false
       }
     }
   }
