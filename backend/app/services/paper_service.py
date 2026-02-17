@@ -48,7 +48,8 @@ class PaperService:
         date: str,
         category: Optional[str] = None,
         start: int = 0,
-        max_results: int = 50
+        max_results: int = 50,
+        fetch_category: str = "cs*"
     ) -> Dict[str, Any]:
         """
         Query papers for a specific date.
@@ -57,7 +58,7 @@ class PaperService:
         1. Normalize the date format
         2. Check if the date is in the future (return empty result)
         3. Check if we have data for this date
-        4. If not, fetch ALL papers for this date from arXiv
+        4. If not, fetch papers for this date from arXiv with fetch_category filter
         5. Store all papers
         6. Filter by category and return with pagination
         """
@@ -84,9 +85,9 @@ class PaperService:
         date_info = self.paper_repo.get_date_index(normalized_date)
         
         if not date_info or date_info.get("total_count", 0) == 0:
-            logger.info(f"No local data for {normalized_date}, fetching from arXiv")
+            logger.info(f"No local data for {normalized_date}, fetching from arXiv with category {fetch_category}")
             try:
-                papers = await self.arxiv_client.fetch_all_papers_for_date(normalized_date)
+                papers = await self.arxiv_client.fetch_all_papers_for_date(normalized_date, fetch_category)
                 
                 if papers:
                     inserted = self.paper_repo.insert_papers_batch(papers)
@@ -126,7 +127,7 @@ class PaperService:
         """Clear all date index cache."""
         self.paper_repo.delete_all_date_index()
 
-    async def fetch_papers_for_date(self, date: str) -> Dict[str, Any]:
+    async def fetch_papers_for_date(self, date: str, category: str = "cs*") -> Dict[str, Any]:
         """
         Manually fetch and store papers for a specific date.
         Returns the result of the fetch operation.
@@ -153,8 +154,8 @@ class PaperService:
         self.paper_repo.delete_date_index(normalized_date)
         
         try:
-            logger.info(f"Manually fetching papers for {normalized_date}")
-            papers = await self.arxiv_client.fetch_all_papers_for_date(normalized_date)
+            logger.info(f"Manually fetching {category or 'all'} papers for {normalized_date}")
+            papers = await self.arxiv_client.fetch_all_papers_for_date(normalized_date, category)
             
             if papers:
                 inserted = self.paper_repo.insert_papers_batch(papers)

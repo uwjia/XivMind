@@ -194,10 +194,10 @@ class ArxivClient:
         
         return papers, total_results
 
-    async def fetch_all_papers_for_date(self, date: str) -> List[Dict[str, Any]]:
+    async def fetch_all_papers_for_date(self, date: str, category: str = "cs*") -> List[Dict[str, Any]]:
         """
         Fetch ALL papers for a specific date from arXiv.
-        No category filter - get everything.
+        Filter by category (default: cs* for all Computer Science).
         """
         start_time, end_time = self._date_to_arxiv_format(date)
         
@@ -206,16 +206,26 @@ class ArxivClient:
         
         async with httpx.AsyncClient(timeout=60.0) as client:
             while True:
-                url = (
-                    f"{self.ARXIV_API_BASE}?"
-                    f"search_query=submittedDate:[{start_time}+TO+{end_time}]&"
-                    f"start={start}&"
-                    f"max_results={self.batch_size}&"
-                    f"sortBy=submittedDate&"
-                    f"sortOrder=descending"
-                )
+                if category:
+                    url = (
+                        f"{self.ARXIV_API_BASE}?"
+                        f"search_query=cat:{category}+AND+submittedDate:[{start_time}+TO+{end_time}]&"
+                        f"start={start}&"
+                        f"max_results={self.batch_size}&"
+                        f"sortBy=submittedDate&"
+                        f"sortOrder=descending"
+                    )
+                else:
+                    url = (
+                        f"{self.ARXIV_API_BASE}?"
+                        f"search_query=submittedDate:[{start_time}+TO+{end_time}]&"
+                        f"start={start}&"
+                        f"max_results={self.batch_size}&"
+                        f"sortBy=submittedDate&"
+                        f"sortOrder=descending"
+                    )
                 
-                logger.info(f"Fetching papers for {date}, start={start}")
+                logger.info(f"Fetching {category or 'all'} papers for {date}, start={start}")
                 xml_text = await self._fetch_with_retry_url(client, url)
                 papers, total = self._parse_response(xml_text)
                 
@@ -232,5 +242,5 @@ class ArxivClient:
                 
                 await asyncio.sleep(0.5)
         
-        logger.info(f"Total papers fetched for {date}: {len(all_papers)}")
+        logger.info(f"Total {category or 'all'} papers fetched for {date}: {len(all_papers)}")
         return all_papers

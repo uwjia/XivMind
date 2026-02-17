@@ -17,19 +17,21 @@ async def query_papers(
     category: Optional[str] = Query(None, description="arXiv category filter (e.g., 'cs.LG')"),
     start: int = Query(0, ge=0, description="Start index for pagination"),
     max_results: int = Query(50, ge=1, le=500, description="Maximum papers to return"),
+    fetch_category: str = Query("cs*", description="Category to fetch from arXiv (e.g., 'cs*', 'physics*', or empty for all)"),
 ):
     """
     Query papers for a specific date.
     
     - If local data exists for the date, returns from local storage
-    - If no local data, fetches ALL papers for that date from arXiv, stores them, then returns filtered results
+    - If no local data, fetches papers for that date from arXiv with fetch_category filter, stores them, then returns filtered results
     """
     try:
         result = await _paper_service.query_papers(
             date=date,
             category=category,
             start=start,
-            max_results=max_results
+            max_results=max_results,
+            fetch_category=fetch_category
         )
         return result
     except Exception as e:
@@ -78,10 +80,14 @@ async def get_statistics():
 
 
 @router.post("/fetch/{date}")
-async def fetch_papers_for_date(date: str):
+async def fetch_papers_for_date(
+    date: str,
+    category: str = Query("cs*", description="Category to fetch from arXiv (e.g., 'cs*', 'physics*', or empty string for all)")
+):
     """
     Manually fetch and store papers for a specific date.
     Date format: YYYY-MM-DD
+    Category: arXiv category pattern (e.g., 'cs*' for all CS, 'cs.LG' for ML, '' for all)
     """
-    result = await _paper_service.fetch_papers_for_date(date)
+    result = await _paper_service.fetch_papers_for_date(date, category)
     return result

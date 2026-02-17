@@ -102,12 +102,14 @@ export const arxivBackendAPI = {
     date: string,
     category?: string,
     maxResults?: number,
-    start: number = 0
+    start: number = 0,
+    fetchCategory: string = 'cs*'
   ): Promise<Paper[]> {
     const params = new URLSearchParams({
       date: date,
       start: start.toString(),
-      max_results: (maxResults || 50).toString()
+      max_results: (maxResults || 50).toString(),
+      fetch_category: fetchCategory
     })
     
     if (category && category !== 'all' && category !== 'cs*') {
@@ -129,19 +131,19 @@ export const arxivBackendAPI = {
     return data.papers.map(transformBackendPaper)
   },
 
-  async fetchTodayPapers(category: string = 'all', maxResults?: number): Promise<Paper[]> {
+  async fetchTodayPapers(category: string = 'all', maxResults?: number, fetchCategory: string = 'cs*'): Promise<Paper[]> {
     const today = new Date()
     const dateStr = today.toISOString().split('T')[0]
     
-    return this.queryPapers(dateStr, category, maxResults)
+    return this.queryPapers(dateStr, category, maxResults, 0, fetchCategory)
   },
 
-  async fetchPapersByDate(category: string = 'all', daysAgo: number = 1, maxResults?: number): Promise<Paper[]> {
+  async fetchPapersByDate(category: string = 'all', daysAgo: number = 1, maxResults?: number, fetchCategory: string = 'cs*'): Promise<Paper[]> {
     const targetDate = new Date()
     targetDate.setDate(targetDate.getDate() - daysAgo)
     const dateStr = targetDate.toISOString().split('T')[0]
     
-    return this.queryPapers(dateStr, category, maxResults)
+    return this.queryPapers(dateStr, category, maxResults, 0, fetchCategory)
   },
 
   async fetchPapersByDateRange(
@@ -220,8 +222,9 @@ export const arxivBackendAPI = {
     return response.json()
   },
 
-  async fetchPapersForDate(date: string): Promise<{ success: boolean; date: string; count: number; error?: string }> {
-    const response = await fetch(`${BACKEND_API_BASE}/fetch/${date}`, { method: 'POST' })
+  async fetchPapersForDate(date: string, category: string = 'cs*'): Promise<{ success: boolean; date: string; count: number; error?: string }> {
+    const params = new URLSearchParams({ category })
+    const response = await fetch(`${BACKEND_API_BASE}/fetch/${date}?${params}`, { method: 'POST' })
     return response.json()
   },
 
