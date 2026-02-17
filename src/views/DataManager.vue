@@ -80,40 +80,47 @@
                 <span v-for="day in weekdays" :key="day" class="weekday">{{ day }}</span>
               </div>
               <div class="days-grid">
-                <span
+                <Tooltip
                   v-for="(day, idx) in month.days"
                   :key="idx"
-                  class="day-cell"
-                  :class="{
-                  'empty': !day.date,
-                  'today': day.isToday,
-                  'stored': day.stored,
-                  'future': day.isFuture,
-                  'selected': day.date === selectedDate,
-                  'fetching': day.fetching
-                }"
-                @click="handleDayClick(day)"
-              >
-                <span v-if="day.date" class="day-number">{{ day.day }}</span>
-                <span v-if="day.stored && day.count > 0" class="day-status stored-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
+                  :content="getDayTooltip(day)"
+                  :type="getDayTooltipType(day)"
+                  position="top"
+                  :delay="300"
+                >
+                  <span
+                    class="day-cell"
+                    :class="{
+                    'empty': !day.date,
+                    'today': day.isToday,
+                    'stored': day.stored,
+                    'future': day.isFuture,
+                    'selected': day.date === selectedDate,
+                    'fetching': day.fetching
+                  }"
+                  @click="handleDayClick(day)"
+                >
+                  <span v-if="day.date" class="day-number">{{ day.day }}</span>
+                  <span v-if="day.stored && day.count > 0" class="day-status stored-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  </span>
+                  <span v-else-if="day.fetching" class="day-status fetching-icon">
+                    <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                    </svg>
+                  </span>
+                  <span v-else-if="day.count === 0 && day.fetched" class="day-status empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="15" y1="9" x2="9" y2="15"/>
+                      <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                  </span>
                 </span>
-                <span v-else-if="day.fetching" class="day-status fetching-icon">
-                  <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-                  </svg>
-                </span>
-                <span v-else-if="day.count === 0 && day.fetched" class="day-status empty-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="15" y1="9" x2="9" y2="15"/>
-                    <line x1="9" y1="9" x2="15" y2="15"/>
-                  </svg>
-                </span>
-              </span>
-            </div>
+                </Tooltip>
+              </div>
           </div>
         </div>
       </div>
@@ -236,6 +243,7 @@ import { arxivBackendAPI } from '../services/arxivBackend'
 import { useDateIndexes } from '../composables/useDateIndexes'
 import MonthView from '../components/MonthView.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
+import Tooltip from '../components/Tooltip.vue'
 
 interface DayInfo {
   date: string | null
@@ -477,6 +485,22 @@ function getSelectedDayInfo(): DayInfo | undefined {
     }
   }
   return undefined
+}
+
+function getDayTooltip(day: DayInfo): string {
+  if (!day.date) return ''
+  if (day.isFuture) return 'Future date'
+  if (day.fetching) return 'Fetching papers...'
+  if (day.stored && day.count > 0) return `${day.count} papers stored`
+  if (day.fetched && day.count === 0) return 'No papers (empty)'
+  return 'Click to fetch papers'
+}
+
+function getDayTooltipType(day: DayInfo): 'default' | 'info' | 'success' | 'warning' {
+  if (day.stored && day.count > 0) return 'success'
+  if (day.fetching) return 'warning'
+  if (day.isFuture) return 'default'
+  return 'info'
 }
 
 async function fetchDate(date: string) {
