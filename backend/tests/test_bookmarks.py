@@ -185,7 +185,7 @@ class TestSearchBookmarks:
         assert response.status_code == 200
         assert response.json()["total"] == 1
         assert len(response.json()["items"]) == 1
-        mock_bookmark_service.search_bookmarks.assert_called_once_with(query="test", limit=10)
+        mock_bookmark_service.search_bookmarks.assert_called_once_with(query="test", limit=100)
 
     def test_search_bookmarks_with_limit(self, client, mock_bookmark_service, sample_bookmark_response):
         mock_bookmark_service.search_bookmarks.return_value = [sample_bookmark_response]
@@ -217,7 +217,7 @@ class TestSearchBookmarks:
         assert response.status_code == 422
 
     def test_search_bookmarks_limit_exceeds_max(self, client, mock_bookmark_service):
-        response = client.get("/bookmarks/search?query=test&limit=101")
+        response = client.get("/bookmarks/search?query=test&limit=1001")
         assert response.status_code == 422
 
 
