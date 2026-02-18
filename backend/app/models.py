@@ -18,6 +18,8 @@ class PaperBase(BaseModel):
     authors: List[str] = []
     abstract: str = ""
     comment: Optional[str] = None
+    journal_ref: Optional[str] = None
+    doi: Optional[str] = None
     primary_category: str = ""
     categories: List[str] = []
     pdf_url: str = ""
@@ -37,6 +39,8 @@ class BookmarkCreate(BaseModel):
     authors: List[str] = []
     abstract: str = ""
     comment: Optional[str] = None
+    journal_ref: Optional[str] = None
+    doi: Optional[str] = None
     primary_category: str = ""
     categories: List[str] = []
     pdf_url: str = ""
@@ -53,6 +57,8 @@ class BookmarkResponse(BaseModel):
     authors: List[str] = []
     abstract: str = ""
     comment: Optional[str] = None
+    journal_ref: Optional[str] = None
+    doi: Optional[str] = None
     primary_category: str = ""
     categories: List[str] = []
     pdf_url: str = ""

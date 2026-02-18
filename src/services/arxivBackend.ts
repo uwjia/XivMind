@@ -16,6 +16,8 @@ interface Paper {
   pdfUrl: string
   absUrl: string
   comment?: string
+  journalRef?: string
+  doi?: string
   citations: number
   downloads: number
 }
@@ -32,6 +34,8 @@ interface BackendPaper {
   pdf_url: string
   abs_url: string
   comment: string
+  journal_ref: string
+  doi: string
 }
 
 interface DateIndex {
@@ -73,6 +77,8 @@ function transformBackendPaper(bp: BackendPaper): Paper {
     pdfUrl: bp.pdf_url || '',
     absUrl: bp.abs_url || '',
     comment: bp.comment || '',
+    journalRef: bp.journal_ref || '',
+    doi: bp.doi || '',
     citations: Math.floor(Math.random() * 100),
     downloads: Math.floor(Math.random() * 500)
   }

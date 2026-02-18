@@ -38,6 +38,16 @@
           <span v-html="renderedComments"></span>
         </p>
       </div>
+      <div v-if="paper.journalRef" class="paper-journal-ref">
+        <p>
+          <svg class="journal-icon" viewBox="0 0 24 24" fill="none">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="#9C27B0" stroke-width="2"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="#9C27B0" stroke-width="2"/>
+            <text x="7" y="14" font-size="5" fill="#9C27B0" font-weight="bold">JOU</text>
+          </svg>
+          <span>{{ paper.journalRef }}</span>
+        </p>
+      </div>
       <div class="paper-footer">
         <div class="paper-tags">
           <div class="paper-id-section">
@@ -52,6 +62,13 @@
           </div>
         </div>
         <div class="paper-stats">
+          <span v-if="paper.doi" class="stat-link" @click.stop="openDoiUrl" :title="'Open DOI'">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-3 3a5 5 0 0 0 .54 7.54z" stroke="#9C27B0" stroke-width="2"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l3-3a5 5 0 0 0-.54-7.54z" stroke="#9C27B0" stroke-width="2"/>
+              <text x="8" y="15" font-size="5" fill="#9C27B0" font-weight="bold">DOI</text>
+            </svg>
+          </span>
           <span class="stat-link" @click.stop="openAbsUrl" :title="'Open arXiv page'">
             <svg viewBox="0 0 24 24" fill="none">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-3 3a5 5 0 0 0 .54 7.54z" stroke="#4CAF50" stroke-width="2"/>
@@ -241,6 +258,14 @@ const openAbsUrl = () => {
   window.open(props.paper.absUrl, '_blank')
 }
 
+const openDoiUrl = () => {
+  if (!props.paper?.doi) {
+    console.warn('Paper has no doi')
+    return
+  }
+  window.open(`https://doi.org/${props.paper.doi}`, '_blank')
+}
+
 const openPdfUrl = () => {
   if (!props.paper?.pdfUrl) {
     console.warn('Paper has no pdfUrl')
@@ -308,6 +333,8 @@ const toggleBookmark = async () => {
       authors: props.paper.authors,
       abstract: props.paper.abstract,
       comment: props.paper.comment,
+      journal_ref: props.paper.journalRef,
+      doi: props.paper.doi,
       primary_category: props.paper.primaryCategory,
       categories: props.paper.categories,
       pdf_url: props.paper.pdfUrl,
@@ -698,6 +725,37 @@ const getVersionFromId = () => {
   background: transparent;
   padding: 0;
   border-radius: 0;
+}
+
+.paper-journal-ref {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  z-index: 1;
+  position: relative;
+  flex: 1;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.paper-journal-ref p {
+  margin: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.paper-journal-ref span {
+  display: block;
+}
+
+.journal-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  margin-right: 8px;
+  float: left;
+  margin-top: 2px;
 }
 
 .paper-footer {

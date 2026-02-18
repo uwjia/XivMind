@@ -7,6 +7,8 @@ export interface BookmarkData {
   authors?: string[]
   abstract?: string
   comment?: string
+  journal_ref?: string
+  doi?: string
   primary_category?: string
   categories?: string[]
   pdf_url?: string
@@ -23,6 +25,8 @@ export interface Bookmark {
   authors: string[]
   abstract: string
   comment?: string
+  journal_ref?: string
+  doi?: string
   primary_category: string
   categories: string[]
   pdf_url: string

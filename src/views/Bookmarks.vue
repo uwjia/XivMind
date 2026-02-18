@@ -87,6 +87,17 @@
           </p>
         </div>
         
+        <div v-if="bookmark.journal_ref" class="bookmark-journal-ref">
+          <p>
+            <svg class="journal-icon" viewBox="0 0 24 24" fill="none">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="#9C27B0" stroke-width="2"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="#9C27B0" stroke-width="2"/>
+              <text x="7" y="14" font-size="5" fill="#9C27B0" font-weight="bold">JOU</text>
+            </svg>
+            <span>{{ bookmark.journal_ref }}</span>
+          </p>
+        </div>
+        
         <div class="bookmark-footer">
           <div class="bookmark-tags">
             <div class="paper-id-section">
@@ -103,6 +114,13 @@
             </div>
           </div>
           <div class="bookmark-actions">
+            <span v-if="bookmark.doi" class="stat-link" @click="openDoiUrl(bookmark.doi)" title="Open DOI">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-3 3a5 5 0 0 0 .54 7.54z" stroke="#9C27B0" stroke-width="2"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l3-3a5 5 0 0 0-.54-7.54z" stroke="#9C27B0" stroke-width="2"/>
+                <text x="8" y="15" font-size="5" fill="#9C27B0" font-weight="bold">DOI</text>
+              </svg>
+            </span>
             <span class="stat-link" @click="openAbsUrl(bookmark.abs_url)" title="Open arXiv page">
               <svg viewBox="0 0 24 24" fill="none">
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-3 3a5 5 0 0 0 .54 7.54z" stroke="#4CAF50" stroke-width="2"/>
@@ -296,6 +314,10 @@ const openAbsUrl = (url: string) => {
 
 const openPdfUrl = (url: string) => {
   if (url) window.open(url, '_blank')
+}
+
+const openDoiUrl = (doi: string) => {
+  if (doi) window.open(`https://doi.org/${doi}`, '_blank')
 }
 
 const handleDownload = async (bookmark: any) => {
@@ -771,6 +793,30 @@ watch(
   background: transparent;
   padding: 0;
   border-radius: 0;
+}
+
+.bookmark-journal-ref {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.bookmark-journal-ref p {
+  margin: 0;
+}
+
+.bookmark-journal-ref span {
+  display: block;
+}
+
+.journal-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  margin-right: 8px;
+  float: left;
+  margin-top: 2px;
 }
 
 .bookmark-footer {
