@@ -16,6 +16,8 @@ interface Paper {
   pdfUrl: string
   absUrl: string
   comment?: string
+  journalRef?: string
+  doi?: string
   citations: number
   downloads: number
 }
@@ -28,6 +30,13 @@ function parseArxivId(fullId: string): string {
 
 function getFullId(fullId: string): string {
   return fullId.split('/').pop() || ''
+}
+
+function parseArxivNamespaceElement(entry: Element, tagName: string): string {
+  const element = Array.from(entry.querySelectorAll('*')).find(el => 
+    el.tagName.toLowerCase().includes(tagName.toLowerCase())
+  )
+  return element?.textContent?.trim() || ''
 }
 
 interface FetchOptions {
@@ -98,6 +107,9 @@ export const arxivAPI = {
             el.tagName.toLowerCase().includes('comment')
           )
           const comment = commentElement?.textContent?.trim() || ''
+          
+          const journalRef = parseArxivNamespaceElement(entry, 'journal_ref')
+          const doi = parseArxivNamespaceElement(entry, 'doi')
 
           const primaryCategory = categories[0] || ''
           const categoryId = primaryCategory.split('.')[0] || 'cs'
@@ -128,6 +140,8 @@ export const arxivAPI = {
             pdfUrl,
             absUrl,
             comment: comment.trim(),
+            journalRef,
+            doi,
             citations: Math.floor(Math.random() * 100),
             downloads: Math.floor(Math.random() * 500)
           })
@@ -235,6 +249,9 @@ export const arxivAPI = {
           )
           const comment = commentElement?.textContent?.trim() || ''
 
+          const journalRef = parseArxivNamespaceElement(entry, 'journal_ref')
+          const doi = parseArxivNamespaceElement(entry, 'doi')
+
           const primaryCategory = categories[0] || ''
           const categoryId = primaryCategory.split('.')[0] || 'cs'
 
@@ -264,6 +281,8 @@ export const arxivAPI = {
             pdfUrl,
             absUrl,
             comment: comment.trim(),
+            journalRef,
+            doi,
             citations: Math.floor(Math.random() * 100),
             downloads: Math.floor(Math.random() * 500)
           })
@@ -345,6 +364,9 @@ export const arxivAPI = {
             )
             const comment = commentElement?.textContent?.trim() || ''
 
+            const journalRef = parseArxivNamespaceElement(entry, 'journal_ref')
+            const doi = parseArxivNamespaceElement(entry, 'doi')
+
             const primaryCategory = categories[0] || ''
             const categoryId = primaryCategory.split('.')[0] || 'cs'
             
@@ -374,6 +396,8 @@ export const arxivAPI = {
               pdfUrl,
               absUrl,
               comment: comment.trim(),
+              journalRef,
+              doi,
               citations: Math.floor(Math.random() * 100),
               downloads: Math.floor(Math.random() * 500)
             })
@@ -440,6 +464,9 @@ export const arxivAPI = {
           )
           const comment = commentElement?.textContent?.trim() || ''
 
+          const journalRef = parseArxivNamespaceElement(entry, 'journal_ref')
+          const doi = parseArxivNamespaceElement(entry, 'doi')
+
           const primaryCategory = categories[0] || ''
           const categoryId = primaryCategory.split('.')[0] || 'cs'
 
@@ -469,6 +496,8 @@ export const arxivAPI = {
             pdfUrl,
             absUrl,
             comment: comment.trim(),
+            journalRef,
+            doi,
             citations: Math.floor(Math.random() * 100),
             downloads: Math.floor(Math.random() * 500)
           })
