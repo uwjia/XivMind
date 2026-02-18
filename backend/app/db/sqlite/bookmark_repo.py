@@ -40,6 +40,8 @@ class SQLiteBookmarkRepository(BookmarkRepository):
                     authors TEXT,
                     abstract TEXT,
                     comment TEXT,
+                    journal_ref TEXT,
+                    doi TEXT,
                     primary_category TEXT,
                     categories TEXT,
                     pdf_url TEXT,
@@ -51,6 +53,14 @@ class SQLiteBookmarkRepository(BookmarkRepository):
             ''')
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_bookmarks_paper_id ON bookmarks(paper_id)')
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_bookmarks_created_at ON bookmarks(created_at)')
+            
+            cursor.execute("PRAGMA table_info(bookmarks)")
+            columns = [col[1] for col in cursor.fetchall()]
+            if 'journal_ref' not in columns:
+                cursor.execute('ALTER TABLE bookmarks ADD COLUMN journal_ref TEXT')
+            if 'doi' not in columns:
+                cursor.execute('ALTER TABLE bookmarks ADD COLUMN doi TEXT')
+            
             conn.commit()
 
     @staticmethod
@@ -69,6 +79,8 @@ class SQLiteBookmarkRepository(BookmarkRepository):
             "authors": json.loads(row["authors"]) if row["authors"] else [],
             "abstract": row["abstract"] or "",
             "comment": row["comment"] or "",
+            "journal_ref": row["journal_ref"] or "",
+            "doi": row["doi"] or "",
             "primary_category": row["primary_category"] or "",
             "categories": json.loads(row["categories"]) if row["categories"] else [],
             "pdf_url": row["pdf_url"] or "",
@@ -85,14 +97,17 @@ class SQLiteBookmarkRepository(BookmarkRepository):
         title = self._safe_str(data.get("title"), 1024)
         abstract = self._safe_str(data.get("abstract"), 16384)
         comment = self._safe_str(data.get("comment"), 4096)
+        journal_ref = self._safe_str(data.get("journal_ref"), 1024)
+        doi = self._safe_str(data.get("doi"), 256)
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT INTO bookmarks (
                     id, paper_id, arxiv_id, title, authors, abstract, comment,
-                    primary_category, categories, pdf_url, abs_url, published, updated, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    journal_ref, doi, primary_category, categories, 
+                    pdf_url, abs_url, published, updated, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 bookmark_id,
                 self._safe_str(data.get("paper_id")),
@@ -101,6 +116,8 @@ class SQLiteBookmarkRepository(BookmarkRepository):
                 json.dumps(data.get("authors") or []),
                 abstract,
                 comment,
+                journal_ref,
+                doi,
                 self._safe_str(data.get("primary_category")),
                 json.dumps(data.get("categories") or []),
                 self._safe_str(data.get("pdf_url")),
@@ -119,6 +136,8 @@ class SQLiteBookmarkRepository(BookmarkRepository):
             "authors": data.get("authors") or [],
             "abstract": abstract,
             "comment": comment,
+            "journal_ref": journal_ref,
+            "doi": doi,
             "primary_category": self._safe_str(data.get("primary_category")),
             "categories": data.get("categories") or [],
             "pdf_url": self._safe_str(data.get("pdf_url")),

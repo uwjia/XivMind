@@ -43,6 +43,8 @@ class SQLitePaperRepository(PaperRepository):
                     pdf_url TEXT,
                     abs_url TEXT,
                     comment TEXT,
+                    journal_ref TEXT,
+                    doi TEXT,
                     fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
@@ -56,6 +58,14 @@ class SQLitePaperRepository(PaperRepository):
                     fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            
+            cursor.execute("PRAGMA table_info(papers)")
+            columns = [col[1] for col in cursor.fetchall()]
+            if 'journal_ref' not in columns:
+                cursor.execute('ALTER TABLE papers ADD COLUMN journal_ref TEXT')
+            if 'doi' not in columns:
+                cursor.execute('ALTER TABLE papers ADD COLUMN doi TEXT')
+            
             conn.commit()
 
     @staticmethod
@@ -78,6 +88,8 @@ class SQLitePaperRepository(PaperRepository):
             "pdf_url": row["pdf_url"] or "",
             "abs_url": row["abs_url"] or "",
             "comment": row["comment"] or "",
+            "journal_ref": row["journal_ref"] or "",
+            "doi": row["doi"] or "",
             "fetched_at": row["fetched_at"] or "",
         }
 
@@ -85,14 +97,16 @@ class SQLitePaperRepository(PaperRepository):
         title = self._safe_str(data.get("title"), 2048)
         abstract = self._safe_str(data.get("abstract"), 32768)
         comment = self._safe_str(data.get("comment"), 8192)
+        journal_ref = self._safe_str(data.get("journal_ref"), 1024)
+        doi = self._safe_str(data.get("doi"), 256)
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT OR IGNORE INTO papers (
                     id, title, abstract, authors, primary_category, categories,
-                    published, updated, pdf_url, abs_url, comment
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    published, updated, pdf_url, abs_url, comment, journal_ref, doi
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 self._safe_str(data.get("id")),
                 title,
@@ -105,6 +119,8 @@ class SQLitePaperRepository(PaperRepository):
                 self._safe_str(data.get("pdf_url")),
                 self._safe_str(data.get("abs_url")),
                 comment,
+                journal_ref,
+                doi,
             ))
             conn.commit()
 
@@ -116,12 +132,14 @@ class SQLitePaperRepository(PaperRepository):
                 title = self._safe_str(data.get("title"), 2048)
                 abstract = self._safe_str(data.get("abstract"), 32768)
                 comment = self._safe_str(data.get("comment"), 8192)
+                journal_ref = self._safe_str(data.get("journal_ref"), 1024)
+                doi = self._safe_str(data.get("doi"), 256)
 
                 cursor.execute('''
                     INSERT OR IGNORE INTO papers (
                         id, title, abstract, authors, primary_category, categories,
-                        published, updated, pdf_url, abs_url, comment
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        published, updated, pdf_url, abs_url, comment, journal_ref, doi
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     self._safe_str(data.get("id")),
                     title,
@@ -134,6 +152,8 @@ class SQLitePaperRepository(PaperRepository):
                     self._safe_str(data.get("pdf_url")),
                     self._safe_str(data.get("abs_url")),
                     comment,
+                    journal_ref,
+                    doi,
                 ))
                 if cursor.rowcount > 0:
                     inserted += 1

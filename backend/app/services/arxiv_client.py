@@ -123,6 +123,8 @@ class ArxivClient:
         published = get_text(entry, "published")
         updated = get_text(entry, "updated")
         comment = get_text(entry, "comment", "arxiv")
+        journal_ref = get_text(entry, "journal_ref", "arxiv")
+        doi = get_text(entry, "doi", "arxiv")
         
         authors = []
         for author in entry.findall(f"{{{self.ARXIV_NS['atom']}}}author"):
@@ -172,6 +174,8 @@ class ArxivClient:
             "pdf_url": pdf_url,
             "abs_url": abs_url,
             "comment": comment,
+            "journal_ref": journal_ref,
+            "doi": doi,
         }
 
     def _parse_response(self, xml_text: str) -> tuple[List[Dict[str, Any]], int]:

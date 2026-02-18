@@ -31,6 +31,8 @@ class MilvusBookmarkRepository(BookmarkRepository):
             "authors": json.loads(entity.get("authors", "[]")),
             "abstract": entity.get("abstract", ""),
             "comment": entity.get("comment", ""),
+            "journal_ref": entity.get("journal_ref", ""),
+            "doi": entity.get("doi", ""),
             "primary_category": entity.get("primary_category", ""),
             "categories": json.loads(entity.get("categories", "[]")),
             "pdf_url": entity.get("pdf_url", ""),
@@ -48,6 +50,8 @@ class MilvusBookmarkRepository(BookmarkRepository):
         title = self._safe_str(data.get("title"), 1024)
         abstract = self._safe_str(data.get("abstract"), 16384)
         comment = self._safe_str(data.get("comment"), 4096)
+        journal_ref = self._safe_str(data.get("journal_ref"), 1024)
+        doi = self._safe_str(data.get("doi"), 256)
 
         insert_data = [
             [bookmark_id],
@@ -57,6 +61,8 @@ class MilvusBookmarkRepository(BookmarkRepository):
             [json.dumps(data.get("authors") or [])],
             [abstract],
             [comment],
+            [journal_ref],
+            [doi],
             [self._safe_str(data.get("primary_category"))],
             [json.dumps(data.get("categories") or [])],
             [self._safe_str(data.get("pdf_url"))],
@@ -77,6 +83,8 @@ class MilvusBookmarkRepository(BookmarkRepository):
             "authors": data.get("authors") or [],
             "abstract": abstract,
             "comment": comment,
+            "journal_ref": journal_ref,
+            "doi": doi,
             "primary_category": self._safe_str(data.get("primary_category")),
             "categories": data.get("categories") or [],
             "pdf_url": self._safe_str(data.get("pdf_url")),
@@ -97,8 +105,8 @@ class MilvusBookmarkRepository(BookmarkRepository):
         collection.load()
         results = collection.query(expr=f'id == "{id}"', output_fields=[
             "id", "paper_id", "arxiv_id", "title", "authors", "abstract",
-            "comment", "primary_category", "categories", "pdf_url", "abs_url",
-            "published", "updated", "created_at"
+            "comment", "journal_ref", "doi", "primary_category", 
+            "categories", "pdf_url", "abs_url", "published", "updated", "created_at"
         ])
         if results:
             return self._entity_to_response(results[0])
@@ -110,8 +118,8 @@ class MilvusBookmarkRepository(BookmarkRepository):
         all_results = collection.query(
             expr='id != ""',
             output_fields=["id", "paper_id", "arxiv_id", "title", "authors", "abstract",
-                          "comment", "primary_category", "categories", "pdf_url", "abs_url",
-                          "published", "updated", "created_at"],
+                          "comment", "journal_ref", "doi", "primary_category",
+                          "categories", "pdf_url", "abs_url", "published", "updated", "created_at"],
         )
         total = len(all_results)
         sorted_results = sorted(
@@ -132,8 +140,8 @@ class MilvusBookmarkRepository(BookmarkRepository):
             expr=f'paper_id == "{paper_id}"',
             output_fields=[
                 "id", "paper_id", "arxiv_id", "title", "authors", "abstract",
-                "comment", "primary_category", "categories", "pdf_url", "abs_url",
-                "published", "updated", "created_at"
+                "comment", "journal_ref", "doi", "primary_category",
+                "categories", "pdf_url", "abs_url", "published", "updated", "created_at"
             ]
         )
         if results:
@@ -146,8 +154,8 @@ class MilvusBookmarkRepository(BookmarkRepository):
         results = collection.query(
             expr=f'paper_id like "%{query}%" or title like "%{query}%" or abstract like "%{query}%"',
             output_fields=["id", "paper_id", "arxiv_id", "title", "authors", "abstract",
-                          "comment", "primary_category", "categories", "pdf_url", "abs_url",
-                          "published", "updated", "created_at"],
+                          "comment", "journal_ref", "doi", "primary_category",
+                          "categories", "pdf_url", "abs_url", "published", "updated", "created_at"],
             limit=limit,
         )
         return [self._entity_to_response(r) for r in results]

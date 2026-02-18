@@ -40,6 +40,8 @@ class MilvusPaperRepository(PaperRepository):
             "pdf_url": entity.get("pdf_url", ""),
             "abs_url": entity.get("abs_url", ""),
             "comment": entity.get("comment", ""),
+            "journal_ref": entity.get("journal_ref", ""),
+            "doi": entity.get("doi", ""),
             "fetched_at": entity.get("fetched_at", ""),
         }
 
@@ -70,7 +72,7 @@ class MilvusPaperRepository(PaperRepository):
             expr='id != ""',
             output_fields=["id", "title", "abstract", "authors", "primary_category",
                           "categories", "published", "updated", "pdf_url", "abs_url",
-                          "comment", "fetched_at"],
+                          "comment", "journal_ref", "doi", "fetched_at"],
         )
         total = len(all_results)
         sorted_results = sorted(
@@ -94,6 +96,8 @@ class MilvusPaperRepository(PaperRepository):
         title = self._safe_str(data.get("title"), 2048)
         abstract = self._safe_str(data.get("abstract"), 32768)
         comment = self._safe_str(data.get("comment"), 8192)
+        journal_ref = self._safe_str(data.get("journal_ref"), 1024)
+        doi = self._safe_str(data.get("doi"), 256)
 
         insert_data = [
             [self._safe_str(data.get("id"), 128)],
@@ -107,6 +111,8 @@ class MilvusPaperRepository(PaperRepository):
             [self._safe_str(data.get("pdf_url"), 512)],
             [self._safe_str(data.get("abs_url"), 512)],
             [comment],
+            [journal_ref],
+            [doi],
             [now],
             [[0.0] * 8],
         ]
@@ -139,6 +145,8 @@ class MilvusPaperRepository(PaperRepository):
         pdf_urls = []
         abs_urls = []
         comments = []
+        journal_refs = []
+        dois = []
         fetched_at_list = []
         embeddings = []
 
@@ -159,6 +167,8 @@ class MilvusPaperRepository(PaperRepository):
             pdf_urls.append(self._safe_str(data.get("pdf_url"), 512))
             abs_urls.append(self._safe_str(data.get("abs_url"), 512))
             comments.append(self._safe_str(data.get("comment"), 8192))
+            journal_refs.append(self._safe_str(data.get("journal_ref"), 1024))
+            dois.append(self._safe_str(data.get("doi"), 256))
             fetched_at_list.append(now)
             embeddings.append([0.0] * 8)
             inserted += 1
@@ -167,7 +177,8 @@ class MilvusPaperRepository(PaperRepository):
             insert_data = [
                 ids, titles, abstracts, authors_list, primary_categories,
                 categories_list, published_list, updated_list, pdf_urls,
-                abs_urls, comments, fetched_at_list, embeddings,
+                abs_urls, comments, journal_refs, dois,
+                fetched_at_list, embeddings,
             ]
             collection.insert(insert_data)
             collection.flush()
@@ -217,7 +228,7 @@ class MilvusPaperRepository(PaperRepository):
             expr='id != ""',
             output_fields=["id", "title", "abstract", "authors", "primary_category",
                           "categories", "published", "updated", "pdf_url", "abs_url",
-                          "comment", "fetched_at"],
+                          "comment", "journal_ref", "doi", "fetched_at"],
         )
 
         filtered = []
@@ -255,7 +266,7 @@ class MilvusPaperRepository(PaperRepository):
             expr=f'id == "{paper_id}"',
             output_fields=["id", "title", "abstract", "authors", "primary_category",
                           "categories", "published", "updated", "pdf_url", "abs_url",
-                          "comment", "fetched_at"],
+                          "comment", "journal_ref", "doi", "fetched_at"],
         )
         if results:
             return self._entity_to_response(results[0])

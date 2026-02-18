@@ -95,7 +95,7 @@ class MilvusClient:
             logger.error(f"Failed to connect to Milvus: {e}")
             raise
 
-        BOOKMARK_SCHEMA_VERSION = 2
+        BOOKMARK_SCHEMA_VERSION = 3
         DOWNLOAD_SCHEMA_VERSION = 2
 
         def get_schema_version(collection_name: str) -> int:
@@ -159,6 +159,8 @@ class MilvusClient:
                 FieldSchema(name="authors", dtype=DataType.VARCHAR, max_length=4096),
                 FieldSchema(name="abstract", dtype=DataType.VARCHAR, max_length=16384),
                 FieldSchema(name="comment", dtype=DataType.VARCHAR, max_length=4096),
+                FieldSchema(name="journal_ref", dtype=DataType.VARCHAR, max_length=1024),
+                FieldSchema(name="doi", dtype=DataType.VARCHAR, max_length=256),
                 FieldSchema(name="primary_category", dtype=DataType.VARCHAR, max_length=64),
                 FieldSchema(name="categories", dtype=DataType.VARCHAR, max_length=512),
                 FieldSchema(name="pdf_url", dtype=DataType.VARCHAR, max_length=512),
@@ -224,7 +226,7 @@ class MilvusClient:
             logger.info("Using existing downloads collection")
             self.downloads_collection = Collection("downloads")
 
-        PAPER_SCHEMA_VERSION = 2
+        PAPER_SCHEMA_VERSION = 3
 
         logger.info("Checking papers collection...")
         paper_version = get_schema_version("papers")
@@ -251,6 +253,8 @@ class MilvusClient:
                 FieldSchema(name="pdf_url", dtype=DataType.VARCHAR, max_length=512),
                 FieldSchema(name="abs_url", dtype=DataType.VARCHAR, max_length=512),
                 FieldSchema(name="comment", dtype=DataType.VARCHAR, max_length=8192),
+                FieldSchema(name="journal_ref", dtype=DataType.VARCHAR, max_length=1024),
+                FieldSchema(name="doi", dtype=DataType.VARCHAR, max_length=256),
                 FieldSchema(name="fetched_at", dtype=DataType.VARCHAR, max_length=64),
                 FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=8),
             ]
