@@ -12,7 +12,7 @@ class MilvusBookmarkRepository(BookmarkRepository):
 
     def _get_collection(self) -> Collection:
         if not self._collection:
-            self._collection = milvus_client.get_bookmarks_collection()
+            self._collection = milvus_client.get_collection("bookmarks")
         return self._collection
 
     @staticmethod

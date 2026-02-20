@@ -12,12 +12,12 @@ class MilvusPaperRepository(PaperRepository):
 
     def _get_papers_collection(self) -> Collection:
         if not self._papers_collection:
-            self._papers_collection = milvus_client.get_papers_collection()
+            self._papers_collection = milvus_client.get_collection("papers")
         return self._papers_collection
 
     def _get_date_index_collection(self) -> Collection:
         if not self._date_index_collection:
-            self._date_index_collection = milvus_client.get_date_index_collection()
+            self._date_index_collection = milvus_client.get_collection("date_index")
         return self._date_index_collection
 
     @staticmethod

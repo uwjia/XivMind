@@ -11,7 +11,7 @@ class MilvusDownloadRepository(DownloadRepository):
 
     def _get_collection(self) -> Collection:
         if not self._collection:
-            self._collection = milvus_client.get_downloads_collection()
+            self._collection = milvus_client.get_collection("downloads")
         return self._collection
 
     @staticmethod
