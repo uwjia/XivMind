@@ -4,6 +4,7 @@ from .bookmarks import BookmarkSchema
 from .downloads import DownloadSchema
 from .papers import PaperSchema
 from .date_index import DateIndexSchema
+from .paper_embeddings import PaperEmbeddingSchema
 
 
 class SchemaRegistry:
@@ -38,3 +39,4 @@ SchemaRegistry.register(BookmarkSchema())
 SchemaRegistry.register(DownloadSchema())
 SchemaRegistry.register(PaperSchema())
 SchemaRegistry.register(DateIndexSchema())
+SchemaRegistry.register(PaperEmbeddingSchema())

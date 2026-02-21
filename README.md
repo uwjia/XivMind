@@ -1,5 +1,7 @@
 # XivMind
 
+**English** | [中文](README_CN.md)
+
 Built by AI, motivated by humans. The Mind of arXiv.
 
 A modern arXiv paper management application with bookmark, download, and AI assistant features.
@@ -11,6 +13,9 @@ A modern arXiv paper management application with bookmark, download, and AI assi
 - 🔖 Bookmark papers for later reading
 - 📥 Download PDFs with progress tracking
 - 🤖 AI Assistant for paper-related questions
+  - Multiple LLM providers: OpenAI, Anthropic, GLM (Zhipu AI), Ollama (local)
+  - Semantic search across papers
+  - Q&A with context from your paper library
 - 🌙 Dark/Light theme toggle
 - 📱 Responsive design
 - 🎨 Modern UI with smooth animations
@@ -144,6 +149,54 @@ npm run dev
 
 The application will be available at `http://localhost:5173`
 
+## AI Assistant Configuration
+
+The AI Assistant supports multiple LLM providers. Configure in `.env`:
+
+### OpenAI
+
+```env
+LLM_PROVIDER=openai
+LLM_MODEL=gpt-4o-mini
+OPENAI_API_KEY=your-api-key
+```
+
+### Anthropic
+
+```env
+LLM_PROVIDER=anthropic
+LLM_MODEL=claude-3-haiku-20240307
+OPENAI_API_KEY=your-api-key  # Uses OpenAI-compatible API
+```
+
+### GLM (Zhipu AI)
+
+```env
+LLM_PROVIDER=glm
+LLM_MODEL=glm-4-plus
+GLM_API_KEY=your-zhipu-api-key
+GLM_BASE_URL=https://open.bigmodel.cn/api/paas/v4
+```
+
+Get your API key from: https://open.bigmodel.cn
+
+### Ollama (Local LLM)
+
+```env
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3
+```
+
+Install Ollama from: https://ollama.ai
+
+```bash
+# Install a model
+ollama pull llama3
+ollama pull mistral
+ollama pull qwen2
+```
+
 ## Database Comparison
 
 | Feature | SQLite | Milvus |
@@ -190,9 +243,10 @@ The application will be available at `http://localhost:5173`
 - Retry failed downloads
 
 ### AI Assistant Page
-- Ask questions about papers
-- Get summaries and insights
-- Placeholder for LLM integration
+- **Search Mode**: Semantic search across your paper library
+- **Ask Mode**: Ask questions with context from your papers
+- Multiple LLM provider support
+- Real-time status for local Ollama connection
 
 ### Settings Page
 - Theme configuration
@@ -220,6 +274,10 @@ The application will be available at `http://localhost:5173`
 | DELETE | `/cache` | Clear all date index cache |
 | GET | `/indexes` | Get all date indexes |
 | GET | `/statistics` | Get storage statistics |
+| GET | `/search/semantic` | Semantic search across papers |
+| POST | `/ask` | Ask question with paper context |
+| GET | `/llm/providers` | Get available LLM providers |
+| GET | `/llm/ollama/status` | Check Ollama service status |
 
 ### Bookmarks `/api/bookmarks`
 

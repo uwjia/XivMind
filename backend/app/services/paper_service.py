@@ -3,15 +3,19 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 import re
 
-from app.db.factory import get_paper_repository
+from app.config import get_settings
+from app.db.factory import get_paper_repository, get_paper_embedding_repository
 from app.services.arxiv_client import ArxivClient
+from app.services.embedding_service import embedding_service
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
 
 class PaperService:
     def __init__(self):
         self.paper_repo = get_paper_repository()
+        self.embedding_repo = get_paper_embedding_repository()
         self.arxiv_client = ArxivClient()
 
     def _normalize_date(self, date_str: str) -> str:
@@ -42,6 +46,30 @@ class PaperService:
             return request_date > today
         except ValueError:
             return False
+
+    async def _fetch_and_store_papers(self, date: str, category: str) -> Dict[str, Any]:
+        """
+        Fetch papers from arXiv and store them.
+        
+        Returns:
+            Dict with 'count' and 'inserted' keys, or 'error' on failure.
+        """
+        try:
+            logger.info(f"Fetching {category or 'all'} papers for {date}")
+            papers = await self.arxiv_client.fetch_all_papers_for_date(date, category)
+            
+            if papers:
+                inserted = self.paper_repo.insert_papers_batch(papers)
+                logger.info(f"Inserted {inserted} papers for {date}")
+                self.paper_repo.insert_date_index(date, len(papers))
+                return {"count": len(papers), "inserted": inserted}
+            else:
+                self.paper_repo.insert_date_index(date, 0)
+                return {"count": 0, "inserted": 0}
+        except Exception as e:
+            logger.error(f"Failed to fetch papers for {date}: {e}")
+            self.paper_repo.insert_date_index(date, 0)
+            return {"count": 0, "inserted": 0, "error": str(e)}
 
     async def query_papers(
         self,
@@ -86,19 +114,7 @@ class PaperService:
         
         if not date_info or date_info.get("total_count", 0) == 0:
             logger.info(f"No local data for {normalized_date}, fetching from arXiv with category {fetch_category}")
-            try:
-                papers = await self.arxiv_client.fetch_all_papers_for_date(normalized_date, fetch_category)
-                
-                if papers:
-                    inserted = self.paper_repo.insert_papers_batch(papers)
-                    logger.info(f"Inserted {inserted} papers for {normalized_date}")
-                    
-                    self.paper_repo.insert_date_index(normalized_date, len(papers))
-                else:
-                    self.paper_repo.insert_date_index(normalized_date, 0)
-            except Exception as e:
-                logger.warning(f"Failed to fetch papers from arXiv for {normalized_date}: {e}")
-                self.paper_repo.insert_date_index(normalized_date, 0)
+            await self._fetch_and_store_papers(normalized_date, fetch_category)
         
         papers, total = self.paper_repo.query_papers_by_date(
             date=normalized_date,
@@ -153,35 +169,21 @@ class PaperService:
         
         self.paper_repo.delete_date_index(normalized_date)
         
-        try:
-            logger.info(f"Manually fetching {category or 'all'} papers for {normalized_date}")
-            papers = await self.arxiv_client.fetch_all_papers_for_date(normalized_date, category)
-            
-            if papers:
-                inserted = self.paper_repo.insert_papers_batch(papers)
-                logger.info(f"Inserted {inserted} papers for {normalized_date}")
-                self.paper_repo.insert_date_index(normalized_date, len(papers))
-                return {
-                    "success": True,
-                    "date": normalized_date,
-                    "count": len(papers),
-                }
-            else:
-                self.paper_repo.insert_date_index(normalized_date, 0)
-                return {
-                    "success": True,
-                    "date": normalized_date,
-                    "count": 0,
-                }
-        except Exception as e:
-            logger.error(f"Failed to fetch papers for {normalized_date}: {e}")
-            self.paper_repo.insert_date_index(normalized_date, 0)
+        result = await self._fetch_and_store_papers(normalized_date, category)
+        
+        if "error" in result:
             return {
                 "success": False,
                 "date": normalized_date,
-                "count": 0,
-                "error": str(e),
+                "count": result["count"],
+                "error": result["error"],
             }
+        
+        return {
+            "success": True,
+            "date": normalized_date,
+            "count": result["count"],
+        }
 
     def get_all_date_indexes(self) -> List[Dict[str, Any]]:
         """Get all date index records."""
@@ -192,9 +194,262 @@ class PaperService:
         indexes = self.paper_repo.get_all_date_indexes()
         total_days = len([i for i in indexes if i.get("total_count", 0) > 0])
         total_papers = self.paper_repo.get_total_paper_count()
+        total_embeddings = self.embedding_repo.count_embeddings()
         
         return {
             "total_days": total_days,
             "total_papers": total_papers,
+            "total_embeddings": total_embeddings,
             "indexes": indexes,
         }
+
+    async def search_papers_semantic(
+        self,
+        query: str,
+        top_k: int = 10,
+        category: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Search papers using semantic similarity.
+        
+        Args:
+            query: Natural language query
+            top_k: Number of results to return
+            category: Optional category filter
+            date_from: Optional start date filter
+            date_to: Optional end date filter
+        
+        Returns:
+            Dict with papers and metadata
+        """
+        try:
+            query_embedding, model_name = embedding_service.encode(query)
+            
+            candidate_ids = None
+            if category or date_from or date_to:
+                candidate_ids = self.paper_repo.get_paper_ids_by_filters(
+                    category=category,
+                    date_from=date_from,
+                    date_to=date_to,
+                    limit=settings.MILVUS_QUERY_BATCH_SIZE,
+                )
+                
+                if not candidate_ids:
+                    return {
+                        "papers": [],
+                        "total": 0,
+                        "query": query,
+                        "model": model_name,
+                    }
+            
+            similar_papers = self.embedding_repo.search_similar(
+                query_embedding=query_embedding,
+                top_k=top_k,
+                paper_ids=candidate_ids,
+            )
+            
+            if not similar_papers:
+                return {
+                    "papers": [],
+                    "total": 0,
+                    "query": query,
+                    "model": model_name,
+                }
+            
+            paper_ids = [p["paper_id"] for p in similar_papers]
+            papers = self.paper_repo.get_papers_by_ids(paper_ids)
+            
+            paper_map = {p["id"]: p for p in papers}
+            results = []
+            for sp in similar_papers:
+                paper = paper_map.get(sp["paper_id"])
+                if paper:
+                    paper["similarity_score"] = sp["similarity_score"]
+                    results.append(paper)
+            
+            return {
+                "papers": results,
+                "total": len(results),
+                "query": query,
+                "model": model_name,
+            }
+            
+        except Exception as e:
+            logger.error(f"Semantic search failed: {e}")
+            return {
+                "papers": [],
+                "total": 0,
+                "query": query,
+                "error": str(e),
+            }
+
+    async def get_similar_papers(
+        self,
+        paper_id: str,
+        top_k: int = 5,
+    ) -> Dict[str, Any]:
+        """
+        Get papers similar to a given paper.
+        
+        Args:
+            paper_id: Paper ID to find similar papers for
+            top_k: Number of similar papers to return
+        
+        Returns:
+            Dict with similar papers
+        """
+        try:
+            embedding_data = self.embedding_repo.get_embedding(paper_id)
+            
+            if not embedding_data:
+                paper = self.paper_repo.get_paper_by_id(paper_id)
+                if not paper:
+                    return {
+                        "papers": [],
+                        "source_paper_id": paper_id,
+                        "error": "Paper not found",
+                    }
+                
+                text = f"{paper.get('title', '')} {paper.get('abstract', '')}"
+                embedding, model_name = embedding_service.encode(text)
+                
+                self.embedding_repo.insert_embedding(
+                    paper_id=paper_id,
+                    embedding=embedding,
+                    model_name=model_name,
+                )
+                embedding_data = {
+                    "embedding": embedding,
+                    "embedding_model": model_name,
+                }
+            
+            similar_papers = self.embedding_repo.search_similar(
+                query_embedding=embedding_data["embedding"],
+                top_k=top_k + 1,
+            )
+            
+            similar_papers = [
+                p for p in similar_papers 
+                if p["paper_id"] != paper_id
+            ][:top_k]
+            
+            if not similar_papers:
+                return {
+                    "papers": [],
+                    "source_paper_id": paper_id,
+                }
+            
+            paper_ids = [p["paper_id"] for p in similar_papers]
+            papers = self.paper_repo.get_papers_by_ids(paper_ids)
+            
+            paper_map = {p["id"]: p for p in papers}
+            results = []
+            for sp in similar_papers:
+                paper = paper_map.get(sp["paper_id"])
+                if paper:
+                    paper["similarity_score"] = sp["similarity_score"]
+                    results.append(paper)
+            
+            return {
+                "papers": results,
+                "source_paper_id": paper_id,
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to get similar papers: {e}")
+            return {
+                "papers": [],
+                "source_paper_id": paper_id,
+                "error": str(e),
+            }
+
+    async def generate_embeddings(
+        self,
+        date: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        force: bool = False,
+        batch_size: int = 100,
+    ) -> Dict[str, Any]:
+        """
+        Generate embeddings for papers.
+        
+        Args:
+            date: Specific date to generate embeddings for
+            date_from: Start date for range
+            date_to: End date for range
+            force: Regenerate embeddings even if they exist
+            batch_size: Number of papers to process at once
+        
+        Returns:
+            Dict with generation statistics
+        """
+        try:
+            paper_ids = self.paper_repo.get_paper_ids_by_date_range(
+                date=date,
+                date_from=date_from,
+                date_to=date_to,
+            )
+            
+            if not force:
+                paper_ids = self.embedding_repo.get_paper_ids_without_embeddings(paper_ids)
+            
+            if not paper_ids:
+                total_papers = self.paper_repo.get_total_paper_count()
+                return {
+                    "success": True,
+                    "generated_count": 0,
+                    "skipped_count": total_papers if not force else 0,
+                    "error_count": 0,
+                }
+            
+            generated = 0
+            errors = 0
+            
+            for i in range(0, len(paper_ids), batch_size):
+                batch_ids = paper_ids[i:i + batch_size]
+                papers = self.paper_repo.get_papers_by_ids(batch_ids)
+                
+                texts = [
+                    f"Title: {p.get('title', '')}\nAbstract: {p.get('abstract', '')}"
+                    for p in papers
+                ]
+                
+                try:
+                    embeddings, model_name = embedding_service.encode_batch(texts)
+                    
+                    embeddings_data = [
+                        {
+                            "paper_id": papers[j]["id"],
+                            "embedding": embeddings[j],
+                            "model_name": model_name,
+                        }
+                        for j in range(len(papers))
+                    ]
+                    
+                    inserted = self.embedding_repo.insert_embeddings_batch(embeddings_data)
+                    generated += inserted
+                    logger.info(f"Generated embeddings for batch {i//batch_size + 1}: {inserted} papers")
+                    
+                except Exception as e:
+                    logger.error(f"Failed to generate embeddings for batch: {e}")
+                    errors += len(batch_ids)
+            
+            return {
+                "success": True,
+                "generated_count": generated,
+                "skipped_count": len(paper_ids) - generated if not force else 0,
+                "error_count": errors,
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to generate embeddings: {e}")
+            return {
+                "success": False,
+                "generated_count": 0,
+                "skipped_count": 0,
+                "error_count": 1,
+                "error": str(e),
+            }

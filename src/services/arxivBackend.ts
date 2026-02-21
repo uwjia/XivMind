@@ -50,6 +50,28 @@ interface Statistics {
   indexes: DateIndex[]
 }
 
+interface LLMProviderInfo {
+  id: string
+  name: string
+  models: string[]
+  available: boolean
+  description: string
+}
+
+interface LLMProvidersResponse {
+  providers: LLMProviderInfo[]
+  default_provider: string | null
+}
+
+interface OllamaStatusResponse {
+  available: boolean
+  error: string | null
+  base_url: string
+  default_model: string
+  checked_model?: string
+  available_models: string[]
+}
+
 interface QueryResponse {
   papers: BackendPaper[]
   total: number
@@ -246,5 +268,125 @@ export const arxivBackendAPI = {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
+  },
+
+  async generateEmbeddings(options: {
+    date?: string
+    dateFrom?: string
+    dateTo?: string
+    force?: boolean
+    batchSize?: number
+  } = {}): Promise<{
+    success: boolean
+    generated_count: number
+    skipped_count: number
+    error_count: number
+    error?: string
+  }> {
+    const response = await fetch(`${BACKEND_API_BASE}/embeddings/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        date: options.date,
+        date_from: options.dateFrom,
+        date_to: options.dateTo,
+        force: options.force || false,
+        batch_size: options.batchSize || 100
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return response.json()
+  },
+
+  async semanticSearch(query: string, topK: number = 10): Promise<{
+    papers: BackendPaper[]
+    total: number
+    query: string
+    model?: string
+    error?: string
+  }> {
+    const response = await fetch(`${BACKEND_API_BASE}/search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        query,
+        top_k: topK
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return response.json()
+  },
+
+  async askQuestion(question: string, topK: number = 5, provider?: string, model?: string): Promise<{
+    answer: string
+    references: Array<{
+      id: string
+      title: string
+      authors: string[]
+      published?: string
+      relevance_score: number
+    }>
+    model?: string
+    error?: string
+  }> {
+    const body: Record<string, any> = {
+      question,
+      top_k: topK,
+      include_references: true
+    }
+    
+    if (provider) {
+      body.provider = provider
+    }
+    if (model) {
+      body.model = model
+    }
+    
+    const response = await fetch(`${BACKEND_API_BASE}/ask`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return response.json()
+  },
+
+  async getLLMProviders(): Promise<LLMProvidersResponse> {
+    const response = await fetch(`${BACKEND_API_BASE}/llm/providers`)
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return response.json()
+  },
+
+  async getOllamaStatus(model?: string): Promise<OllamaStatusResponse> {
+    const params = model ? `?model=${encodeURIComponent(model)}` : ''
+    const response = await fetch(`${BACKEND_API_BASE}/llm/ollama/status${params}`)
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return response.json()
   }
 }

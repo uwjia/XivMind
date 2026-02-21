@@ -115,15 +115,16 @@ class MilvusBookmarkRepository(BookmarkRepository):
     def get_all(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
         collection = self._get_collection()
         collection.load()
-        all_results = collection.query(
+        total = collection.num_entities
+        results = collection.query(
             expr='id != ""',
             output_fields=["id", "paper_id", "arxiv_id", "title", "authors", "abstract",
                           "comment", "journal_ref", "doi", "primary_category",
                           "categories", "pdf_url", "abs_url", "published", "updated", "created_at"],
+            limit=offset + limit,
         )
-        total = len(all_results)
         sorted_results = sorted(
-            all_results,
+            results,
             key=lambda x: x.get("created_at", ""),
             reverse=True
         )

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Any
-from pymilvus import FieldSchema, CollectionSchema
+from pymilvus import FieldSchema, CollectionSchema, DataType
 
 
 class BaseCollectionSchema(ABC):
@@ -59,9 +59,9 @@ class BaseCollectionSchema(ABC):
     def get_schema_version_fields(self) -> List[FieldSchema]:
         """Return fields for schema version collection."""
         return [
-            FieldSchema(name="id", dtype="VARCHAR", max_length=64, is_primary=True),
-            FieldSchema(name="version", dtype="INT64"),
-            FieldSchema(name="embedding", dtype="FLOAT_VECTOR", dim=8),
+            FieldSchema(name="id", dtype=DataType.VARCHAR, max_length=64, is_primary=True),
+            FieldSchema(name="version", dtype=DataType.INT64),
+            FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=8),
         ]
     
     def get_schema_version_collection_name(self) -> str:

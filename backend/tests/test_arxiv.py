@@ -348,3 +348,278 @@ class TestQueryPapersEmptyResult:
         assert response.status_code == 200
         assert response.json()["papers"] == []
         assert response.json()["total"] == 0
+
+
+class TestSemanticSearch:
+    def test_search_papers_semantic_success(self, client, mock_paper_service):
+        mock_paper_service.search_papers_semantic = AsyncMock(return_value={
+            "papers": [
+                {
+                    "id": "2301.12345",
+                    "title": "Machine Learning Paper",
+                    "abstract": "Abstract about machine learning",
+                    "authors": ["Author One"],
+                    "primary_category": "cs.LG",
+                    "categories": ["cs.LG", "cs.AI"],
+                    "pdf_url": "https://arxiv.org/pdf/2301.12345",
+                    "abs_url": "https://arxiv.org/abs/2301.12345",
+                    "published": "2024-01-15",
+                    "similarity_score": 0.95,
+                }
+            ],
+            "total": 1,
+            "query": "machine learning",
+            "model": "text-embedding-ada-002",
+        })
+        
+        response = client.post("/arxiv/search", json={
+            "query": "machine learning",
+            "top_k": 10,
+        })
+        
+        assert response.status_code == 200
+        assert response.json()["total"] == 1
+        assert len(response.json()["papers"]) == 1
+        assert response.json()["papers"][0]["similarity_score"] == 0.95
+
+    def test_search_papers_semantic_with_filters(self, client, mock_paper_service):
+        mock_paper_service.search_papers_semantic = AsyncMock(return_value={
+            "papers": [],
+            "total": 0,
+            "query": "machine learning",
+            "model": "text-embedding-ada-002",
+        })
+        
+        response = client.post("/arxiv/search", json={
+            "query": "machine learning",
+            "top_k": 10,
+            "category": "cs.LG",
+            "date_from": "2024-01-01",
+            "date_to": "2024-12-31",
+        })
+        
+        assert response.status_code == 200
+        call_kwargs = mock_paper_service.search_papers_semantic.call_args[1]
+        assert call_kwargs["category"] == "cs.LG"
+        assert call_kwargs["date_from"] == "2024-01-01"
+        assert call_kwargs["date_to"] == "2024-12-31"
+
+    def test_search_papers_semantic_empty_result(self, client, mock_paper_service):
+        mock_paper_service.search_papers_semantic = AsyncMock(return_value={
+            "papers": [],
+            "total": 0,
+            "query": "nonexistent topic",
+            "model": "text-embedding-ada-002",
+        })
+        
+        response = client.post("/arxiv/search", json={
+            "query": "nonexistent topic",
+            "top_k": 10,
+        })
+        
+        assert response.status_code == 200
+        assert response.json()["papers"] == []
+        assert response.json()["total"] == 0
+
+    def test_search_papers_semantic_error(self, client, mock_paper_service):
+        mock_paper_service.search_papers_semantic = AsyncMock(return_value={
+            "papers": [],
+            "total": 0,
+            "query": "test query",
+            "error": "Embedding service unavailable",
+        })
+        
+        response = client.post("/arxiv/search", json={
+            "query": "test query",
+            "top_k": 10,
+        })
+        
+        assert response.status_code == 200
+        assert "error" in response.json()
+
+    def test_search_papers_semantic_validation_top_k(self, client, mock_paper_service):
+        response = client.post("/arxiv/search", json={
+            "query": "test",
+            "top_k": 0,
+        })
+        assert response.status_code == 422
+
+    def test_search_papers_semantic_validation_top_k_max(self, client, mock_paper_service):
+        response = client.post("/arxiv/search", json={
+            "query": "test",
+            "top_k": 101,
+        })
+        assert response.status_code == 422
+
+
+class TestSimilarPapers:
+    def test_get_similar_papers_success(self, client, mock_paper_service):
+        mock_paper_service.get_similar_papers = AsyncMock(return_value={
+            "papers": [
+                {
+                    "id": "2301.12346",
+                    "title": "Similar Paper",
+                    "abstract": "Similar abstract",
+                    "authors": ["Author Two"],
+                    "primary_category": "cs.LG",
+                    "categories": ["cs.LG"],
+                    "pdf_url": "https://arxiv.org/pdf/2301.12346",
+                    "abs_url": "https://arxiv.org/abs/2301.12346",
+                    "published": "2024-01-16",
+                    "similarity_score": 0.85,
+                }
+            ],
+            "source_paper_id": "2301.12345",
+        })
+        
+        response = client.get("/arxiv/paper/2301.12345/similar?top_k=5")
+        
+        assert response.status_code == 200
+        assert response.json()["source_paper_id"] == "2301.12345"
+        assert len(response.json()["papers"]) == 1
+
+    def test_get_similar_papers_not_found(self, client, mock_paper_service):
+        mock_paper_service.get_similar_papers = AsyncMock(return_value={
+            "papers": [],
+            "source_paper_id": "nonexistent",
+            "error": "Paper not found",
+        })
+        
+        response = client.get("/arxiv/paper/nonexistent/similar")
+        
+        assert response.status_code == 200
+        assert response.json()["papers"] == []
+        assert "error" in response.json()
+
+    def test_get_similar_papers_empty(self, client, mock_paper_service):
+        mock_paper_service.get_similar_papers = AsyncMock(return_value={
+            "papers": [],
+            "source_paper_id": "2301.12345",
+        })
+        
+        response = client.get("/arxiv/paper/2301.12345/similar")
+        
+        assert response.status_code == 200
+        assert response.json()["papers"] == []
+
+    def test_get_similar_papers_validation_top_k(self, client, mock_paper_service):
+        response = client.get("/arxiv/paper/2301.12345/similar?top_k=0")
+        assert response.status_code == 422
+
+    def test_get_similar_papers_validation_top_k_max(self, client, mock_paper_service):
+        response = client.get("/arxiv/paper/2301.12345/similar?top_k=21")
+        assert response.status_code == 422
+
+
+class TestGenerateEmbeddings:
+    def test_generate_embeddings_success(self, client, mock_paper_service):
+        mock_paper_service.generate_embeddings = AsyncMock(return_value={
+            "success": True,
+            "generated_count": 100,
+            "skipped_count": 50,
+            "error_count": 0,
+        })
+        
+        response = client.post("/arxiv/embeddings/generate", json={
+            "batch_size": 100,
+        })
+        
+        assert response.status_code == 200
+        assert response.json()["success"] is True
+        assert response.json()["generated_count"] == 100
+
+    def test_generate_embeddings_with_date(self, client, mock_paper_service):
+        mock_paper_service.generate_embeddings = AsyncMock(return_value={
+            "success": True,
+            "generated_count": 25,
+            "skipped_count": 0,
+            "error_count": 0,
+        })
+        
+        response = client.post("/arxiv/embeddings/generate", json={
+            "date": "2024-01-15",
+            "batch_size": 100,
+        })
+        
+        assert response.status_code == 200
+        call_kwargs = mock_paper_service.generate_embeddings.call_args[1]
+        assert call_kwargs["date"] == "2024-01-15"
+
+    def test_generate_embeddings_with_date_range(self, client, mock_paper_service):
+        mock_paper_service.generate_embeddings = AsyncMock(return_value={
+            "success": True,
+            "generated_count": 50,
+            "skipped_count": 0,
+            "error_count": 0,
+        })
+        
+        response = client.post("/arxiv/embeddings/generate", json={
+            "date_from": "2024-01-01",
+            "date_to": "2024-01-31",
+            "batch_size": 100,
+        })
+        
+        assert response.status_code == 200
+        call_kwargs = mock_paper_service.generate_embeddings.call_args[1]
+        assert call_kwargs["date_from"] == "2024-01-01"
+        assert call_kwargs["date_to"] == "2024-01-31"
+
+    def test_generate_embeddings_force(self, client, mock_paper_service):
+        mock_paper_service.generate_embeddings = AsyncMock(return_value={
+            "success": True,
+            "generated_count": 150,
+            "skipped_count": 0,
+            "error_count": 0,
+        })
+        
+        response = client.post("/arxiv/embeddings/generate", json={
+            "force": True,
+            "batch_size": 100,
+        })
+        
+        assert response.status_code == 200
+        call_kwargs = mock_paper_service.generate_embeddings.call_args[1]
+        assert call_kwargs["force"] is True
+
+    def test_generate_embeddings_no_papers(self, client, mock_paper_service):
+        mock_paper_service.generate_embeddings = AsyncMock(return_value={
+            "success": True,
+            "generated_count": 0,
+            "skipped_count": 0,
+            "error_count": 0,
+        })
+        
+        response = client.post("/arxiv/embeddings/generate", json={
+            "batch_size": 100,
+        })
+        
+        assert response.status_code == 200
+        assert response.json()["generated_count"] == 0
+
+    def test_generate_embeddings_error(self, client, mock_paper_service):
+        mock_paper_service.generate_embeddings = AsyncMock(return_value={
+            "success": False,
+            "generated_count": 0,
+            "skipped_count": 0,
+            "error_count": 1,
+            "error": "Embedding service unavailable",
+        })
+        
+        response = client.post("/arxiv/embeddings/generate", json={
+            "batch_size": 100,
+        })
+        
+        assert response.status_code == 200
+        assert response.json()["success"] is False
+
+    def test_generate_embeddings_validation_batch_size(self, client, mock_paper_service):
+        response = client.post("/arxiv/embeddings/generate", json={
+            "batch_size": 5,
+        })
+        assert response.status_code == 422
+
+    def test_generate_embeddings_validation_batch_size_max(self, client, mock_paper_service):
+        response = client.post("/arxiv/embeddings/generate", json={
+            "batch_size": 501,
+        })
+        assert response.status_code == 422

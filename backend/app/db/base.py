@@ -140,3 +140,99 @@ class PaperRepository(BaseRepository):
     def get_total_paper_count(self) -> int:
         """Get total count of papers."""
         pass
+
+    @abstractmethod
+    def get_all_paper_ids(self) -> List[str]:
+        """Get all paper IDs."""
+        pass
+
+    @abstractmethod
+    def get_papers_by_ids(self, paper_ids: List[str]) -> List[Dict[str, Any]]:
+        """Get papers by a list of IDs."""
+        pass
+
+    @abstractmethod
+    def get_paper_ids_by_date_range(
+        self,
+        date: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+    ) -> List[str]:
+        """Get paper IDs filtered by date or date range."""
+        pass
+
+    @abstractmethod
+    def get_paper_ids_by_filters(
+        self,
+        category: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        limit: int = 1000,
+    ) -> List[str]:
+        """Get paper IDs filtered by category and/or date range."""
+        pass
+
+
+class PaperEmbeddingRepository(ABC):
+    """Abstract repository for paper embeddings."""
+
+    @abstractmethod
+    def insert_embedding(
+        self, 
+        paper_id: str, 
+        embedding: List[float], 
+        model_name: str
+    ) -> Dict[str, Any]:
+        """Insert a single paper embedding."""
+        pass
+
+    @abstractmethod
+    def insert_embeddings_batch(
+        self, 
+        embeddings_data: List[Dict[str, Any]]
+    ) -> int:
+        """Insert multiple paper embeddings."""
+        pass
+
+    @abstractmethod
+    def get_embedding(self, paper_id: str) -> Optional[Dict[str, Any]]:
+        """Get embedding for a single paper."""
+        pass
+
+    @abstractmethod
+    def get_embeddings_batch(self, paper_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+        """Get embeddings for multiple papers."""
+        pass
+
+    @abstractmethod
+    def search_similar(
+        self, 
+        query_embedding: List[float], 
+        top_k: int = 10,
+        paper_ids: Optional[List[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Search for similar papers by embedding."""
+        pass
+
+    @abstractmethod
+    def delete_embedding(self, paper_id: str) -> bool:
+        """Delete embedding for a paper."""
+        pass
+
+    @abstractmethod
+    def delete_embeddings_batch(self, paper_ids: List[str]) -> int:
+        """Delete embeddings for multiple papers."""
+        pass
+
+    @abstractmethod
+    def count_embeddings(self) -> int:
+        """Get total number of embeddings."""
+        pass
+
+    @abstractmethod
+    def get_paper_ids_without_embeddings(
+        self, 
+        all_paper_ids: List[str]
+    ) -> List[str]:
+        """Get paper IDs that don't have embeddings yet."""
+        pass

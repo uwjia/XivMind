@@ -271,6 +271,92 @@ class SQLitePaperRepository(PaperRepository):
             cursor.execute('SELECT COUNT(*) FROM papers')
             return cursor.fetchone()[0]
 
+    def get_all_paper_ids(self) -> List[str]:
+        """Get all paper IDs."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id FROM papers')
+            return [row["id"] for row in cursor.fetchall()]
+
+    def get_papers_by_ids(self, paper_ids: List[str]) -> List[Dict[str, Any]]:
+        """Get papers by a list of IDs."""
+        if not paper_ids:
+            return []
+        
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            placeholders = ", ".join(["?"] * len(paper_ids))
+            cursor.execute(f'SELECT * FROM papers WHERE id IN ({placeholders})', paper_ids)
+            return [self._row_to_response(row) for row in cursor.fetchall()]
+
+    def get_paper_ids_by_date_range(
+        self,
+        date: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+    ) -> List[str]:
+        """Get paper IDs filtered by date or date range."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            
+            if date:
+                cursor.execute(
+                    'SELECT id FROM papers WHERE date(published) = ?',
+                    (date,)
+                )
+            elif date_from and date_to:
+                cursor.execute(
+                    'SELECT id FROM papers WHERE date(published) >= ? AND date(published) <= ?',
+                    (date_from, date_to)
+                )
+            elif date_from:
+                cursor.execute(
+                    'SELECT id FROM papers WHERE date(published) >= ?',
+                    (date_from,)
+                )
+            elif date_to:
+                cursor.execute(
+                    'SELECT id FROM papers WHERE date(published) <= ?',
+                    (date_to,)
+                )
+            else:
+                cursor.execute('SELECT id FROM papers')
+            
+            return [row["id"] for row in cursor.fetchall()]
+
+    def get_paper_ids_by_filters(
+        self,
+        category: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        limit: int = 1000,
+    ) -> List[str]:
+        """Get paper IDs filtered by category and/or date range."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            
+            conditions = []
+            params = []
+            
+            if category:
+                conditions.append('categories LIKE ?')
+                params.append(f'%"{category}"%')
+            
+            if date_from:
+                conditions.append('date(published) >= ?')
+                params.append(date_from)
+            
+            if date_to:
+                conditions.append('date(published) <= ?')
+                params.append(date_to)
+            
+            where_clause = " AND ".join(conditions) if conditions else "1=1"
+            query = f'SELECT id FROM papers WHERE {where_clause} LIMIT ?'
+            params.append(limit)
+            
+            cursor.execute(query, params)
+            return [row["id"] for row in cursor.fetchall()]
+
     def add(self, data: Dict[str, Any]) -> Dict[str, Any]:
         self.insert_paper(data)
         return self.get_paper_by_id(self._safe_str(data.get("id")))

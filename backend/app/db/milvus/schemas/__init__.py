@@ -3,6 +3,7 @@ from .bookmarks import BookmarkSchema
 from .downloads import DownloadSchema
 from .papers import PaperSchema
 from .date_index import DateIndexSchema
+from .paper_embeddings import PaperEmbeddingSchema
 from .registry import SchemaRegistry
 
 __all__ = [
@@ -11,5 +12,6 @@ __all__ = [
     "DownloadSchema",
     "PaperSchema",
     "DateIndexSchema",
+    "PaperEmbeddingSchema",
     "SchemaRegistry",
 ]

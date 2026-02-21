@@ -1,8 +1,11 @@
 from app.db.base import PaperRepository
 from app.db.milvus.client import milvus_client, Collection
+from app.config import get_settings
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 import json
+
+settings = get_settings()
 
 
 class MilvusPaperRepository(PaperRepository):
@@ -68,15 +71,17 @@ class MilvusPaperRepository(PaperRepository):
     def get_all(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
         collection = self._get_papers_collection()
         collection.load()
-        all_results = collection.query(
+        total = collection.num_entities
+        
+        results = collection.query(
             expr='id != ""',
             output_fields=["id", "title", "abstract", "authors", "primary_category",
                           "categories", "published", "updated", "pdf_url", "abs_url",
                           "comment", "journal_ref", "doi", "fetched_at"],
+            limit=offset + limit,
         )
-        total = len(all_results)
         sorted_results = sorted(
-            all_results,
+            results,
             key=lambda x: x.get("published", ""),
             reverse=True
         )
@@ -128,11 +133,18 @@ class MilvusPaperRepository(PaperRepository):
         collection.load()
         now = datetime.utcnow().isoformat()
 
-        existing_results = collection.query(
-            expr='id != ""',
-            output_fields=["id"],
-        )
-        existing_ids = {r.get("id") for r in existing_results}
+        paper_ids_to_insert = [self._safe_str(p.get("id"), 128) for p in papers]
+        
+        existing_ids = set()
+        batch_size = settings.MILVUS_QUERY_BATCH_SIZE
+        for i in range(0, len(paper_ids_to_insert), batch_size):
+            batch = paper_ids_to_insert[i:i + batch_size]
+            ids_str = ", ".join([f'"{pid}"' for pid in batch])
+            results = collection.query(
+                expr=f'id in [{ids_str}]',
+                output_fields=["id"],
+            )
+            existing_ids.update(r.get("id") for r in results)
 
         ids = []
         titles = []
@@ -224,32 +236,23 @@ class MilvusPaperRepository(PaperRepository):
         collection = self._get_papers_collection()
         collection.load()
 
-        all_results = collection.query(
-            expr='id != ""',
+        next_date = self._get_next_date(date)
+        base_expr = f'published >= "{date}" && published < "{next_date}"'
+        
+        if category:
+            expr = f'{base_expr} && categories like "%\\"{category}\\"%"'
+        else:
+            expr = base_expr
+
+        results = collection.query(
+            expr=expr,
             output_fields=["id", "title", "abstract", "authors", "primary_category",
                           "categories", "published", "updated", "pdf_url", "abs_url",
                           "comment", "journal_ref", "doi", "fetched_at"],
         )
 
-        filtered = []
-        for r in all_results:
-            published = r.get("published", "")
-            if not published.startswith(date):
-                continue
-
-            if category:
-                categories_str = r.get("categories", "[]")
-                try:
-                    categories = json.loads(categories_str)
-                    if category not in categories:
-                        continue
-                except json.JSONDecodeError:
-                    continue
-
-            filtered.append(r)
-
         sorted_results = sorted(
-            filtered,
+            results,
             key=lambda x: x.get("published", ""),
             reverse=True
         )
@@ -280,19 +283,17 @@ class MilvusPaperRepository(PaperRepository):
     def delete_all_date_index(self) -> None:
         collection = self._get_date_index_collection()
         collection.load()
-        all_results = collection.query(
-            expr='date != ""',
-            output_fields=["date"],
-        )
-        for r in all_results:
-            collection.delete(f'date == "{r.get("date")}"')
+        collection.delete('date != ""')
+        collection.flush()
 
     def get_all_date_indexes(self) -> List[Dict[str, Any]]:
         collection = self._get_date_index_collection()
         collection.load()
+        total = collection.num_entities
         results = collection.query(
             expr='date != ""',
             output_fields=["date", "total_count", "fetched_at"],
+            limit=total,
         )
         sorted_results = sorted(
             results,
@@ -304,8 +305,119 @@ class MilvusPaperRepository(PaperRepository):
     def get_total_paper_count(self) -> int:
         collection = self._get_papers_collection()
         collection.load()
+        return collection.num_entities
+
+    def get_all_paper_ids(self) -> List[str]:
+        """Get all paper IDs."""
+        collection = self._get_papers_collection()
+        collection.load()
+        total = collection.num_entities
         results = collection.query(
             expr='id != ""',
             output_fields=["id"],
+            limit=total,
         )
-        return len(results)
+        return [r.get("id") for r in results if r.get("id")]
+
+    def get_papers_by_ids(self, paper_ids: List[str]) -> List[Dict[str, Any]]:
+        """Get papers by a list of IDs."""
+        if not paper_ids:
+            return []
+        
+        collection = self._get_papers_collection()
+        collection.load()
+        
+        all_results = []
+        batch_size = settings.MILVUS_QUERY_BATCH_SIZE
+        
+        for i in range(0, len(paper_ids), batch_size):
+            batch = paper_ids[i:i + batch_size]
+            ids_str = ", ".join([f'"{pid}"' for pid in batch])
+            results = collection.query(
+                expr=f'id in [{ids_str}]',
+                output_fields=["id", "title", "abstract", "authors", "primary_category",
+                              "categories", "published", "updated", "pdf_url", "abs_url",
+                              "comment", "journal_ref", "doi", "fetched_at"],
+            )
+            all_results.extend(results)
+        
+        return [self._entity_to_response(r) for r in all_results]
+
+    def get_paper_ids_by_date_range(
+        self,
+        date: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+    ) -> List[str]:
+        """Get paper IDs filtered by date or date range."""
+        collection = self._get_papers_collection()
+        collection.load()
+        
+        if date:
+            next_date = self._get_next_date(date)
+            expr = f'published >= "{date}" && published < "{next_date}"'
+        elif date_from and date_to:
+            expr = f'published >= "{date_from}" && published <= "{date_to}"'
+        elif date_from:
+            expr = f'published >= "{date_from}"'
+        elif date_to:
+            expr = f'published <= "{date_to}"'
+        else:
+            expr = 'id != ""'
+        
+        results = collection.query(
+            expr=expr,
+            output_fields=["id"],
+            limit=settings.MILVUS_QUERY_BATCH_SIZE,
+        )
+        
+        return [r.get("id") for r in results if r.get("id")]
+
+    def get_paper_ids_by_filters(
+        self,
+        category: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        limit: int = settings.MILVUS_QUERY_BATCH_SIZE,
+    ) -> List[str]:
+        """Get paper IDs filtered by category and/or date range.
+        
+        This method pushes filtering to the database level for better performance.
+        """
+        collection = self._get_papers_collection()
+        collection.load()
+        
+        conditions = []
+        
+        if category:
+            conditions.append(f'categories like "%\\"{category}\\"%"')
+        
+        if date_from and date_to:
+            conditions.append(f'published >= "{date_from}" && published <= "{date_to}"')
+        elif date_from:
+            conditions.append(f'published >= "{date_from}"')
+        elif date_to:
+            conditions.append(f'published <= "{date_to}"')
+        
+        if conditions:
+            expr = " && ".join(conditions)
+        else:
+            expr = 'id != ""'
+        
+        results = collection.query(
+            expr=expr,
+            output_fields=["id"],
+            limit=limit,
+        )
+        
+        return [r.get("id") for r in results if r.get("id")]
+
+    def _get_next_date(self, date: str) -> str:
+        """Get the next date for range query."""
+        from datetime import datetime, timedelta
+        try:
+            dt = datetime.strptime(date, "%Y-%m-%d")
+            next_dt = dt + timedelta(days=1)
+            return next_dt.strftime("%Y-%m-%d")
+        except ValueError:
+            return date

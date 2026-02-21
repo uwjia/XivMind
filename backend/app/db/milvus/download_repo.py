@@ -1,9 +1,11 @@
 from app.db.base import DownloadRepository
 from app.db.milvus.client import milvus_client, Collection
+from app.config import get_settings
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 import uuid
 
+settings = get_settings()
 
 class MilvusDownloadRepository(DownloadRepository):
     def __init__(self):
@@ -94,13 +96,14 @@ class MilvusDownloadRepository(DownloadRepository):
     def get_all(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
         collection = self._get_collection()
         collection.load()
-        all_results = collection.query(
+        total = collection.num_entities
+        results = collection.query(
             expr='id != ""',
             output_fields=["*"],
+            limit=offset + limit,
         )
-        total = len(all_results)
         sorted_results = sorted(
-            all_results,
+            results,
             key=lambda x: x.get("created_at", ""),
             reverse=True
         )
@@ -187,6 +190,7 @@ class MilvusDownloadRepository(DownloadRepository):
         results = collection.query(
             expr='status == "downloading" or status == "pending"',
             output_fields=["*"],
+            limit=settings.MILVUS_QUERY_BATCH_SIZE,
         )
         
         if not results:

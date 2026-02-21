@@ -122,6 +122,29 @@
               </button>
               <button
                 v-if="day.stored"
+                class="action-btn embedding"
+                :class="{ 'loading': generatingEmbeddingDates.has(day.date || '') }"
+                :disabled="generatingEmbeddingDates.has(day.date || '')"
+                :title="generatingEmbeddingDates.has(day.date || '') ? 'Generating...' : 'Generate embeddings for this date'"
+                @click.stop="day.date && generateEmbedding(day.date)"
+              >
+                <svg v-if="!generatingEmbeddingDates.has(day.date || '')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="6" cy="6" r="2"/>
+                  <circle cx="18" cy="6" r="2"/>
+                  <circle cx="6" cy="18" r="2"/>
+                  <circle cx="18" cy="18" r="2"/>
+                  <circle cx="12" cy="12" r="2.5"/>
+                  <line x1="7.5" y1="7.5" x2="10" y2="10"/>
+                  <line x1="13.5" y1="7.5" x2="14" y2="10"/>
+                  <line x1="7.5" y1="16.5" x2="10" y2="14"/>
+                  <line x1="13.5" y1="16.5" x2="14" y2="14"/>
+                </svg>
+                <svg v-else class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg>
+              </button>
+              <button
+                v-if="day.stored"
                 class="action-btn view"
                 title="View papers for this date"
                 @click.stop="day.date && $emit('viewPapers', day.date)"
@@ -141,6 +164,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { arxivBackendAPI } from '../services/arxivBackend'
 
 interface DayInfo {
   date: string | null
@@ -167,6 +191,7 @@ const emit = defineEmits<{
 }>()
 
 const selectedDate = ref<string | null>(null)
+const generatingEmbeddingDates = ref<Set<string>>(new Set())
 
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const monthNames = [
@@ -249,6 +274,26 @@ function handleDayClick(day: DayInfo) {
 
 function fetchDate(date: string) {
   emit('fetchDate', date)
+}
+
+async function generateEmbedding(date: string) {
+  if (generatingEmbeddingDates.value.has(date)) return
+  
+  generatingEmbeddingDates.value.add(date)
+  
+  try {
+    const result = await arxivBackendAPI.generateEmbeddings({ date })
+    
+    if (result.success) {
+      console.log(`Generated ${result.generated_count} embeddings for ${date}`)
+    } else {
+      console.error(`Failed to generate embeddings: ${result.error}`)
+    }
+  } catch (error) {
+    console.error('Error generating embeddings:', error)
+  } finally {
+    generatingEmbeddingDates.value.delete(date)
+  }
 }
 </script>
 
@@ -558,6 +603,25 @@ function fetchDate(date: string) {
 .action-btn.view:hover {
   background: var(--accent-color);
   color: white;
+}
+
+.action-btn.embedding {
+  background: rgba(250, 112, 154, 0.1);
+  color: var(--warning-color);
+}
+
+.action-btn.embedding:hover:not(:disabled) {
+  background: rgba(250, 112, 154, 0.2);
+  transform: scale(1.1);
+}
+
+.action-btn.embedding:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-btn.embedding.loading svg {
+  animation: spin 1s linear infinite;
 }
 
 @media (max-width: 900px) {

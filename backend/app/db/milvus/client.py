@@ -73,14 +73,12 @@ class MilvusClient:
             executor.shutdown(wait=False)
 
         db_name = self.settings.DATABASE_NAME
-        try:
+        existing_databases = db.list_database()
+        if db_name not in existing_databases:
             db.create_database(db_name)
             logger.info(f"Created database: {db_name}")
-        except MilvusException as e:
-            if "already exist" in str(e):
-                logger.debug(f"Database '{db_name}' already exists, using existing database")
-            else:
-                raise
+        else:
+            logger.debug(f"Database '{db_name}' already exists, using existing database")
         db.using_database(db_name)
         return True
 
@@ -94,7 +92,11 @@ class MilvusClient:
             if utility.has_collection(version_collection_name):
                 version_collection = Collection(version_collection_name)
                 version_collection.load()
-                results = version_collection.query(expr='id == "version"', output_fields=["version"])
+                results = version_collection.query(
+                    expr='id == "version"', 
+                    output_fields=["version"],
+                    limit=1
+                )
                 if results:
                     version = int(results[0].get("version", 0))
                     logger.info(f"Schema version for {collection_name}: v{version}")
@@ -139,20 +141,41 @@ class MilvusClient:
         
         current_version = self._get_schema_version(collection_name)
         
+        need_recreate = False
+        
         if current_version == 0 and utility.has_collection(collection_name):
-            current_version = schema.schema_version
-            self._set_schema_version(collection_name, schema.schema_version)
-            logger.info(f"Existing {collection_name} collection found, setting schema version")
+            existing_collection = Collection(collection_name)
+            for field in existing_collection.schema.fields:
+                if field.name == "embedding" and field.dtype == DataType.FLOAT_VECTOR:
+                    existing_dim = field.params.get("dim", 0)
+                    if existing_dim != schema.embedding_dim:
+                        logger.info(
+                            f"Dimension mismatch for {collection_name}: "
+                            f"existing={existing_dim}, expected={schema.embedding_dim}, "
+                            f"will recreate collection"
+                        )
+                        need_recreate = True
+                    break
+            if not need_recreate:
+                current_version = schema.schema_version
+                self._set_schema_version(collection_name, schema.schema_version)
+                logger.info(f"Existing {collection_name} collection found, setting schema version")
         elif current_version > 0 and current_version < schema.schema_version:
-            if utility.has_collection(collection_name):
-                logger.info(
-                    f"Upgrading {collection_name} schema from v{current_version} "
-                    f"to v{schema.schema_version}, dropping old collection..."
-                )
-                utility.drop_collection(collection_name)
+            need_recreate = True
+            logger.info(
+                f"Upgrading {collection_name} schema from v{current_version} "
+                f"to v{schema.schema_version}, will recreate collection..."
+            )
+        
+        if need_recreate and utility.has_collection(collection_name):
+            logger.info(f"Dropping old {collection_name} collection...")
+            utility.drop_collection(collection_name)
+            version_collection_name = schema.get_schema_version_collection_name()
+            if utility.has_collection(version_collection_name):
+                utility.drop_collection(version_collection_name)
 
         if not utility.has_collection(collection_name):
-            logger.info(f"Creating {collection_name} collection...")
+            logger.info(f"Creating {collection_name} collection with dim={schema.embedding_dim}...")
             collection_schema = schema.get_collection_schema()
             collection = Collection(name=collection_name, schema=collection_schema)
             collection.create_index(field_name="embedding", index_params=schema.get_index_params())
