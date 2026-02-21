@@ -10,6 +10,9 @@ aiofiles>=23.2.1
 openai>=1.0.0
 tqdm>=4.65.0
 
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch>=2.0.0
+
 sentence-transformers>=2.2.0
 
 pytest==8.0.0
