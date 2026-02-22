@@ -137,7 +137,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
 import MarkdownItKatex from 'markdown-it-katex'
@@ -158,7 +158,8 @@ const router = useRouter()
 const bookmarkStore = useBookmarkStore()
 const downloadStore = useDownloadStore()
 const toastStore = useToastStore()
-const isBookmarked = ref(false)
+
+const isBookmarked = computed(() => bookmarkStore.isBookmarked(props.paper?.id || ''))
 
 const downloadStatus = computed(() => {
   if (!props.paper?.id) return 'none'
@@ -342,7 +343,6 @@ const toggleBookmark = async () => {
       published: props.paper.published?.toString(),
       updated: props.paper.updated?.toString(),
     })
-    isBookmarked.value = result
     toastStore.showSuccess(result ? 'Added to bookmarks' : 'Removed from bookmarks')
   } catch (error) {
     console.error('Failed to toggle bookmark:', error)
@@ -352,7 +352,7 @@ const toggleBookmark = async () => {
 
 onMounted(async () => {
   if (props.paper?.id) {
-    isBookmarked.value = await bookmarkStore.checkBookmark(props.paper.id)
+    await bookmarkStore.checkBookmark(props.paper.id)
   }
   if (downloadStore.tasks.length === 0) {
     await downloadStore.fetchTasks()

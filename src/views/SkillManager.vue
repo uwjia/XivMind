@@ -4,7 +4,7 @@
       <h1>Skills Management</h1>
       <p class="subtitle">Manage and execute dynamic skills</p>
       <div class="header-actions">
-        <button @click="reloadAllSkills" class="reload-btn" :disabled="isReloading">
+        <button @click="reloadAllSkillsHandler" class="reload-btn" :disabled="isReloading">
           <svg v-if="isReloading" class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32"/>
           </svg>
@@ -55,13 +55,13 @@
         :show-actions="true"
         :selected="selectedSkill?.id === skill.id"
         @select="showSkillDetail"
-        @execute="executeSkill"
+        @execute="selectSkill"
         @edit="editSkill"
-        @reload="reloadSkill"
+        @reload="reloadSkillHandler"
       />
     </div>
     
-    <div v-if="showDetailModal && detailSkill" class="modal-overlay" @click="closeDetailModal">
+    <div v-if="isModalOpen('detail') && detailSkill" class="modal-overlay" @click="closeDetailModal">
       <div class="modal-content detail-modal" @click.stop>
         <div class="modal-header">
           <div class="detail-header">
@@ -134,23 +134,23 @@
       <button @click="notification = null" class="close-btn">×</button>
     </div>
     
-    <div v-if="showExecuteModal" class="modal-overlay" @click.self="isExecuting ? null : closeExecuteModal">
+    <div v-if="isModalOpen('execute')" class="modal-overlay" @click.self="executing ? null : closeExecuteModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h3>{{ selectedSkill?.name }}</h3>
-          <button @click="closeExecuteModal" class="close-btn" :disabled="isExecuting">×</button>
+          <button @click="closeExecuteModal" class="close-btn" :disabled="executing">×</button>
         </div>
         <SkillForm
           v-if="selectedSkill"
           :skill="selectedSkill"
-          :is-executing="isExecuting"
+          :is-executing="executing"
           @submit="handleExecute"
           @cancel="closeExecuteModal"
         />
       </div>
     </div>
     
-    <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
+    <div v-if="isModalOpen('edit')" class="modal-overlay" @click="closeEditModal">
       <div class="modal-content editor-modal" @click.stop>
         <div class="modal-header">
           <h3>Edit: {{ editingSkill?.id }}</h3>
@@ -176,31 +176,33 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { skillsAPI } from '../services/skills'
 import SkillCard from '../components/skills/SkillCard.vue'
 import SkillForm from '../components/skills/SkillForm.vue'
 import type { Skill } from '../types/skill'
-import { useLLMStore } from '../stores/llm-store'
+import { useSkills } from '../composables/useSkills'
+import { useModals } from '../composables/useModal'
 
-const llmStore = useLLMStore()
+const { 
+  loading, 
+  executing, 
+  loadSkills, 
+  executeSkill, 
+  reloadSkill, 
+  reloadAllSkills,
+  getSkillsByCategory
+} = useSkills()
 
-const skills = ref<Skill[]>([])
-const loading = ref(true)
+const { open: openModal, close: closeModal, isOpen: isModalOpen } = useModals(['execute', 'edit', 'detail'] as const)
+
 const isReloading = ref(false)
 const isSaving = ref(false)
 const activeFilter = ref('all')
 const notification = ref<{ type: string; message: string } | null>(null)
 
 const selectedSkill = ref<Skill | null>(null)
-const showExecuteModal = ref(false)
-const isExecuting = ref(false)
-
 const detailSkill = ref<Skill | null>(null)
-const showDetailModal = ref(false)
-
 const editingSkill = ref<Skill | null>(null)
 const editingContent = ref('')
-const showEditModal = ref(false)
 
 const showNotification = (type: string, message: string) => {
   notification.value = { type, message }
@@ -219,45 +221,23 @@ const categories = [
 ]
 
 const filteredSkills = computed(() => {
-  if (activeFilter.value === 'all') return skills.value
-  if (activeFilter.value === 'dynamic') {
-    return skills.value.filter(s => s.source === 'dynamic')
-  }
-  if (activeFilter.value === 'builtin') {
-    return skills.value.filter(s => s.source !== 'dynamic')
-  }
-  return skills.value.filter(s => s.category === activeFilter.value)
+  return getSkillsByCategory(activeFilter.value)
 })
 
 const getSkillCount = (filter: string) => {
-  if (filter === 'all') return skills.value.length
-  if (filter === 'dynamic') {
-    return skills.value.filter(s => s.source === 'dynamic').length
-  }
-  if (filter === 'builtin') {
-    return skills.value.filter(s => s.source !== 'dynamic').length
-  }
-  return skills.value.filter(s => s.category === filter).length
+  const filtered = getSkillsByCategory(filter)
+  return filtered.length
 }
 
-const loadSkills = async () => {
-  loading.value = true
-  try {
-    const result = await skillsAPI.getSkills()
-    skills.value = result.skills || []
-  } catch (error) {
-    showNotification('error', 'Failed to load skills')
-  } finally {
-    loading.value = false
-  }
-}
-
-const reloadAllSkills = async () => {
+const reloadAllSkillsHandler = async () => {
   isReloading.value = true
   try {
-    const result = await skillsAPI.reloadSkills()
-    showNotification('success', `Reloaded ${result.loaded} skills`)
-    await loadSkills()
+    const result = await reloadAllSkills()
+    if (result.loaded > 0) {
+      showNotification('success', `Reloaded ${result.loaded} skills`)
+    } else {
+      showNotification('error', result.message || 'Failed to reload skills')
+    }
   } catch (error) {
     showNotification('error', 'Failed to reload skills')
   } finally {
@@ -265,18 +245,18 @@ const reloadAllSkills = async () => {
   }
 }
 
-const executeSkill = (skill: Skill) => {
+const selectSkill = (skill: Skill) => {
   selectedSkill.value = skill
-  showExecuteModal.value = true
+  openModal('execute')
 }
 
 const showSkillDetail = (skill: Skill) => {
   detailSkill.value = skill
-  showDetailModal.value = true
+  openModal('detail')
 }
 
 const closeDetailModal = () => {
-  showDetailModal.value = false
+  closeModal('detail')
   detailSkill.value = null
 }
 
@@ -284,36 +264,32 @@ const executeFromDetail = () => {
   if (!detailSkill.value) return
   selectedSkill.value = detailSkill.value
   closeDetailModal()
-  showExecuteModal.value = true
+  openModal('execute')
 }
 
 const closeExecuteModal = () => {
-  showExecuteModal.value = false
+  closeModal('execute')
   selectedSkill.value = null
 }
 
 const handleExecute = async (paperIds: string[], params: Record<string, unknown>) => {
   if (!selectedSkill.value) return
   
-  isExecuting.value = true
   try {
-    const result = await skillsAPI.executeSkill(
-      selectedSkill.value.id,
+    const result = await executeSkill({
+      skillId: selectedSkill.value.id,
       paperIds,
-      params,
-      llmStore.selectedProvider || undefined,
-      llmStore.selectedModel || undefined
-    )
+      params
+    })
     
-    if (result.success) {
+    if (result && result.success) {
       showNotification('success', `Skill "${selectedSkill.value.name}" executed successfully`)
     } else {
-      showNotification('error', result.error || 'Execution failed')
+      showNotification('error', result?.error || 'Execution failed')
     }
   } catch (error) {
     showNotification('error', 'Failed to execute skill')
   } finally {
-    isExecuting.value = false
     closeExecuteModal()
   }
 }
@@ -322,16 +298,17 @@ const editSkill = async (skill: Skill) => {
   editingSkill.value = skill
   
   try {
+    const { skillsAPI } = await import('../services/skills')
     const result = await skillsAPI.getSkillRaw(skill.id)
     editingContent.value = result.content
-    showEditModal.value = true
+    openModal('edit')
   } catch (error) {
     showNotification('error', 'Failed to load skill content')
   }
 }
 
 const closeEditModal = () => {
-  showEditModal.value = false
+  closeModal('edit')
   editingSkill.value = null
   editingContent.value = ''
 }
@@ -341,6 +318,7 @@ const saveSkill = async () => {
   
   isSaving.value = true
   try {
+    const { skillsAPI } = await import('../services/skills')
     const result = await skillsAPI.saveSkill(editingSkill.value.id, editingContent.value)
     if (result.success) {
       showNotification('success', 'Skill saved and reloaded')
@@ -356,12 +334,11 @@ const saveSkill = async () => {
   }
 }
 
-const reloadSkill = async (skill: Skill) => {
+const reloadSkillHandler = async (skill: Skill) => {
   try {
-    const result = await skillsAPI.reloadSkill(skill.id)
+    const result = await reloadSkill(skill.id)
     if (result.success) {
       showNotification('success', `Skill ${skill.id} reloaded`)
-      await loadSkills()
     } else {
       showNotification('error', result.message || 'Failed to reload')
     }

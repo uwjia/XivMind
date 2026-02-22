@@ -39,7 +39,7 @@
 
     <div class="chat-container">
       <div class="messages" ref="messagesContainer">
-        <div v-if="messages.length === 0" class="empty-state">
+        <div v-if="currentModeMessages.length === 0" class="empty-state">
           <div class="empty-icon">
             <svg v-if="mode === 'search'" viewBox="0 0 24 24" fill="none" stroke="#10B981">
               <circle cx="11" cy="11" r="8"/>
@@ -126,7 +126,7 @@
           </div>
         </div>
 
-        <div v-for="(message, index) in messages" :key="index" class="message" :class="message.role" :ref="el => setMessageRef(el, index)">
+        <div v-for="(message, index) in currentModeMessages" :key="index" class="message" :class="message.role" :ref="el => setMessageRef(el, index)">
           <div class="message-avatar">
             <svg v-if="message.role === 'user'" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -277,9 +277,10 @@
 import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { arxivBackendAPI } from '../services/arxivBackend'
-import { skillsAPI } from '../services/skills'
 import type { Skill, RelatedPaper } from '../services/skills'
 import { useLLMStore } from '../stores/llm-store'
+import { useSkills } from '../composables/useSkills'
+import { useConfigError } from '../composables/useConfigError'
 import SkillForm from '../components/skills/SkillForm.vue'
 
 interface Paper {
@@ -318,30 +319,14 @@ interface Message {
 const router = useRouter()
 const llmStore = useLLMStore()
 
-const isConfigError = (errorMsg: string): boolean => {
-  const configErrorPatterns = [
-    /api[_-]?key/i,
-    /not configured/i,
-    /missing.*key/i,
-    /key is required/i,
-    /authentication/i,
-    /unauthorized/i,
-    /invalid.*key/i,
-    /no provider/i,
-    /provider not available/i,
-    /400 bad request/i,
-    /401/i,
-    /403 forbidden/i,
-    /connection refused/i,
-    /localhost.*11434/i,
-    /ollama/i,
-    /ECONNREFUSED/i,
-    /network error/i,
-    /failed to fetch/i,
-    /request failed/i
-  ]
-  return configErrorPatterns.some(pattern => pattern.test(errorMsg))
-}
+const { 
+  skills, 
+  loading: skillsLoading, 
+  loadSkills, 
+  executeSkill: executeSkillApi 
+} = useSkills()
+
+const { isConfigError } = useConfigError()
 
 const mode = ref<'search' | 'ask' | 'skills'>('search')
 const searchMessages = ref<Message[]>([])
@@ -352,7 +337,7 @@ const isLoading = ref(false)
 const messagesContainer = ref<HTMLElement | null>(null)
 const inputRef = ref<HTMLTextAreaElement | null>(null)
 
-const messages = computed({
+const currentModeMessages = computed({
   get: () => {
     switch (mode.value) {
       case 'search': return searchMessages.value
@@ -370,8 +355,6 @@ const messages = computed({
   }
 })
 
-const skills = ref<Skill[]>([])
-const skillsLoading = ref(false)
 const selectedSkill = ref<Skill | null>(null)
 const skillExecuted = ref(false)
 const copiedMessageId = ref<string | null>(null)
@@ -423,13 +406,13 @@ const copyMessage = async (message: Message) => {
 }
 
 const retryMessage = async (message: Message) => {
-  const messageIndex = messages.value.findIndex(m => getMessageId(m) === getMessageId(message))
+  const messageIndex = currentModeMessages.value.findIndex(m => getMessageId(m) === getMessageId(message))
   if (messageIndex <= 0) return
   
-  const userMessage = messages.value[messageIndex - 1]
+  const userMessage = currentModeMessages.value[messageIndex - 1]
   if (userMessage.role !== 'user') return
   
-  messages.value = messages.value.slice(0, messageIndex)
+  currentModeMessages.value = currentModeMessages.value.slice(0, messageIndex)
   
   if (userMessage.skillId && userMessage.paperIds && userMessage.skillParams) {
     const skill = skills.value.find(s => s.id === userMessage.skillId)
@@ -461,23 +444,11 @@ watch(mode, (newMode) => {
   }
 })
 
-const loadSkills = async () => {
-  skillsLoading.value = true
-  try {
-    const result = await skillsAPI.getSkills()
-    skills.value = result.skills || []
-  } catch (error) {
-    console.error('Failed to load skills:', error)
-  } finally {
-    skillsLoading.value = false
-  }
-}
-
 const selectSkill = (skill: Skill) => {
   if (!skill.available) return
   selectedSkill.value = skill
   skillExecuted.value = false
-  messages.value = []
+  currentModeMessages.value = []
 }
 
 const handleSkillExecute = async (paperIds: string[], params: Record<string, unknown>) => {
@@ -485,8 +456,10 @@ const handleSkillExecute = async (paperIds: string[], params: Record<string, unk
   
   skillExecuted.value = true
   
+  const currentMessages = skillsMessages
+  
   const paperIdText = paperIds.length > 0 ? paperIds.join(', ') : 'No paper ID'
-  messages.value.push({ 
+  currentMessages.value.push({ 
     role: 'user', 
     content: `**${selectedSkill.value.name}** on: ${paperIdText}`,
     skillId: selectedSkill.value.id,
@@ -495,20 +468,18 @@ const handleSkillExecute = async (paperIds: string[], params: Record<string, unk
     skillParams: params
   })
   
-  currentUserMessageIndex.value = messages.value.length - 1
+  currentUserMessageIndex.value = currentMessages.value.length - 1
   scrollToBottom()
   isLoading.value = true
   
   try {
-    const result = await skillsAPI.executeSkill(
-      selectedSkill.value.id,
+    const result = await executeSkillApi({
+      skillId: selectedSkill.value.id,
       paperIds,
-      params,
-      llmStore.selectedProvider || undefined,
-      llmStore.selectedModel || undefined
-    )
+      params
+    })
     
-    if (result.success) {
+    if (result && result.success) {
       let responseContent = ''
       
       if (result.summary) {
@@ -531,18 +502,18 @@ const handleSkillExecute = async (paperIds: string[], params: Record<string, unk
         responseContent = JSON.stringify(result, null, 2)
       }
       
-      messages.value.push({
+      currentMessages.value.push({
         role: 'assistant',
         content: responseContent
       })
     } else {
-      messages.value.push({
+      currentMessages.value.push({
         role: 'assistant',
-        content: `Error: ${result.error || 'Failed to execute skill'}`
+        content: `Error: ${result?.error || 'Failed to execute skill'}`
       })
     }
   } catch (error) {
-    messages.value.push({
+    currentMessages.value.push({
       role: 'assistant',
       content: `Error: ${error instanceof Error ? error.message : 'Something went wrong'}`
     })
@@ -554,13 +525,13 @@ const handleSkillExecute = async (paperIds: string[], params: Record<string, unk
 
 const runSkillAgain = () => {
   skillExecuted.value = false
-  messages.value = []
+  currentModeMessages.value = []
 }
 
 const backToSkills = () => {
   selectedSkill.value = null
   skillExecuted.value = false
-  messages.value = []
+  currentModeMessages.value = []
 }
 
 const searchSuggestions = [
@@ -608,20 +579,25 @@ const sendMessage = async (isRetry: boolean = false) => {
   const message = inputMessage.value.trim()
   if (!message || isLoading.value) return
 
+  const currentMode = mode.value
+  const currentMessages = currentMode === 'search' ? searchMessages : 
+                          currentMode === 'ask' ? askMessages : 
+                          skillsMessages
+
   if (!isRetry) {
-    messages.value.push({ role: 'user', content: message })
+    currentMessages.value.push({ role: 'user', content: message })
   }
-  currentUserMessageIndex.value = messages.value.length - 1
+  currentUserMessageIndex.value = currentMessages.value.length - 1
   inputMessage.value = ''
   scrollToBottom()
 
   isLoading.value = true
   
   try {
-    if (mode.value === 'search') {
+    if (currentMode === 'search') {
       const result = await arxivBackendAPI.semanticSearch(message, 10)
       
-      messages.value.push({
+      currentMessages.value.push({
         role: 'assistant',
         content: '',
         papers: result.papers.map((p: any) => ({
@@ -646,13 +622,13 @@ const sendMessage = async (isRetry: boolean = false) => {
       
       if (result.error) {
         const configError = isConfigError(result.error)
-        messages.value.push({
+        currentMessages.value.push({
           role: 'assistant',
           content: `Error: ${result.error}`,
           isConfigError: configError
         })
       } else {
-        messages.value.push({
+        currentMessages.value.push({
           role: 'assistant',
           content: '',
           answer: result.answer,
@@ -665,7 +641,7 @@ const sendMessage = async (isRetry: boolean = false) => {
     console.error('Error:', error)
     const errorMsg = error instanceof Error ? error.message : 'Something went wrong'
     const configError = isConfigError(errorMsg)
-    messages.value.push({
+    currentMessages.value.push({
       role: 'assistant',
       content: `Error: ${errorMsg}`,
       isConfigError: configError

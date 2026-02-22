@@ -109,8 +109,8 @@
               </span>
             </div>
             <div class="paper-published-section">
-              <div class="paper-published">Published: {{ formatDate(bookmark.published) }}</div>
-              <div v-if="bookmark.updated && bookmark.updated !== bookmark.published" class="paper-updated">Updated: {{ formatDate(bookmark.updated) }}</div>
+              <div class="paper-published">Published: {{ formatShortDate(bookmark.published) }}</div>
+              <div v-if="bookmark.updated && bookmark.updated !== bookmark.published" class="paper-updated">Updated: {{ formatShortDate(bookmark.updated) }}</div>
             </div>
           </div>
           <div class="bookmark-actions">
@@ -137,7 +137,7 @@
                 <text x="8" y="16" font-size="6" fill="#F44336" font-weight="bold">PDF</text>
               </svg>
             </span>
-            <span class="stat-link download-btn" :class="getDownloadStatus(bookmark.paper_id)" @click="handleDownload(bookmark)" :title="getDownloadTitle(bookmark.paper_id)">
+            <span class="stat-link download-btn" :class="getDownloadStatus(bookmark.paper_id)" @click="handleDownloadClick(bookmark)" :title="getDownloadTitle(bookmark.paper_id)">
               <svg v-if="getDownloadStatus(bookmark.paper_id) === 'downloading'" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="#2196F3" stroke-width="2" fill="none"/>
                 <circle cx="12" cy="12" r="10" stroke="#64B5F6" stroke-width="2" fill="none" stroke-dasharray="62.83" :stroke-dashoffset="62.83 - (62.83 * getDownloadProgress(bookmark.paper_id) / 100)" style="transform: rotate(-90deg); transform-origin: center;"/>
@@ -197,24 +197,18 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import MarkdownIt from 'markdown-it'
-import MarkdownItKatex from 'markdown-it-katex'
-import 'katex/dist/katex.min.css'
 import { useBookmarkStore } from '../stores/bookmark-store'
 import { useDownloadStore } from '../stores/download-store'
 import { useToastStore } from '../stores/toast-store'
 import { getTagStyle, getCategoryFullName, getCategoryShortName, getCategoryColor, categories } from '../utils/categoryColors'
-import { apiService } from '../services/api'
 import CategoryTree from '../components/CategoryTree.vue'
+import { useMarkdown } from '../composables/useMarkdown'
+import { useDateFormatter } from '../composables/useDateFormatter'
+import { useDownloadHandler } from '../composables/useDownloadHandler'
 
-const md = new MarkdownIt({
-  html: true,
-  linkify: true,
-  typographer: true
-}).use(MarkdownItKatex, {
-  throwOnError: false,
-  displayMode: false
-})
+const { render, renderWithDefault } = useMarkdown()
+const { formatShortDate, formatDateTime } = useDateFormatter()
+    const { getStatus: getDownloadStatus, getProgress: getDownloadProgress, getStatusTitle: getDownloadTitle, handleDownload } = useDownloadHandler()
 
 const router = useRouter()
 const route = useRoute()
@@ -263,13 +257,11 @@ const handleCategorySelect = (categoryId: string | null) => {
 }
 
 const getRenderedAbstract = (abstract?: string) => {
-  if (!abstract) return '<p>No abstract available</p>'
-  return md.render(abstract)
+  return renderWithDefault(abstract, 'No abstract available')
 }
 
 const getRenderedComment = (comment?: string) => {
-  if (!comment) return ''
-  return md.render(comment)
+  return render(comment)
 }
 
 const getCategoryStyle = (category?: string) => {
@@ -281,31 +273,13 @@ const getCategoryStyle = (category?: string) => {
   }
 }
 
-const getDownloadStatus = (paperId: string) => {
-  const task = downloadStore.tasks.find(t => t.paper_id === paperId)
-  return task?.status || 'none'
-}
-
-const getDownloadProgress = (paperId: string) => {
-  const task = downloadStore.tasks.find(t => t.paper_id === paperId)
-  return task?.progress || 0
-}
-
-const getDownloadTitle = (paperId: string) => {
-  const status = getDownloadStatus(paperId)
-  const progress = getDownloadProgress(paperId)
-  switch (status) {
-    case 'downloading':
-      return `Downloading... ${progress}%`
-    case 'completed':
-      return 'Download completed'
-    case 'failed':
-      return 'Download failed - click to retry'
-    case 'pending':
-      return 'Download pending...'
-    default:
-      return 'Download PDF'
-  }
+const handleDownloadClick = async (bookmark: any) => {
+  await handleDownload({
+    paperId: bookmark.paper_id,
+    arxivId: bookmark.arxiv_id,
+    title: bookmark.title,
+    pdfUrl: bookmark.pdf_url
+  })
 }
 
 const openAbsUrl = (url: string) => {
@@ -318,52 +292,6 @@ const openPdfUrl = (url: string) => {
 
 const openDoiUrl = (doi: string) => {
   if (doi) window.open(`https://doi.org/${doi}`, '_blank')
-}
-
-const handleDownload = async (bookmark: any) => {
-  if (!bookmark.pdf_url || !bookmark.paper_id) {
-    toastStore.showError('No PDF URL available')
-    return
-  }
-
-  const existingTask = downloadStore.tasks.find(t => t.paper_id === bookmark.paper_id)
-
-  if (existingTask) {
-    if (existingTask.status === 'failed') {
-      try {
-        await downloadStore.retryTask(existingTask.id)
-        toastStore.showSuccess('Download retry started')
-      } catch (error) {
-        console.error('Failed to retry download:', error)
-        toastStore.showError('Failed to retry download')
-      }
-    } else if (existingTask.status === 'downloading') {
-      toastStore.showInfo('Download already in progress')
-    } else if (existingTask.status === 'completed') {
-      try {
-        await apiService.openDownloadFile(existingTask.id)
-      } catch (error) {
-        console.error('Failed to open file:', error)
-        toastStore.showError('Failed to open file')
-      }
-    } else {
-      toastStore.showInfo('Download already queued')
-    }
-    return
-  }
-
-  try {
-    await downloadStore.createTask({
-      paper_id: bookmark.paper_id,
-      arxiv_id: bookmark.arxiv_id,
-      title: bookmark.title,
-      pdf_url: bookmark.pdf_url,
-    })
-    toastStore.showSuccess('Download task added to queue')
-  } catch (error) {
-    console.error('Failed to create download task:', error)
-    toastStore.showError('Failed to create download task')
-  }
 }
 
 const fetchBookmarks = async () => {
@@ -409,36 +337,6 @@ const removeBookmark = async (paperId: string) => {
 
 const goToDetail = (paperId: string) => {
   router.push({ name: 'PaperDetail', params: { id: paperId } })
-}
-
-const formatDate = (dateStr?: string) => {
-  if (!dateStr) return 'Unknown date'
-  try {
-    const date = new Date(dateStr)
-    if (isNaN(date.getTime())) return 'Invalid date'
-    const year = date.getUTCFullYear()
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-    const day = String(date.getUTCDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  } catch {
-    return String(dateStr)
-  }
-}
-
-const formatDateTime = (dateStr?: string) => {
-  if (!dateStr) return 'Unknown'
-  try {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  } catch {
-    return dateStr
-  }
 }
 
 onMounted(() => {

@@ -214,11 +214,10 @@ import { useBookmarkStore } from '../stores/bookmark-store'
 import { useDownloadStore } from '../stores/download-store'
 import { useToastStore } from '../stores/toast-store'
 import { getTagStyle, categories } from '../utils/categoryColors'
-import { apiService } from '../services/api'
-import MarkdownIt from 'markdown-it'
-import MarkdownItKatex from 'markdown-it-katex'
-import 'katex/dist/katex.min.css'
 import type { Paper } from '../types'
+import { useMarkdown } from '../composables/useMarkdown'
+import { useDateFormatter } from '../composables/useDateFormatter'
+import { useDownloadHandler } from '../composables/useDownloadHandler'
 
 const route = useRoute()
 const router = useRouter()
@@ -227,38 +226,29 @@ const bookmarkStore = useBookmarkStore()
 const downloadStore = useDownloadStore()
 const toastStore = useToastStore()
 
+const { render, renderWithDefault } = useMarkdown()
+const { formatDate } = useDateFormatter()
+const { getStatus: getDownloadStatus, getProgress: getDownloadProgress, handleDownload } = useDownloadHandler()
+
 const loading = ref<boolean>(false)
 const error = ref<string | null>(null)
 const paper = ref<Paper | null>(null)
 const isBookmarked = ref(false)
 const downloadStatus = computed(() => {
   if (!paper.value?.id) return 'none'
-  const task = downloadStore.tasks.find(t => t.paper_id === paper.value?.id)
-  return task?.status || 'none'
+  return getDownloadStatus(paper.value.id)
 })
 const downloadProgress = computed(() => {
   if (!paper.value?.id) return 0
-  const task = downloadStore.tasks.find(t => t.paper_id === paper.value?.id)
-  return task?.progress || 0
-})
-
-const md = new MarkdownIt({
-  html: true,
-  linkify: true,
-  typographer: true
-}).use(MarkdownItKatex, {
-  throwOnError: false,
-  displayMode: false
+  return getDownloadProgress(paper.value.id)
 })
 
 const renderedAbstract = computed(() => {
-  if (!paper.value?.abstract) return '<p>No abstract available</p>'
-  return md.render(paper.value.abstract)
+  return renderWithDefault(paper.value?.abstract, 'No abstract available')
 })
 
 const renderedComment = computed(() => {
-  if (!paper.value?.comment) return ''
-  return md.render(paper.value.comment)
+  return render(paper.value?.comment)
 })
 
 const relatedPapers = computed(() => {
@@ -344,51 +334,12 @@ const toggleBookmark = async () => {
 
 const downloadPdf = async () => {
   if (!paper.value?.pdfUrl || !paper.value?.id) return
-  
-  const existingTask = downloadStore.tasks.find(t => t.paper_id === paper.value?.id)
-
-  if (existingTask) {
-    if (existingTask.status === 'failed') {
-      try {
-        await downloadStore.retryTask(existingTask.id)
-        toastStore.showSuccess('Download retry started')
-      } catch (error) {
-        console.error('Failed to retry download:', error)
-        toastStore.showError('Failed to retry download')
-      }
-    } else if (existingTask.status === 'downloading') {
-      toastStore.showInfo('Download already in progress')
-    } else if (existingTask.status === 'completed') {
-      try {
-        await apiService.openDownloadFile(existingTask.id)
-      } catch (error) {
-        console.error('Failed to open file:', error)
-        toastStore.showError('Failed to open file')
-      }
-    } else {
-      toastStore.showInfo('Download already queued')
-    }
-    return
-  }
-  
-  try {
-    await downloadStore.createTask({
-      paper_id: paper.value.id,
-      arxiv_id: paper.value.arxivId,
-      title: paper.value.title,
-      pdf_url: paper.value.pdfUrl,
-    })
-    toastStore.showSuccess('Download task added to queue')
-  } catch (error) {
-    console.error('Failed to create download task:', error)
-    toastStore.showError('Failed to create download task')
-  }
-}
-
-const formatDate = (dateStr: string | Date | undefined) => {
-  if (!dateStr) return 'Unknown date'
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  await handleDownload({
+    paperId: paper.value.id,
+    arxivId: paper.value.arxivId,
+    title: paper.value.title,
+    pdfUrl: paper.value.pdfUrl
+  })
 }
 
 const getCategoryFullName = (category: string) => {
