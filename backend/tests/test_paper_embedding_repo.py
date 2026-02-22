@@ -193,11 +193,7 @@ class TestMilvusPaperEmbeddingRepository:
         assert result == 0
 
     def test_count_embeddings(self, repo, mock_collection):
-        mock_collection.query.return_value = [
-            {"paper_id": "2301.12345"},
-            {"paper_id": "2301.12346"},
-            {"paper_id": "2301.12347"},
-        ]
+        mock_collection.num_entities = 3
         
         result = repo.count_embeddings()
 

@@ -7,6 +7,7 @@ import Bookmarks from '../views/Bookmarks.vue'
 import Downloads from '../views/Downloads.vue'
 import Assistant from '../views/Assistant.vue'
 import DataManager from '../views/DataManager.vue'
+import SkillManager from '../views/SkillManager.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -48,6 +49,11 @@ const routes: RouteRecordRaw[] = [
     path: '/data-manager',
     name: 'DataManager',
     component: DataManager
+  },
+  {
+    path: '/skills',
+    name: 'SkillManager',
+    component: SkillManager
   }
 ]
 

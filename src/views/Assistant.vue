@@ -24,44 +24,16 @@
             </svg>
             <span>Ask</span>
           </button>
+          <button 
+            :class="['mode-btn', { active: mode === 'skills' }]" 
+            @click="mode = 'skills'"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+            <span>Skills</span>
+          </button>
         </div>
-        
-        <div v-if="mode === 'ask' && llmProviders.length > 0" class="llm-selector">
-          <select v-model="selectedProvider" @change="onProviderChange" class="provider-select">
-            <option v-for="provider in availableProviders" :key="provider.id" :value="provider.id">
-              {{ provider.name }} {{ !provider.available ? '(Not configured)' : '' }}
-            </option>
-          </select>
-          <select v-model="selectedModel" class="model-select">
-            <option v-for="model in currentModels" :key="model" :value="model">
-              {{ model }}
-            </option>
-          </select>
-        </div>
-      </div>
-      
-      <div v-if="mode === 'ask' && selectedProvider === 'ollama' && showStatusMessage && (ollamaStatus.loading || ollamaStatus.available || ollamaStatus.error)" class="ollama-status-row">
-        <span v-if="ollamaStatus.loading" class="status-loading">
-          <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="14" height="14">
-            <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32"/>
-          </svg>
-          Checking Ollama...
-        </span>
-        <span v-else-if="ollamaStatus.available" class="status-available">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="14" height="14">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
-          </svg>
-          Ollama connected
-        </span>
-        <span v-else-if="ollamaStatus.error" class="status-error">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="14" height="14">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="15" y1="9" x2="9" y2="15"/>
-            <line x1="9" y1="9" x2="15" y2="15"/>
-          </svg>
-          {{ ollamaStatus.error }}
-        </span>
       </div>
     </div>
 
@@ -77,17 +49,84 @@
               <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2"/>
             </svg>
           </div>
-          <h3>{{ mode === 'search' ? 'Search Papers' : 'Ask Questions' }}</h3>
+          <h3>{{ mode === 'search' ? 'Search Papers' : mode === 'ask' ? 'Ask Questions' : 'Select a Skill' }}</h3>
           <p v-if="mode === 'search'">Enter a natural language query to find relevant papers using semantic search.</p>
-          <p v-else>Ask questions about research topics and get AI-powered answers with paper references.</p>
-          <div class="suggestions">
+          <p v-else-if="mode === 'ask'">Ask questions about research topics and get AI-powered answers with paper references.</p>
+          <p v-else>Select a skill to perform specific tasks on papers.</p>
+          
+          <div v-if="mode === 'skills'" class="skills-panel">
+            <div v-if="skillsLoading" class="skills-loading">
+              <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="24" height="24">
+                <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32"/>
+              </svg>
+              <span>Loading skills...</span>
+            </div>
+            <div v-else class="skills-grid">
+              <div 
+                v-for="skill in skills" 
+                :key="skill.id" 
+                class="skill-card"
+                :class="{ disabled: !skill.available, dynamic: skill.source === 'dynamic' }"
+                @click="selectSkill(skill)"
+              >
+                <div class="skill-icon">
+                  <svg v-if="skill.icon === 'file-text'" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                  </svg>
+                  <svg v-else-if="skill.icon === 'languages'" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                  </svg>
+                  <svg v-else-if="skill.icon === 'quote'" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21z"/>
+                    <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3z"/>
+                  </svg>
+                  <svg v-else-if="skill.icon === 'link'" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                  </svg>
+                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 16v-4"/>
+                    <path d="M12 8h.01"/>
+                  </svg>
+                </div>
+                <div class="skill-info">
+                  <div class="skill-name">{{ skill.name }}</div>
+                  <div class="skill-desc">{{ skill.description }}</div>
+                </div>
+                <div class="skill-meta">
+                  <span class="skill-category">{{ skill.category }}</span>
+                  <span 
+                    v-if="skill.source === 'dynamic'" 
+                    class="skill-source dynamic"
+                  >
+                    Dynamic
+                  </span>
+                  <span 
+                    v-else 
+                    class="skill-source builtin"
+                  >
+                    Built-in
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div v-else class="suggestions">
             <button v-for="suggestion in currentSuggestions" :key="suggestion" class="suggestion-btn" @click="sendSuggestion(suggestion)">
               {{ suggestion }}
             </button>
           </div>
         </div>
 
-        <div v-for="(message, index) in messages" :key="index" class="message" :class="message.role">
+        <div v-for="(message, index) in messages" :key="index" class="message" :class="message.role" :ref="el => setMessageRef(el, index)">
           <div class="message-avatar">
             <svg v-if="message.role === 'user'" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -131,6 +170,42 @@
               </div>
             </div>
             <div v-else class="message-text" v-html="formatMessage(message.content)"></div>
+            <div v-if="message.isConfigError" class="config-error-hint">
+              <button @click="goToSettings" class="settings-link-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+                Go to Settings to configure LLM Provider
+              </button>
+            </div>
+            <div v-if="message.role === 'assistant'" class="message-actions">
+              <button 
+                @click="copyMessage(message)" 
+                class="action-icon-btn"
+                :title="copiedMessageId === getMessageId(message) ? 'Copied!' : 'Copy all'"
+              >
+                <svg v-if="copiedMessageId === getMessageId(message)" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+              </button>
+              <button 
+                v-if="message.answer || message.papers || message.content"
+                @click="retryMessage(message)" 
+                class="action-icon-btn"
+                title="Retry"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M23 4v6h-6"/>
+                  <path d="M1 20v-6h6"/>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -152,27 +227,60 @@
       </div>
 
       <div class="input-area">
-        <textarea
-          v-model="inputMessage"
-          @keydown.enter.exact.prevent="sendMessage"
-          :placeholder="mode === 'search' ? 'Enter your search query...' : 'Ask a question about research...'"
-          rows="1"
-          ref="inputRef"
-        ></textarea>
-        <button @click="sendMessage" :disabled="!inputMessage.trim() || isLoading" class="send-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <line x1="22" y1="2" x2="11" y2="13"/>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-          </svg>
-        </button>
+        <template v-if="mode === 'skills' && selectedSkill && !skillExecuted">
+          <SkillForm
+            :skill="selectedSkill"
+            @submit="handleSkillExecute"
+            @cancel="backToSkills"
+          />
+        </template>
+        <template v-else-if="mode === 'skills' && selectedSkill && skillExecuted">
+          <div class="skill-actions-bar">
+            <button @click="runSkillAgain" class="action-btn run-again">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M23 4v6h-6"/>
+                <path d="M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+              <span>Run Again</span>
+            </button>
+            <button @click="backToSkills" class="action-btn back-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+              </svg>
+              <span>Back to Skills</span>
+            </button>
+          </div>
+        </template>
+        <template v-else>
+          <textarea
+            v-model="inputMessage"
+            @keydown.enter.exact.prevent="sendMessage()"
+            :placeholder="mode === 'search' ? 'Enter your search query...' : 'Ask a question about research...'"
+            rows="1"
+            ref="inputRef"
+          ></textarea>
+          <button @click="sendMessage()" :disabled="!inputMessage.trim() || isLoading" class="send-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </template>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { arxivBackendAPI } from '../services/arxivBackend'
+import { skillsAPI } from '../services/skills'
+import type { Skill, RelatedPaper } from '../services/skills'
+import { useLLMStore } from '../stores/llm-store'
+import SkillForm from '../components/skills/SkillForm.vue'
 
 interface Paper {
   id: string
@@ -200,174 +308,260 @@ interface Message {
   answer?: string
   references?: Reference[]
   model?: string
+  isConfigError?: boolean
+  skillId?: string
+  skillName?: string
+  paperIds?: string[]
+  skillParams?: Record<string, unknown>
 }
 
-interface LLMProvider {
-  id: string
-  name: string
-  models: string[]
-  available: boolean
-  description: string
+const router = useRouter()
+const llmStore = useLLMStore()
+
+const isConfigError = (errorMsg: string): boolean => {
+  const configErrorPatterns = [
+    /api[_-]?key/i,
+    /not configured/i,
+    /missing.*key/i,
+    /key is required/i,
+    /authentication/i,
+    /unauthorized/i,
+    /invalid.*key/i,
+    /no provider/i,
+    /provider not available/i,
+    /400 bad request/i,
+    /401/i,
+    /403 forbidden/i,
+    /connection refused/i,
+    /localhost.*11434/i,
+    /ollama/i,
+    /ECONNREFUSED/i,
+    /network error/i,
+    /failed to fetch/i,
+    /request failed/i
+  ]
+  return configErrorPatterns.some(pattern => pattern.test(errorMsg))
 }
 
-interface OllamaStatus {
-  loading: boolean
-  available: boolean
-  error: string | null
-  models: string[]
-}
-
-const mode = ref<'search' | 'ask'>('search')
-const messages = ref<Message[]>([])
+const mode = ref<'search' | 'ask' | 'skills'>('search')
+const searchMessages = ref<Message[]>([])
+const askMessages = ref<Message[]>([])
+const skillsMessages = ref<Message[]>([])
 const inputMessage = ref('')
 const isLoading = ref(false)
 const messagesContainer = ref<HTMLElement | null>(null)
 const inputRef = ref<HTMLTextAreaElement | null>(null)
 
-const llmProviders = ref<LLMProvider[]>([])
-const selectedProvider = ref<string>('')
-const selectedModel = ref<string>('')
-const isUpdatingModel = ref(false)
-const showStatusMessage = ref(true)
-let statusTimeout: ReturnType<typeof setTimeout> | null = null
-const ollamaStatus = ref<OllamaStatus>({
-  loading: false,
-  available: false,
-  error: null,
-  models: []
-})
-
-const availableProviders = computed(() => {
-  return llmProviders.value
-})
-
-const currentModels = computed(() => {
-  if (selectedProvider.value === 'ollama' && ollamaStatus.value.models.length > 0) {
-    return ollamaStatus.value.models
+const messages = computed({
+  get: () => {
+    switch (mode.value) {
+      case 'search': return searchMessages.value
+      case 'ask': return askMessages.value
+      case 'skills': return skillsMessages.value
+      default: return searchMessages.value
+    }
+  },
+  set: (value: Message[]) => {
+    switch (mode.value) {
+      case 'search': searchMessages.value = value; break
+      case 'ask': askMessages.value = value; break
+      case 'skills': skillsMessages.value = value; break
+    }
   }
-  const provider = llmProviders.value.find(p => p.id === selectedProvider.value)
-  return provider?.models || []
 })
 
-const onProviderChange = async () => {
-  const provider = llmProviders.value.find(p => p.id === selectedProvider.value)
-  
-  if (selectedProvider.value === 'ollama') {
-    await checkOllamaStatus()
-  } else if (provider && provider.models.length > 0) {
-    selectedModel.value = provider.models[0]
+const skills = ref<Skill[]>([])
+const skillsLoading = ref(false)
+const selectedSkill = ref<Skill | null>(null)
+const skillExecuted = ref(false)
+const copiedMessageId = ref<string | null>(null)
+const messageRefs = ref<Map<number, HTMLElement>>(new Map())
+const currentUserMessageIndex = ref<number | null>(null)
+
+const setMessageRef = (el: any, index: number) => {
+  if (el) {
+    messageRefs.value.set(index, el as HTMLElement)
   }
 }
 
-const checkOllamaStatus = async () => {
-  if (isUpdatingModel.value) return
+const getMessageId = (message: Message): string => {
+  return `${message.role}-${message.content.substring(0, 50)}-${message.papers?.length || 0}-${message.answer?.substring(0, 50) || ''}`
+}
+
+const copyMessage = async (message: Message) => {
+  let textToCopy = ''
   
-  if (statusTimeout) {
-    clearTimeout(statusTimeout)
-    statusTimeout = null
-  }
-  
-  showStatusMessage.value = true
-  ollamaStatus.value = {
-    loading: true,
-    available: false,
-    error: null,
-    models: []
+  if (message.answer) {
+    textToCopy = message.answer
+    if (message.references && message.references.length > 0) {
+      textToCopy += '\n\nReferences:\n'
+      message.references.forEach((ref, index) => {
+        textToCopy += `${index + 1}. ${ref.title} - ${ref.authors?.join(', ')}\n`
+      })
+    }
+  } else if (message.papers && message.papers.length > 0) {
+    textToCopy = `Found ${message.papers.length} papers:\n\n`
+    message.papers.forEach((paper, index) => {
+      textToCopy += `${index + 1}. ${paper.title}\n   Authors: ${paper.authors?.join(', ')}\n   Category: ${paper.primary_category}\n   Published: ${paper.published}\n   Similarity: ${(paper.similarity_score * 100).toFixed(1)}%\n\n`
+    })
+  } else {
+    textToCopy = message.content
   }
   
   try {
-    const result = await arxivBackendAPI.getOllamaStatus(selectedModel.value || undefined)
-    const availableModels = result.available_models || []
-    
-    if (result.available) {
-      ollamaStatus.value = {
-        loading: false,
-        available: true,
-        error: null,
-        models: availableModels
+    await navigator.clipboard.writeText(textToCopy)
+    const msgId = getMessageId(message)
+    copiedMessageId.value = msgId
+    setTimeout(() => {
+      if (copiedMessageId.value === msgId) {
+        copiedMessageId.value = null
       }
-      
-      if (availableModels.length > 0 && !availableModels.includes(selectedModel.value)) {
-        isUpdatingModel.value = true
-        selectedModel.value = availableModels[0]
-        nextTick(() => {
-          isUpdatingModel.value = false
-        })
-      }
-    } else {
-      ollamaStatus.value = {
-        loading: false,
-        available: false,
-        error: result.error,
-        models: availableModels
-      }
-      
-      if (availableModels.length > 0) {
-        isUpdatingModel.value = true
-        selectedModel.value = availableModels[0]
-        nextTick(() => {
-          isUpdatingModel.value = false
-        })
-      }
-    }
-    
-    statusTimeout = setTimeout(() => {
-      showStatusMessage.value = false
-    }, 5000)
-    
-  } catch (error) {
-    ollamaStatus.value = {
-      loading: false,
-      available: false,
-      error: error instanceof Error ? error.message : 'Failed to check Ollama status',
-      models: []
-    }
-    
-    statusTimeout = setTimeout(() => {
-      showStatusMessage.value = false
-    }, 5000)
+    }, 2000)
+  } catch (err) {
+    console.error('Failed to copy:', err)
   }
 }
 
-const loadLLMProviders = async () => {
-  try {
-    const result = await arxivBackendAPI.getLLMProviders()
-    llmProviders.value = result.providers || []
-    
-    if (result.default_provider) {
-      selectedProvider.value = result.default_provider
-    } else if (llmProviders.value.length > 0) {
-      const firstAvailable = llmProviders.value.find(p => p.available)
-      if (firstAvailable) {
-        selectedProvider.value = firstAvailable.id
-      }
+const retryMessage = async (message: Message) => {
+  const messageIndex = messages.value.findIndex(m => getMessageId(m) === getMessageId(message))
+  if (messageIndex <= 0) return
+  
+  const userMessage = messages.value[messageIndex - 1]
+  if (userMessage.role !== 'user') return
+  
+  messages.value = messages.value.slice(0, messageIndex)
+  
+  if (userMessage.skillId && userMessage.paperIds && userMessage.skillParams) {
+    const skill = skills.value.find(s => s.id === userMessage.skillId)
+    if (skill) {
+      selectedSkill.value = skill
+      skillExecuted.value = false
+      
+      await handleSkillExecute(userMessage.paperIds, userMessage.skillParams)
     }
+  } else {
+    const originalInput = userMessage.content
+    inputMessage.value = originalInput
     
-    if (selectedProvider.value) {
-      onProviderChange()
-    }
-  } catch (error) {
-    console.error('Failed to load LLM providers:', error)
+    await sendMessage(true)
   }
 }
 
 watch(mode, (newMode) => {
-  if (newMode === 'ask' && llmProviders.value.length === 0) {
-    loadLLMProviders()
+  currentUserMessageIndex.value = null
+  if (newMode === 'ask' && llmStore.providers.length === 0) {
+    llmStore.init()
+  }
+  if (newMode === 'skills') {
+    selectedSkill.value = null
+    skillExecuted.value = false
+    if (skills.value.length === 0) {
+      loadSkills()
+    }
   }
 })
 
-watch(selectedProvider, (newProvider) => {
-  if (newProvider === 'ollama') {
-    checkOllamaStatus()
+const loadSkills = async () => {
+  skillsLoading.value = true
+  try {
+    const result = await skillsAPI.getSkills()
+    skills.value = result.skills || []
+  } catch (error) {
+    console.error('Failed to load skills:', error)
+  } finally {
+    skillsLoading.value = false
   }
-})
+}
 
-watch(selectedModel, () => {
-  if (selectedProvider.value === 'ollama' && !ollamaStatus.value.loading && !isUpdatingModel.value) {
-    checkOllamaStatus()
+const selectSkill = (skill: Skill) => {
+  if (!skill.available) return
+  selectedSkill.value = skill
+  skillExecuted.value = false
+  messages.value = []
+}
+
+const handleSkillExecute = async (paperIds: string[], params: Record<string, unknown>) => {
+  if (!selectedSkill.value) return
+  
+  skillExecuted.value = true
+  
+  const paperIdText = paperIds.length > 0 ? paperIds.join(', ') : 'No paper ID'
+  messages.value.push({ 
+    role: 'user', 
+    content: `**${selectedSkill.value.name}** on: ${paperIdText}`,
+    skillId: selectedSkill.value.id,
+    skillName: selectedSkill.value.name,
+    paperIds: paperIds,
+    skillParams: params
+  })
+  
+  currentUserMessageIndex.value = messages.value.length - 1
+  scrollToBottom()
+  isLoading.value = true
+  
+  try {
+    const result = await skillsAPI.executeSkill(
+      selectedSkill.value.id,
+      paperIds,
+      params,
+      llmStore.selectedProvider || undefined,
+      llmStore.selectedModel || undefined
+    )
+    
+    if (result.success) {
+      let responseContent = ''
+      
+      if (result.summary) {
+        responseContent = `**Summary**\n\n${result.summary}`
+      } else if (result.translation) {
+        responseContent = `**Translation (${result.target_language})**\n\n${result.translation}`
+      } else if (result.citations) {
+        responseContent = '**Citations**\n\n'
+        for (const [format, citation] of Object.entries(result.citations)) {
+          responseContent += `**${format}:**\n\`\`\`\n${citation}\n\`\`\`\n\n`
+        }
+      } else if (result.related_papers && Array.isArray(result.related_papers)) {
+        responseContent = `**Related Papers** (${result.total || result.related_papers.length} found)\n\n`
+        result.related_papers.forEach((paper: RelatedPaper, index: number) => {
+          responseContent += `${index + 1}. **${paper.title}**\n   ${paper.authors?.slice(0, 2).join(', ')}\n   Similarity: ${(paper.similarity_score * 100).toFixed(1)}%\n\n`
+        })
+      } else if (result.result) {
+        responseContent = `**${result.skill_name || 'Result'}**\n\n${result.result}`
+      } else {
+        responseContent = JSON.stringify(result, null, 2)
+      }
+      
+      messages.value.push({
+        role: 'assistant',
+        content: responseContent
+      })
+    } else {
+      messages.value.push({
+        role: 'assistant',
+        content: `Error: ${result.error || 'Failed to execute skill'}`
+      })
+    }
+  } catch (error) {
+    messages.value.push({
+      role: 'assistant',
+      content: `Error: ${error instanceof Error ? error.message : 'Something went wrong'}`
+    })
+  } finally {
+    isLoading.value = false
+    scrollToBottom()
   }
-})
+}
+
+const runSkillAgain = () => {
+  skillExecuted.value = false
+  messages.value = []
+}
+
+const backToSkills = () => {
+  selectedSkill.value = null
+  skillExecuted.value = false
+  messages.value = []
+}
 
 const searchSuggestions = [
   'transformer attention mechanisms',
@@ -398,16 +592,26 @@ const formatMessage = (content: string) => {
 const scrollToBottom = () => {
   nextTick(() => {
     if (messagesContainer.value) {
+      if (currentUserMessageIndex.value !== null) {
+        const userMessageEl = messageRefs.value.get(currentUserMessageIndex.value)
+        if (userMessageEl) {
+          userMessageEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          return
+        }
+      }
       messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
     }
   })
 }
 
-const sendMessage = async () => {
+const sendMessage = async (isRetry: boolean = false) => {
   const message = inputMessage.value.trim()
   if (!message || isLoading.value) return
 
-  messages.value.push({ role: 'user', content: message })
+  if (!isRetry) {
+    messages.value.push({ role: 'user', content: message })
+  }
+  currentUserMessageIndex.value = messages.value.length - 1
   inputMessage.value = ''
   scrollToBottom()
 
@@ -436,23 +640,35 @@ const sendMessage = async () => {
       const result = await arxivBackendAPI.askQuestion(
         message, 
         5, 
-        selectedProvider.value || undefined,
-        selectedModel.value || undefined
+        llmStore.selectedProvider || undefined,
+        llmStore.selectedModel || undefined
       )
       
-      messages.value.push({
-        role: 'assistant',
-        content: '',
-        answer: result.answer,
-        references: result.references || [],
-        model: result.model
-      })
+      if (result.error) {
+        const configError = isConfigError(result.error)
+        messages.value.push({
+          role: 'assistant',
+          content: `Error: ${result.error}`,
+          isConfigError: configError
+        })
+      } else {
+        messages.value.push({
+          role: 'assistant',
+          content: '',
+          answer: result.answer,
+          references: result.references || [],
+          model: result.model
+        })
+      }
     }
   } catch (error) {
     console.error('Error:', error)
+    const errorMsg = error instanceof Error ? error.message : 'Something went wrong'
+    const configError = isConfigError(errorMsg)
     messages.value.push({
       role: 'assistant',
-      content: `Error: ${error instanceof Error ? error.message : 'Something went wrong'}`
+      content: `Error: ${errorMsg}`,
+      isConfigError: configError
     })
   } finally {
     isLoading.value = false
@@ -465,17 +681,14 @@ const sendSuggestion = (suggestion: string) => {
   sendMessage()
 }
 
+const goToSettings = () => {
+  router.push('/settings')
+}
+
 onMounted(() => {
   inputRef.value?.focus()
   if (mode.value === 'ask') {
-    loadLLMProviders()
-  }
-})
-
-onUnmounted(() => {
-  if (statusTimeout) {
-    clearTimeout(statusTimeout)
-    statusTimeout = null
+    llmStore.init()
   }
 })
 </script>
@@ -515,78 +728,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 16px;
-}
-
-.llm-selector {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.ollama-status-row {
-  margin-top: 12px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--bg-secondary);
-  font-size: 0.85rem;
-}
-
-.ollama-status-row svg {
-  flex-shrink: 0;
-}
-
-.status-loading {
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.status-loading .spinner {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.status-available {
-  color: #10B981;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.status-error {
-  color: #EF4444;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.provider-select,
-.model-select {
-  padding: 8px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: 0.85rem;
-  cursor: pointer;
-  outline: none;
-  transition: all 0.2s ease;
-}
-
-.provider-select:hover,
-.model-select:hover {
-  border-color: #10B981;
-}
-
-.provider-select:focus,
-.model-select:focus {
-  border-color: #10B981;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
 }
 
 .mode-btn {
@@ -640,16 +781,22 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-top: 40px;
   height: 100%;
   text-align: center;
   color: var(--text-muted);
+  overflow-y: auto;
 }
 
 .empty-icon {
   width: 80px;
   height: 80px;
   margin-bottom: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .empty-icon svg {
@@ -661,6 +808,134 @@ onUnmounted(() => {
   font-size: 1.5rem;
   color: var(--text-primary);
   margin: 0 0 8px 0;
+}
+
+.skills-panel {
+  width: 100%;
+  max-width: 800px;
+  margin-top: 24px;
+}
+
+.skills-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px;
+  color: var(--text-muted);
+}
+
+.skills-loading .spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  text-align: left;
+}
+
+.skill-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.skill-card:hover:not(.disabled) {
+  border-color: #10B981;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+}
+
+.skill-card.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.skill-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #10B981, #059669);
+  border-radius: 10px;
+}
+
+.skill-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: white;
+}
+
+.skill-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.skill-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.skill-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.skill-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.skill-category {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.skill-source {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.skill-source.dynamic {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10B981;
+}
+
+.skill-source.builtin {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366F1;
+}
+
+.skill-card.dynamic {
+  border-left: 3px solid #10B981;
 }
 
 .empty-state p {
@@ -753,12 +1028,79 @@ onUnmounted(() => {
   border-bottom-left-radius: 4px;
 }
 
+.message-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.message-content:hover .message-actions {
+  opacity: 1;
+}
+
+.action-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-icon-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.action-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 .message-text code {
   background: rgba(0, 0, 0, 0.1);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: monospace;
   font-size: 0.9em;
+}
+
+.config-error-hint {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.settings-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366F1;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-link-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: #6366F1;
+}
+
+.settings-link-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .papers-result {
@@ -1010,6 +1352,51 @@ onUnmounted(() => {
   height: 20px;
 }
 
+.skill-actions-bar {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.action-btn.run-again {
+  background: #10B981;
+  color: white;
+}
+
+.action-btn.run-again:hover {
+  background: #059669;
+}
+
+.action-btn.back-btn {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.action-btn.back-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--text-muted);
+}
+
 @media (max-width: 768px) {
   .assistant-page {
     padding: 80px 16px 16px 16px;
@@ -1029,16 +1416,6 @@ onUnmounted(() => {
 
   .header-controls {
     flex-wrap: wrap;
-  }
-
-  .llm-selector {
-    flex-wrap: wrap;
-  }
-
-  .provider-select,
-  .model-select {
-    flex: 1;
-    min-width: 120px;
   }
 }
 </style>

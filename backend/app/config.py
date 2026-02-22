@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     OLLAMA_MODEL: str = "llama3"
     
     MILVUS_QUERY_BATCH_SIZE: int = 3000
+    
+    SKILLS_DIR: str = "./skills"
+    SKILLS_WATCH_ENABLED: bool = True
+    SKILLS_WATCH_DEBOUNCE_MS: int = 250
+    SKILLS_RELOAD_ON_START: bool = True
 
     class Config:
         env_file = ".env"

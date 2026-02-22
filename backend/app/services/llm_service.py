@@ -490,6 +490,37 @@ is available. Reference specific papers when relevant."""}
         except Exception as e:
             logger.warning(f"LLM service not available: {e}")
             return False
+    
+    async def generate(
+        self,
+        prompt: str,
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
+        **kwargs
+    ) -> str:
+        """
+        Generate a response from the LLM with a simple prompt.
+        
+        Args:
+            prompt: The prompt to send to the LLM
+            provider: Optional provider to use (overrides default)
+            model: Optional model to use
+            **kwargs: Additional parameters for the LLM
+        
+        Returns:
+            Generated response string
+        """
+        if provider:
+            cache_key = f"{provider}:{model or 'default'}"
+            if cache_key not in self._providers_cache:
+                self._providers_cache[cache_key] = self._create_provider(provider, model)
+            active_provider = self._providers_cache[cache_key]
+        else:
+            self._initialize()
+            active_provider = self._provider
+        
+        messages = [{"role": "user", "content": prompt}]
+        return await active_provider.generate(messages, **kwargs)
 
 
 llm_service = LLMService()

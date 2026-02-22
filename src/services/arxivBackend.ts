@@ -50,28 +50,6 @@ interface Statistics {
   indexes: DateIndex[]
 }
 
-interface LLMProviderInfo {
-  id: string
-  name: string
-  models: string[]
-  available: boolean
-  description: string
-}
-
-interface LLMProvidersResponse {
-  providers: LLMProviderInfo[]
-  default_provider: string | null
-}
-
-interface OllamaStatusResponse {
-  available: boolean
-  error: string | null
-  base_url: string
-  default_model: string
-  checked_model?: string
-  available_models: string[]
-}
-
 interface QueryResponse {
   papers: BackendPaper[]
   total: number
@@ -194,7 +172,7 @@ export const arxivBackendAPI = {
     return this.queryPapers(dateStr, category, maxResults, start)
   },
 
-  async searchPapers(query: string, category: string = 'cs*', maxResults?: number): Promise<Paper[]> {
+  async searchPapers(_query: string, category: string = 'cs*', maxResults?: number): Promise<Paper[]> {
     console.log('searchPapers: Using backend with today date')
     const today = new Date()
     const dateStr = today.toISOString().split('T')[0]
@@ -367,26 +345,7 @@ export const arxivBackendAPI = {
     }
     
     return response.json()
-  },
-
-  async getLLMProviders(): Promise<LLMProvidersResponse> {
-    const response = await fetch(`${BACKEND_API_BASE}/llm/providers`)
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    return response.json()
-  },
-
-  async getOllamaStatus(model?: string): Promise<OllamaStatusResponse> {
-    const params = model ? `?model=${encodeURIComponent(model)}` : ''
-    const response = await fetch(`${BACKEND_API_BASE}/llm/ollama/status${params}`)
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    return response.json()
   }
 }
+
+export type { Paper, BackendPaper, DateIndex, Statistics }

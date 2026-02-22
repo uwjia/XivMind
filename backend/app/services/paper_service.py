@@ -134,6 +134,10 @@ class PaperService:
         """Get a single paper by ID."""
         return self.paper_repo.get_paper_by_id(paper_id)
 
+    def get_papers_by_ids(self, paper_ids: List[str]) -> List[Dict[str, Any]]:
+        """Get multiple papers by their IDs."""
+        return self.paper_repo.get_papers_by_ids(paper_ids)
+
     def clear_date_index(self, date: str) -> None:
         """Clear date index for a specific date."""
         normalized_date = self._normalize_date(date)

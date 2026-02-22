@@ -16,6 +16,7 @@
   - 多种 LLM 提供商：OpenAI、Anthropic、GLM（智谱 AI）、Ollama（本地）
   - 论文语义搜索
   - 基于论文库的问答
+  - 动态技能系统，支持自定义任务
 - 🌙 深色/浅色主题切换
 - 📱 响应式设计
 - 🎨 现代化 UI，流畅动画
@@ -29,6 +30,7 @@
 - **Pinia** - 状态管理库
 - **TypeScript** - 类型安全的 JavaScript
 - **Markdown-it** - 支持 LaTeX 的 Markdown 渲染
+- **Storybook** - 组件开发和文档
 
 ### 后端
 - **FastAPI** - 现代 Python Web 框架
@@ -151,7 +153,7 @@ npm run dev
 
 ## AI 助手配置
 
-AI 助手支持多种 LLM 提供商。在 `.env` 中配置：
+AI 助手支持多种 LLM 提供商。可在**设置**页面或 `.env` 文件中配置：
 
 ### OpenAI
 
@@ -166,7 +168,7 @@ OPENAI_API_KEY=your-api-key
 ```env
 LLM_PROVIDER=anthropic
 LLM_MODEL=claude-3-haiku-20240307
-OPENAI_API_KEY=your-api-key  # 使用 OpenAI 兼容 API
+ANTHROPIC_API_KEY=your-api-key
 ```
 
 ### GLM（智谱 AI）
@@ -215,6 +217,7 @@ ollama pull qwen2
 | API 文档 | http://localhost:8000/docs | Swagger UI |
 | API 文档 | http://localhost:8000/redoc | ReDoc |
 | Attu | http://localhost:3000 | Milvus 管理界面（仅 Milvus 模式） |
+| Storybook | http://localhost:6006 | 组件文档 |
 
 ## 功能概览
 
@@ -245,11 +248,20 @@ ollama pull qwen2
 ### AI 助手页
 - **搜索模式**：在论文库中进行语义搜索
 - **提问模式**：基于论文内容回答问题
-- 支持多种 LLM 提供商
-- 本地 Ollama 连接实时状态显示
+- **技能模式**：对论文执行特定任务
+  - 内置技能：论文摘要、翻译、引用生成、相关论文
+  - 动态技能：从 SKILL.md 文件加载的自定义技能
+  - 创建自己的技能，支持自定义提示词
+- 各模式独立保存消息历史
+- 复制和重试功能
+- 支持多种 LLM 提供商，可在设置中轻松切换
 
 ### 设置页
-- 主题配置
+- 主题配置（深色/浅色）
+- LLM 提供商配置
+  - 选择提供商和模型
+  - 配置 API Key
+  - 测试连接状态
 - 应用偏好设置
 
 ### 数据管理页
@@ -260,6 +272,42 @@ ollama pull qwen2
 - 清除特定日期的缓存
 - 可视化状态指示器（已存储、获取中、无论文、未来日期）
 - 点击已存储日期跳转到论文列表
+
+## 技能系统
+
+XivMind 具有强大的技能系统，允许您对论文执行各种任务。
+
+### 内置技能
+- **论文摘要**：生成简洁摘要，突出关键贡献
+- **论文翻译**：将论文内容翻译为多种语言（中文、日语、德语、法语、西班牙语）
+- **引用生成**：生成 APA、MLA、BibTeX、IEEE 格式的引用
+- **相关论文**：在论文库中查找相似论文
+
+### 动态技能
+通过在 `backend/skills/` 目录中添加 `SKILL.md` 文件来创建自定义技能：
+
+```markdown
+---
+name: my-custom-skill
+description: 我的自定义技能描述
+icon: file-text
+category: analysis
+requires_paper: true
+metadata:
+  xivmind:
+    input_schema:
+      type: object
+      properties:
+        param1:
+          type: string
+          description: 参数描述
+          default: "默认值"
+---
+
+# 我的自定义技能
+
+在这里编写提示词模板，使用 {paper.title} 和 {paper.abstract} 占位符。
+```
 
 ## API 端点
 
@@ -288,6 +336,17 @@ ollama pull qwen2
 | GET | `/check/{paper_id}` | 检查是否已收藏 |
 | GET | `/` | 获取收藏列表 |
 | GET | `/search` | 搜索收藏 |
+
+### 技能 `/api/skills`
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| GET | `/` | 获取所有可用技能 |
+| GET | `/categories` | 按类别获取技能 |
+| GET | `/{skill_id}` | 获取特定技能 |
+| POST | `/{skill_id}/execute` | 执行技能 |
+| POST | `/reload` | 重载所有动态技能 |
+| POST | `/reload/{skill_id}` | 重载特定技能 |
 
 ### 下载 `/api/downloads`
 
@@ -320,6 +379,21 @@ cd backend
 start.bat dev        # Windows - 开发模式
 ./start.sh dev       # Linux/Mac - 开发模式
 ```
+
+## 组件开发
+
+XivMind 使用 Storybook 进行组件开发和文档：
+
+```bash
+npm run storybook
+```
+
+访问地址：http://localhost:6006
+
+可用的组件类别：
+- **PaperCard** - 论文展示组件
+- **Skills** - SkillCard、SkillForm 组件
+- **UI 组件** - 按钮、对话框、工具提示等
 
 ## 数据库模式升级
 
