@@ -53,10 +53,80 @@
         :key="skill.id"
         :skill="skill"
         :show-actions="true"
+        :selected="selectedSkill?.id === skill.id"
+        @select="showSkillDetail"
         @execute="executeSkill"
         @edit="editSkill"
         @reload="reloadSkill"
       />
+    </div>
+    
+    <div v-if="showDetailModal && detailSkill" class="modal-overlay" @click="closeDetailModal">
+      <div class="modal-content detail-modal" @click.stop>
+        <div class="modal-header">
+          <div class="detail-header">
+            <h3>{{ detailSkill.name }}</h3>
+            <div class="detail-meta">
+              <span class="skill-category">{{ detailSkill.category }}</span>
+              <span 
+                v-if="detailSkill.source === 'dynamic'" 
+                class="skill-source dynamic"
+              >
+                Dynamic
+              </span>
+              <span v-else class="skill-source builtin">Built-in</span>
+            </div>
+          </div>
+          <button @click="closeDetailModal" class="close-btn">×</button>
+        </div>
+        <div class="detail-body">
+          <div class="detail-section">
+            <h4>Description</h4>
+            <p>{{ detailSkill.description }}</p>
+          </div>
+          
+          <div v-if="detailSkill.requires_paper" class="detail-section">
+            <h4>Requirements</h4>
+            <div class="requirement-tag">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              Requires Paper ID
+            </div>
+          </div>
+          
+          <div v-if="detailSkill.input_schema" class="detail-section">
+            <h4>Parameters</h4>
+            <div class="params-list">
+              <div 
+                v-for="(prop, key) in detailSkill.input_schema.properties" 
+                :key="key" 
+                class="param-item"
+              >
+                <span class="param-name">{{ key }}</span>
+                <span class="param-type">{{ prop.type }}</span>
+                <span v-if="detailSkill.input_schema.required?.includes(key)" class="param-required">required</span>
+                <span v-if="prop.description" class="param-desc">{{ prop.description }}</span>
+                <span v-if="prop.default" class="param-default">default: {{ prop.default }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button @click="closeDetailModal" class="cancel-btn">Close</button>
+          <button 
+            @click="executeFromDetail" 
+            class="execute-btn"
+            :disabled="!detailSkill.available"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            Execute
+          </button>
+        </div>
+      </div>
     </div>
     
     <div v-if="notification" class="notification" :class="notification.type">
@@ -64,15 +134,16 @@
       <button @click="notification = null" class="close-btn">×</button>
     </div>
     
-    <div v-if="showExecuteModal" class="modal-overlay" @click="closeExecuteModal">
+    <div v-if="showExecuteModal" class="modal-overlay" @click.self="isExecuting ? null : closeExecuteModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h3>{{ selectedSkill?.name }}</h3>
-          <button @click="closeExecuteModal" class="close-btn">×</button>
+          <button @click="closeExecuteModal" class="close-btn" :disabled="isExecuting">×</button>
         </div>
         <SkillForm
           v-if="selectedSkill"
           :skill="selectedSkill"
+          :is-executing="isExecuting"
           @submit="handleExecute"
           @cancel="closeExecuteModal"
         />
@@ -122,10 +193,21 @@ const notification = ref<{ type: string; message: string } | null>(null)
 
 const selectedSkill = ref<Skill | null>(null)
 const showExecuteModal = ref(false)
+const isExecuting = ref(false)
+
+const detailSkill = ref<Skill | null>(null)
+const showDetailModal = ref(false)
 
 const editingSkill = ref<Skill | null>(null)
 const editingContent = ref('')
 const showEditModal = ref(false)
+
+const showNotification = (type: string, message: string) => {
+  notification.value = { type, message }
+  setTimeout(() => {
+    notification.value = null
+  }, 3000)
+}
 
 const categories = [
   { value: 'all', label: 'All' },
@@ -188,6 +270,23 @@ const executeSkill = (skill: Skill) => {
   showExecuteModal.value = true
 }
 
+const showSkillDetail = (skill: Skill) => {
+  detailSkill.value = skill
+  showDetailModal.value = true
+}
+
+const closeDetailModal = () => {
+  showDetailModal.value = false
+  detailSkill.value = null
+}
+
+const executeFromDetail = () => {
+  if (!detailSkill.value) return
+  selectedSkill.value = detailSkill.value
+  closeDetailModal()
+  showExecuteModal.value = true
+}
+
 const closeExecuteModal = () => {
   showExecuteModal.value = false
   selectedSkill.value = null
@@ -196,6 +295,7 @@ const closeExecuteModal = () => {
 const handleExecute = async (paperIds: string[], params: Record<string, unknown>) => {
   if (!selectedSkill.value) return
   
+  isExecuting.value = true
   try {
     const result = await skillsAPI.executeSkill(
       selectedSkill.value.id,
@@ -206,15 +306,16 @@ const handleExecute = async (paperIds: string[], params: Record<string, unknown>
     )
     
     if (result.success) {
-      showNotification('success', `Skill executed successfully`)
+      showNotification('success', `Skill "${selectedSkill.value.name}" executed successfully`)
     } else {
       showNotification('error', result.error || 'Execution failed')
     }
   } catch (error) {
     showNotification('error', 'Failed to execute skill')
+  } finally {
+    isExecuting.value = false
+    closeExecuteModal()
   }
-  
-  closeExecuteModal()
 }
 
 const editSkill = async (skill: Skill) => {
@@ -240,10 +341,14 @@ const saveSkill = async () => {
   
   isSaving.value = true
   try {
-    await skillsAPI.reloadSkill(editingSkill.value.id)
-    showNotification('success', 'Skill saved and reloaded')
-    closeEditModal()
-    await loadSkills()
+    const result = await skillsAPI.saveSkill(editingSkill.value.id, editingContent.value)
+    if (result.success) {
+      showNotification('success', 'Skill saved and reloaded')
+      closeEditModal()
+      await loadSkills()
+    } else {
+      showNotification('error', result.message || 'Failed to save skill')
+    }
   } catch (error) {
     showNotification('error', 'Failed to save skill')
   } finally {
@@ -263,13 +368,6 @@ const reloadSkill = async (skill: Skill) => {
   } catch (error) {
     showNotification('error', 'Failed to reload skill')
   }
-}
-
-const showNotification = (type: string, message: string) => {
-  notification.value = { type, message }
-  setTimeout(() => {
-    notification.value = null
-  }, 3000)
 }
 
 onMounted(loadSkills)
@@ -561,5 +659,174 @@ onMounted(loadSkills)
 .save-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.detail-modal {
+  max-width: 600px;
+}
+
+.detail-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-header h3 {
+  margin: 0;
+}
+
+.detail-meta {
+  display: flex;
+  gap: 8px;
+}
+
+.detail-body {
+  padding: 20px;
+}
+
+.detail-section {
+  margin-bottom: 20px;
+}
+
+.detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.detail-section h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 12px 0;
+}
+
+.detail-section p {
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.requirement-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10B981;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.requirement-tag svg {
+  width: 16px;
+  height: 16px;
+}
+
+.params-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.param-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.param-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: monospace;
+}
+
+.param-type {
+  padding: 2px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.param-required {
+  padding: 2px 6px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.param-desc {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.param-default {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+.execute-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #10B981;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.execute-btn:hover:not(:disabled) {
+  background: #059669;
+}
+
+.execute-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.execute-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.skill-category {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.skill-source {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.skill-source.dynamic {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10B981;
+}
+
+.skill-source.builtin {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366F1;
 }
 </style>

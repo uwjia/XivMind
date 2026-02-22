@@ -118,6 +118,23 @@ class SkillLoader:
         if skill_path.exists():
             return skill_path.read_text(encoding="utf-8")
         return None
+    
+    def save_skill_raw(self, skill_id: str, content: str) -> bool:
+        """Save raw SKILL.md content for a skill."""
+        skill_dir = self.skills_dir / skill_id
+        skill_path = skill_dir / "SKILL.md"
+        
+        if not skill_dir.exists():
+            logger.warning(f"Skill directory does not exist: {skill_dir}")
+            return False
+        
+        try:
+            skill_path.write_text(content, encoding="utf-8")
+            logger.info(f"Saved skill content: {skill_path}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save skill content: {e}")
+            return False
 
 
 skill_loader = SkillLoader()

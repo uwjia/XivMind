@@ -13,6 +13,7 @@
         type="text"
         placeholder="Enter paper ID (e.g., 2301.12345)"
         class="form-input"
+        :disabled="isExecuting"
       />
       <span class="field-hint">Comma-separated for multiple papers</span>
     </div>
@@ -30,6 +31,7 @@
         type="text"
         class="form-input"
         :placeholder="field.description"
+        :disabled="isExecuting"
       />
       
       <select
@@ -37,6 +39,7 @@
         :id="field.key"
         v-model="values[field.key]"
         class="form-select"
+        :disabled="isExecuting"
       >
         <option v-for="opt in field.enum" :key="opt" :value="opt">{{ opt }}</option>
       </select>
@@ -49,6 +52,7 @@
         class="form-input"
         :min="field.minimum"
         :max="field.maximum"
+        :disabled="isExecuting"
       />
       
       <div v-else-if="field.type === 'boolean'" class="form-checkbox">
@@ -56,6 +60,7 @@
           :id="field.key"
           v-model="values[field.key]"
           type="checkbox"
+          :disabled="isExecuting"
         />
         <label :for="field.key">{{ field.description || 'Enable' }}</label>
       </div>
@@ -68,6 +73,7 @@
         class="form-textarea"
         rows="4"
         :placeholder="field.description"
+        :disabled="isExecuting"
       ></textarea>
       
       <span v-if="field.description && field.type !== 'boolean'" class="field-hint">
@@ -76,15 +82,15 @@
     </div>
     
     <div class="form-actions">
-      <button @click="handleCancel" class="cancel-btn">
+      <button @click="handleCancel" class="cancel-btn" :disabled="isExecuting">
         Cancel
       </button>
       <button
         @click="handleSubmit"
-        :disabled="isSubmitting || !isValid"
+        :disabled="isSubmitting || isExecuting || !isValid"
         class="submit-btn"
       >
-        <svg v-if="isSubmitting" class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <svg v-if="isSubmitting || isExecuting" class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32"/>
         </svg>
         <span v-else>Execute Skill</span>
@@ -99,6 +105,7 @@ import type { Skill, FormField, SchemaProperty } from '../../types/skill'
 
 const props = defineProps<{
   skill: Skill
+  isExecuting?: boolean
 }>()
 
 const emit = defineEmits<{

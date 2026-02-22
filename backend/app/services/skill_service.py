@@ -107,6 +107,26 @@ class SkillService:
             "message": "Skill reloaded" if success else "Skill not found or reload failed"
         }
     
+    def save_skill(self, skill_id: str, content: str) -> Dict[str, Any]:
+        """Save and reload a skill."""
+        settings = get_settings()
+        loader = SkillLoader(settings.SKILLS_DIR)
+        
+        saved = loader.save_skill_raw(skill_id, content)
+        if not saved:
+            return {
+                "success": False,
+                "skill_id": skill_id,
+                "message": "Failed to save skill content"
+            }
+        
+        success = SkillRegistry.reload_skill(skill_id)
+        return {
+            "success": success,
+            "skill_id": skill_id,
+            "message": "Skill saved and reloaded" if success else "Skill saved but reload failed"
+        }
+    
     async def execute_skill(
         self,
         skill_id: str,

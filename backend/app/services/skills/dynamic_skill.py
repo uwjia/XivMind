@@ -107,12 +107,12 @@ class DynamicSkill(SkillProvider):
     
     def _render_conditionals(self, template: str, context: Dict[str, Any]) -> str:
         """Render conditional blocks in template."""
-        conditional_pattern = re.compile(
+        if_elif_else_pattern = re.compile(
             r'\{if\s+(\w+)\s*==\s*"([^"]+)"\}(.*?)\{elif\s+\w+\s*==\s*"([^"]+)"\}(.*?)\{else\}(.*?)\{endif\}',
             re.DOTALL
         )
         
-        def replace_conditional(match):
+        def replace_if_elif_else(match):
             var_name = match.group(1)
             if_value = match.group(2)
             if_content = match.group(3)
@@ -129,7 +129,27 @@ class DynamicSkill(SkillProvider):
             else:
                 return else_content
         
-        template = conditional_pattern.sub(replace_conditional, template)
+        template = if_elif_else_pattern.sub(replace_if_elif_else, template)
+        
+        if_else_pattern = re.compile(
+            r'\{if\s+(\w+)\s*==\s*"([^"]+)"\}(.*?)\{else\}(.*?)\{endif\}',
+            re.DOTALL
+        )
+        
+        def replace_if_else(match):
+            var_name = match.group(1)
+            expected_value = match.group(2)
+            if_content = match.group(3)
+            else_content = match.group(4)
+            
+            actual_value = context.get(var_name, "")
+            
+            if actual_value == expected_value:
+                return if_content
+            else:
+                return else_content
+        
+        template = if_else_pattern.sub(replace_if_else, template)
         
         simple_if_pattern = re.compile(
             r'\{if\s+(\w+)\}(.*?)\{else\}(.*?)\{endif\}',

@@ -871,14 +871,14 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #10B981, #059669);
+  background: transparent;
   border-radius: 10px;
 }
 
 .skill-icon svg {
-  width: 20px;
-  height: 20px;
-  stroke: white;
+  width: 24px;
+  height: 24px;
+  stroke: #10B981;
 }
 
 .skill-info {

@@ -82,6 +82,28 @@ def sample_skills_list():
     ]
 
 
+@pytest.fixture
+def sample_skill_raw_content():
+    return '''---
+name: paper-summary
+description: Generate a concise summary
+icon: file-text
+category: analysis
+requires_paper: true
+---
+
+# Paper Summary Skill
+
+Generate a concise summary of academic papers.
+
+```prompt
+Please provide a {detail_level} summary of the following paper:
+Title: {paper.title}
+Abstract: {paper.abstract}
+```
+'''
+
+
 class TestGetSkills:
     def test_get_skills_success(self, client, mock_skill_service, sample_skills_list):
         mock_skill_service.get_all_skills.return_value = sample_skills_list
@@ -151,6 +173,153 @@ class TestGetSkill:
         
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
+
+
+class TestGetSkillRaw:
+    def test_get_skill_raw_success(self, client, mock_skill_service, sample_skill_raw_content):
+        mock_skill_service.get_skill_raw.return_value = sample_skill_raw_content
+        
+        response = client.get("/skills/paper-summary/raw")
+        
+        assert response.status_code == 200
+        assert response.json()["skill_id"] == "paper-summary"
+        assert "content" in response.json()
+        assert "---" in response.json()["content"]
+        mock_skill_service.get_skill_raw.assert_called_once_with("paper-summary")
+    
+    def test_get_skill_raw_not_found(self, client, mock_skill_service):
+        mock_skill_service.get_skill_raw.return_value = None
+        
+        response = client.get("/skills/nonexistent/raw")
+        
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
+    
+    def test_get_skill_raw_builtin_skill(self, client, mock_skill_service):
+        mock_skill_service.get_skill_raw.return_value = None
+        
+        response = client.get("/skills/summary/raw")
+        
+        assert response.status_code == 404
+        assert "not a dynamic skill" in response.json()["detail"].lower()
+
+
+class TestReloadSkills:
+    def test_reload_skills_success(self, client, mock_skill_service):
+        mock_skill_service.reload_skills.return_value = {
+            "success": True,
+            "loaded": 5,
+            "skills": ["skill1", "skill2", "skill3", "skill4", "skill5"]
+        }
+        
+        response = client.post("/skills/reload")
+        
+        assert response.status_code == 200
+        assert response.json()["success"] is True
+        assert response.json()["loaded"] == 5
+        mock_skill_service.reload_skills.assert_called_once()
+    
+    def test_reload_skills_empty(self, client, mock_skill_service):
+        mock_skill_service.reload_skills.return_value = {
+            "success": True,
+            "loaded": 0,
+            "skills": []
+        }
+        
+        response = client.post("/skills/reload")
+        
+        assert response.status_code == 200
+        assert response.json()["loaded"] == 0
+
+
+class TestReloadSkill:
+    def test_reload_skill_success(self, client, mock_skill_service):
+        mock_skill_service.reload_skill.return_value = {
+            "success": True,
+            "skill_id": "paper-summary",
+            "message": "Skill reloaded"
+        }
+        
+        response = client.post("/skills/paper-summary/reload")
+        
+        assert response.status_code == 200
+        assert response.json()["success"] is True
+        assert response.json()["skill_id"] == "paper-summary"
+        mock_skill_service.reload_skill.assert_called_once_with("paper-summary")
+    
+    def test_reload_skill_not_found(self, client, mock_skill_service):
+        mock_skill_service.reload_skill.return_value = {
+            "success": False,
+            "skill_id": "nonexistent",
+            "message": "Skill not found or reload failed"
+        }
+        
+        response = client.post("/skills/nonexistent/reload")
+        
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
+
+
+class TestSaveSkill:
+    def test_save_skill_success(self, client, mock_skill_service, sample_skill_raw_content):
+        mock_skill_service.save_skill.return_value = {
+            "success": True,
+            "skill_id": "paper-summary",
+            "message": "Skill saved and reloaded"
+        }
+        
+        response = client.put(
+            "/skills/paper-summary",
+            json={"content": sample_skill_raw_content}
+        )
+        
+        assert response.status_code == 200
+        assert response.json()["success"] is True
+        assert response.json()["skill_id"] == "paper-summary"
+        mock_skill_service.save_skill.assert_called_once_with("paper-summary", sample_skill_raw_content)
+    
+    def test_save_skill_not_found(self, client, mock_skill_service, sample_skill_raw_content):
+        mock_skill_service.save_skill.return_value = {
+            "success": False,
+            "skill_id": "nonexistent",
+            "message": "Failed to save skill content"
+        }
+        
+        response = client.put(
+            "/skills/nonexistent",
+            json={"content": sample_skill_raw_content}
+        )
+        
+        assert response.status_code == 400
+        assert "failed to save" in response.json()["detail"].lower()
+    
+    def test_save_skill_invalid_content(self, client, mock_skill_service):
+        mock_skill_service.save_skill.return_value = {
+            "success": False,
+            "skill_id": "paper-summary",
+            "message": "Failed to save skill content"
+        }
+        
+        response = client.put(
+            "/skills/paper-summary",
+            json={"content": "invalid content without frontmatter"}
+        )
+        
+        assert response.status_code == 400
+    
+    def test_save_skill_empty_content(self, client, mock_skill_service):
+        mock_skill_service.save_skill.return_value = {
+            "success": False,
+            "skill_id": "paper-summary",
+            "message": "Failed to save skill content"
+        }
+        
+        response = client.put(
+            "/skills/paper-summary",
+            json={"content": ""}
+        )
+        
+        assert response.status_code == 400
 
 
 class TestExecuteSkill:
@@ -250,3 +419,25 @@ class TestExecuteSkill:
         assert response.status_code == 200
         call_kwargs = mock_skill_service.execute_skill.call_args[1]
         assert call_kwargs["context"] == {"custom_key": "custom_value"}
+    
+    def test_execute_skill_with_params(self, client, mock_skill_service):
+        mock_skill_service.execute_skill = AsyncMock(return_value={
+            "success": True,
+            "result": "ok",
+        })
+        
+        response = client.post(
+            "/skills/translation/execute",
+            json={
+                "paper_ids": ["2301.12345"],
+                "params": {
+                    "target_language": "Chinese",
+                    "content_type": "abstract"
+                },
+            }
+        )
+        
+        assert response.status_code == 200
+        call_kwargs = mock_skill_service.execute_skill.call_args[1]
+        assert call_kwargs["target_language"] == "Chinese"
+        assert call_kwargs["content_type"] == "abstract"

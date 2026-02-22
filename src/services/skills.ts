@@ -98,5 +98,21 @@ export const skillsAPI = {
     }
     
     return response.json()
+  },
+
+  async saveSkill(skillId: string, content: string): Promise<SkillReloadResponse> {
+    const response = await fetch(`${SKILLS_API_BASE}/${skillId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ content }),
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return response.json()
   }
 }

@@ -21,6 +21,10 @@ class SkillExecuteResponse(BaseModel):
     data: Optional[Dict[str, Any]] = None
 
 
+class SkillSaveRequest(BaseModel):
+    content: str
+
+
 @router.get("")
 async def get_skills():
     """
@@ -104,6 +108,23 @@ async def reload_skill(skill_id: str):
     result = skill_service.reload_skill(skill_id)
     if not result["success"]:
         raise HTTPException(status_code=404, detail=result["message"])
+    return result
+
+
+@router.put("/{skill_id}")
+async def save_skill(skill_id: str, request: SkillSaveRequest = Body(default=SkillSaveRequest(content=""))):
+    """
+    Save and reload a skill.
+    
+    Args:
+        skill_id: The unique identifier of the skill to save.
+        request: The save request containing the new SKILL.md content.
+    
+    This will save the content to SKILL.md file and reload the skill.
+    """
+    result = skill_service.save_skill(skill_id, request.content)
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result.get("message", "Failed to save skill"))
     return result
 
 

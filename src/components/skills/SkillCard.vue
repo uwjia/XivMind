@@ -63,22 +63,35 @@
         class="action-btn execute" 
         @click="$emit('execute', skill)"
         :disabled="!skill.available"
+        title="Execute this skill"
       >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
         Execute
       </button>
       <button 
         v-if="skill.source === 'dynamic'" 
         class="action-btn edit" 
         @click="$emit('edit', skill)"
+        title="Edit skill definition"
       >
-        Edit
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
       </button>
       <button 
         v-if="skill.source === 'dynamic'" 
         class="action-btn reload" 
         @click="$emit('reload', skill)"
+        title="Reload skill from file"
       >
-        Reload
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M23 4v6h-6"/>
+          <path d="M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
       </button>
     </div>
   </div>
@@ -147,14 +160,14 @@ defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #10B981, #059669);
+  background: transparent;
   border-radius: 10px;
 }
 
 .skill-icon svg {
-  width: 20px;
-  height: 20px;
-  stroke: white;
+  width: 24px;
+  height: 24px;
+  stroke: #10B981;
 }
 
 .skill-info {
@@ -221,7 +234,11 @@ defineEmits<{
 }
 
 .action-btn {
-  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
   border: none;
   border-radius: 6px;
   font-size: 0.8rem;
@@ -230,18 +247,25 @@ defineEmits<{
   transition: all 0.2s;
 }
 
+.action-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
 .action-btn.execute {
-  background: #10B981;
-  color: white;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
 .action-btn.execute:hover:not(:disabled) {
-  background: #059669;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .action-btn.edit {
   background: var(--bg-tertiary);
   color: var(--text-secondary);
+  padding: 8px;
 }
 
 .action-btn.edit:hover {
@@ -252,6 +276,7 @@ defineEmits<{
 .action-btn.reload {
   background: rgba(99, 102, 241, 0.1);
   color: #6366F1;
+  padding: 8px;
 }
 
 .action-btn.reload:hover {

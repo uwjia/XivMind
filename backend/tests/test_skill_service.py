@@ -322,3 +322,90 @@ class TestSkillProviderBaseClass:
     def test_requires_paper_false(self):
         skill = MockSkillProvider(requires_paper=False)
         assert skill.requires_paper is False
+
+
+class TestSkillServiceSaveSkill:
+    def test_save_skill_success(self, skill_service):
+        with patch('app.services.skill_service.SkillLoader') as MockLoader:
+            mock_loader_instance = MagicMock()
+            mock_loader_instance.save_skill_raw.return_value = True
+            MockLoader.return_value = mock_loader_instance
+            
+            with patch.object(SkillRegistry, 'reload_skill', return_value=True):
+                result = skill_service.save_skill("paper-summary", "---\nname: test\n---")
+        
+        assert result["success"] is True
+        assert result["skill_id"] == "paper-summary"
+    
+    def test_save_skill_save_failed(self, skill_service):
+        with patch('app.services.skill_service.SkillLoader') as MockLoader:
+            mock_loader_instance = MagicMock()
+            mock_loader_instance.save_skill_raw.return_value = False
+            MockLoader.return_value = mock_loader_instance
+            
+            result = skill_service.save_skill("nonexistent", "---\nname: test\n---")
+        
+        assert result["success"] is False
+        assert "failed to save" in result["message"].lower()
+    
+    def test_save_skill_reload_failed(self, skill_service):
+        with patch('app.services.skill_service.SkillLoader') as MockLoader:
+            mock_loader_instance = MagicMock()
+            mock_loader_instance.save_skill_raw.return_value = True
+            MockLoader.return_value = mock_loader_instance
+            
+            with patch.object(SkillRegistry, 'reload_skill', return_value=False):
+                result = skill_service.save_skill("paper-summary", "---\nname: test\n---")
+        
+        assert result["success"] is False
+        assert "reload failed" in result["message"].lower()
+
+
+class TestSkillServiceReloadSkill:
+    def test_reload_skill_success(self, skill_service):
+        with patch.object(SkillRegistry, 'reload_skill', return_value=True):
+            result = skill_service.reload_skill("paper-summary")
+        
+        assert result["success"] is True
+        assert result["skill_id"] == "paper-summary"
+        assert result["message"] == "Skill reloaded"
+    
+    def test_reload_skill_not_found(self, skill_service):
+        with patch.object(SkillRegistry, 'reload_skill', return_value=False):
+            result = skill_service.reload_skill("nonexistent")
+        
+        assert result["success"] is False
+        assert "not found" in result["message"].lower()
+
+
+class TestSkillServiceGetSkillRaw:
+    def test_get_skill_raw_success(self, skill_service):
+        sample_content = "---\nname: test\n---\n# Test"
+        
+        with patch('app.services.skill_service.SkillLoader') as MockLoader:
+            mock_loader_instance = MagicMock()
+            mock_loader_instance.get_skill_raw.return_value = sample_content
+            MockLoader.return_value = mock_loader_instance
+            
+            result = skill_service.get_skill_raw("paper-summary")
+        
+        assert result == sample_content
+    
+    def test_get_skill_raw_not_found(self, skill_service):
+        with patch('app.services.skill_service.SkillLoader') as MockLoader:
+            mock_loader_instance = MagicMock()
+            mock_loader_instance.get_skill_raw.return_value = None
+            MockLoader.return_value = mock_loader_instance
+            
+            result = skill_service.get_skill_raw("nonexistent")
+        
+        assert result is None
+
+
+class TestSkillServiceReloadSkills:
+    def test_reload_skills_success(self, skill_service):
+        with patch.object(SkillRegistry, 'reload_dynamic_skills', return_value={"loaded": 3, "skills": ["a", "b", "c"]}):
+            result = skill_service.reload_skills()
+        
+        assert result["success"] is True
+        assert result["loaded"] == 3
