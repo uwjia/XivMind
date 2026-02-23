@@ -216,3 +216,31 @@ async def ask_question(request: AskRequest = Body(...)):
             references=[],
             error=str(e),
         )
+
+
+@router.get("/embedding-indexes")
+async def get_embedding_indexes():
+    """
+    Get all embedding indexes.
+    
+    Returns a list of all dates that have embedding indexes generated.
+    """
+    try:
+        indexes = _paper_service.get_embedding_indexes()
+        return {"indexes": indexes}
+    except Exception as e:
+        logger.error(f"Error getting embedding indexes: {e}")
+        return {"indexes": []}
+
+
+@router.get("/embedding-indexes/{date}")
+async def get_embedding_index(date: str):
+    """
+    Get embedding index for a specific date.
+    
+    Returns the embedding index information for the given date.
+    """
+    index = _paper_service.get_embedding_index(date)
+    if not index:
+        raise HTTPException(status_code=404, detail="Embedding index not found")
+    return index

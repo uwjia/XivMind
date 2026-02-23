@@ -23,6 +23,25 @@
         </div>
       </div>
       <div class="stat-card">
+        <div class="stat-icon embedding-stat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="6" cy="6" r="2"/>
+            <circle cx="18" cy="6" r="2"/>
+            <circle cx="6" cy="18" r="2"/>
+            <circle cx="18" cy="18" r="2"/>
+            <circle cx="12" cy="12" r="2.5"/>
+            <line x1="7.5" y1="7.5" x2="10" y2="10"/>
+            <line x1="13.5" y1="7.5" x2="14" y2="10"/>
+            <line x1="7.5" y1="16.5" x2="10" y2="14"/>
+            <line x1="13.5" y1="16.5" x2="14" y2="14"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ embeddedDays }}</div>
+          <div class="stat-label">Days Embedded</div>
+        </div>
+      </div>
+      <div class="stat-card">
         <div class="stat-icon papers">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -68,16 +87,31 @@
             'selected': day.date === selectedDate,
             'fetching': day.date ? fetchingDates.has(day.date) : false
           }"
-          @click="handleDayClick(day)"
+          @click="handleDayClick(day, $event)"
         >
           <template v-if="day.date">
             <div class="day-header">
               <span class="day-number">{{ day.day }}</span>
-              <span v-if="day.stored" class="day-badge stored">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
-              </span>
+              <div class="day-badges">
+                <span v-if="day.hasEmbedding" class="day-badge embedding" title="Embeddings generated">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="6" cy="6" r="2"/>
+                    <circle cx="18" cy="6" r="2"/>
+                    <circle cx="6" cy="18" r="2"/>
+                    <circle cx="18" cy="18" r="2"/>
+                    <circle cx="12" cy="12" r="2.5"/>
+                    <line x1="7.5" y1="7.5" x2="10" y2="10"/>
+                    <line x1="13.5" y1="7.5" x2="14" y2="10"/>
+                    <line x1="7.5" y1="16.5" x2="10" y2="14"/>
+                    <line x1="13.5" y1="16.5" x2="14" y2="14"/>
+                  </svg>
+                </span>
+                <span v-if="day.stored" class="day-badge stored" title="Papers stored">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </span>
+              </div>
             </div>
             <div class="day-content">
               <div v-if="day.stored" class="paper-count">
@@ -112,7 +146,7 @@
                 class="action-btn fetch"
                 :disabled="fetchingDates.has(day.date || '')"
                 :title="fetchingDates.has(day.date || '') ? 'Fetching...' : 'Fetch papers for this date'"
-                @click.stop="day.date && fetchDate(day.date)"
+                @click.stop="day.date && handleFetchDate(day.date)"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -123,10 +157,10 @@
               <button
                 v-if="day.stored"
                 class="action-btn embedding"
-                :class="{ 'loading': generatingEmbeddingDates.has(day.date || '') }"
+                :class="{ 'loading': generatingEmbeddingDates.has(day.date || ''), 'generated': day.hasEmbedding }"
                 :disabled="generatingEmbeddingDates.has(day.date || '')"
-                :title="generatingEmbeddingDates.has(day.date || '') ? 'Generating...' : 'Generate embeddings for this date'"
-                @click.stop="day.date && generateEmbedding(day.date)"
+                :title="generatingEmbeddingDates.has(day.date || '') ? 'Generating...' : (day.hasEmbedding ? 'Regenerate embeddings for this date' : 'Generate embeddings for this date')"
+                @click.stop="day.date && handleGenerateEmbedding(day.date)"
               >
                 <svg v-if="!generatingEmbeddingDates.has(day.date || '')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="6" cy="6" r="2"/>
@@ -154,17 +188,45 @@
                   <circle cx="12" cy="12" r="3"/>
                 </svg>
               </button>
+              <button
+                v-if="day.stored"
+                class="action-btn refetch"
+                :class="{ 'loading': fetchingDates.has(day.date || '') }"
+                :disabled="fetchingDates.has(day.date || '')"
+                :title="fetchingDates.has(day.date || '') ? 'Fetching...' : 'Re-fetch papers for this date'"
+                @click.stop="day.date && handleFetchDate(day.date)"
+              >
+                <svg v-if="!fetchingDates.has(day.date || '')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 4v6h-6"/>
+                  <path d="M1 20v-6h6"/>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+                <svg v-else class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg>
+              </button>
             </div>
           </template>
         </div>
       </div>
     </div>
+
+    <DayTooltip
+      :visible="isTooltipVisible"
+      :date="tooltipDate || ''"
+      :dateInfo="tooltipDateInfo"
+      :embeddingInfo="tooltipEmbeddingInfo"
+      :position="tooltipPosition"
+      :closable="true"
+      @close="closeTooltip"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { arxivBackendAPI } from '../services/arxivBackend'
+import { useDateIndexes, useDayTooltip } from '../composables/useDateIndexes'
+import DayTooltip from './DayTooltip.vue'
 
 interface DayInfo {
   date: string | null
@@ -172,6 +234,8 @@ interface DayInfo {
   isToday: boolean
   isFuture: boolean
   stored: boolean
+  hasEmbedding: boolean
+  embeddingCount: number
   count: number
   fetching: boolean
   fetched: boolean
@@ -180,18 +244,14 @@ interface DayInfo {
 const props = defineProps<{
   year: number
   month: number
-  indexes: { date: string; total_count: number; fetched_at: string }[]
-  fetchingDates: Set<string>
 }>()
 
 const emit = defineEmits<{
   (e: 'back'): void
-  (e: 'fetchDate', date: string): void
   (e: 'viewPapers', date: string): void
 }>()
 
 const selectedDate = ref<string | null>(null)
-const generatingEmbeddingDates = ref<Set<string>>(new Set())
 
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const monthNames = [
@@ -201,13 +261,26 @@ const monthNames = [
 
 const monthName = computed(() => monthNames[props.month])
 
-const dateIndexMap = computed(() => {
-  const map = new Map<string, number>()
-  props.indexes.forEach(idx => {
-    map.set(idx.date, idx.total_count)
-  })
-  return map
-})
+const {
+  dateIndexMap,
+  embeddingIndexMap,
+  dateIndexInfoMap,
+  embeddingIndexInfoMap,
+  fetchingDates,
+  generatingEmbeddingDates,
+  fetchDate,
+  generateEmbedding
+} = useDateIndexes()
+
+const {
+  tooltipDate,
+  tooltipPosition,
+  tooltipDateInfo,
+  tooltipEmbeddingInfo,
+  isTooltipVisible,
+  showTooltip,
+  hideTooltip
+} = useDayTooltip(dateIndexInfoMap, embeddingIndexInfoMap)
 
 const calendarDays = computed(() => {
   const days: DayInfo[] = []
@@ -224,6 +297,8 @@ const calendarDays = computed(() => {
       isToday: false,
       isFuture: false,
       stored: false,
+      hasEmbedding: false,
+      embeddingCount: 0,
       count: 0,
       fetching: false,
       fetched: false
@@ -234,6 +309,7 @@ const calendarDays = computed(() => {
     const dateStr = `${props.year}-${String(props.month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
     const dateObj = new Date(props.year, props.month, d)
     const count = dateIndexMap.value.get(dateStr) ?? 0
+    const embeddingInfo = embeddingIndexMap.value.get(dateStr)
 
     days.push({
       date: dateStr,
@@ -241,8 +317,10 @@ const calendarDays = computed(() => {
       isToday: dateStr === todayStr,
       isFuture: dateObj > today,
       stored: count > 0,
+      hasEmbedding: !!embeddingInfo,
+      embeddingCount: embeddingInfo?.count ?? 0,
       count: count,
-      fetching: props.fetchingDates.has(dateStr),
+      fetching: fetchingDates.value.has(dateStr),
       fetched: dateIndexMap.value.has(dateStr)
     })
   }
@@ -252,6 +330,10 @@ const calendarDays = computed(() => {
 
 const storedDays = computed(() => {
   return calendarDays.value.filter(d => d.stored).length
+})
+
+const embeddedDays = computed(() => {
+  return calendarDays.value.filter(d => d.hasEmbedding).length
 })
 
 const totalPapers = computed(() => {
@@ -267,33 +349,27 @@ function formatDateISO(date: Date): string {
   return date.toISOString().split('T')[0]
 }
 
-function handleDayClick(day: DayInfo) {
+function handleDayClick(day: DayInfo, event: MouseEvent) {
   if (!day.date) return
   selectedDate.value = day.date
-}
-
-function fetchDate(date: string) {
-  emit('fetchDate', date)
-}
-
-async function generateEmbedding(date: string) {
-  if (generatingEmbeddingDates.value.has(date)) return
   
-  generatingEmbeddingDates.value.add(date)
-  
-  try {
-    const result = await arxivBackendAPI.generateEmbeddings({ date })
-    
-    if (result.success) {
-      console.log(`Generated ${result.generated_count} embeddings for ${date}`)
-    } else {
-      console.error(`Failed to generate embeddings: ${result.error}`)
-    }
-  } catch (error) {
-    console.error('Error generating embeddings:', error)
-  } finally {
-    generatingEmbeddingDates.value.delete(date)
+  if (day.stored || day.hasEmbedding) {
+    showTooltip(day.date, event.clientX, event.clientY)
+  } else {
+    hideTooltip()
   }
+}
+
+function closeTooltip() {
+  hideTooltip()
+}
+
+async function handleFetchDate(date: string) {
+  await fetchDate(date)
+}
+
+async function handleGenerateEmbedding(date: string) {
+  await generateEmbedding(date)
 }
 </script>
 
@@ -374,6 +450,11 @@ async function generateEmbedding(date: string) {
 .stat-icon.stored {
   background: linear-gradient(135deg, rgba(67, 233, 123, 0.2) 0%, rgba(56, 249, 215, 0.2) 100%);
   color: var(--success-color);
+}
+
+.stat-icon.embedding-stat {
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.2) 0%, rgba(103, 58, 183, 0.2) 100%);
+  color: #9C27B0;
 }
 
 .stat-icon.papers {
@@ -491,6 +572,12 @@ async function generateEmbedding(date: string) {
   color: var(--text-primary);
 }
 
+.day-badges {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .day-badge {
   width: 20px;
   height: 20px;
@@ -503,6 +590,10 @@ async function generateEmbedding(date: string) {
   width: 16px;
   height: 16px;
   stroke: var(--success-color);
+}
+
+.day-badge.embedding svg {
+  stroke: #9C27B0;
 }
 
 .day-content {
@@ -596,13 +687,32 @@ async function generateEmbedding(date: string) {
 }
 
 .action-btn.view {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
+  background: rgba(32, 178, 170, 0.1);
+  color: #20B2AA;
 }
 
 .action-btn.view:hover {
-  background: var(--accent-color);
-  color: white;
+  background: rgba(32, 178, 170, 0.2);
+  transform: scale(1.1);
+}
+
+.action-btn.refetch {
+  background: rgba(102, 126, 234, 0.1);
+  color: var(--accent-color);
+}
+
+.action-btn.refetch:hover:not(:disabled) {
+  background: rgba(102, 126, 234, 0.2);
+  transform: scale(1.1);
+}
+
+.action-btn.refetch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-btn.refetch.loading svg {
+  animation: spin 1s linear infinite;
 }
 
 .action-btn.embedding {
@@ -612,6 +722,17 @@ async function generateEmbedding(date: string) {
 
 .action-btn.embedding:hover:not(:disabled) {
   background: rgba(250, 112, 154, 0.2);
+  transform: scale(1.1);
+}
+
+.action-btn.embedding.generated {
+  background: rgba(156, 39, 176, 0.15);
+  color: #9C27B0;
+  border: 1px solid rgba(156, 39, 176, 0.3);
+}
+
+.action-btn.embedding.generated:hover:not(:disabled) {
+  background: rgba(156, 39, 176, 0.25);
   transform: scale(1.1);
 }
 
@@ -661,6 +782,18 @@ async function generateEmbedding(date: string) {
 
   .count-value {
     font-size: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .month-view {
+    padding: 16px;
+  }
+
+  .month-view-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 }
 </style>

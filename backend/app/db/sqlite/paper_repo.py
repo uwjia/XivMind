@@ -59,6 +59,15 @@ class SQLitePaperRepository(PaperRepository):
                 )
             ''')
             
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS embedding_index (
+                    date TEXT PRIMARY KEY,
+                    total_count INTEGER,
+                    generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    model_name TEXT
+                )
+            ''')
+            
             cursor.execute("PRAGMA table_info(papers)")
             columns = [col[1] for col in cursor.fetchall()]
             if 'journal_ref' not in columns:
@@ -386,3 +395,51 @@ class SQLitePaperRepository(PaperRepository):
             cursor = conn.cursor()
             cursor.execute('SELECT 1 FROM papers WHERE id = ?', (id,))
             return cursor.fetchone() is not None
+
+    def get_embedding_index(self, date: str) -> Optional[Dict[str, Any]]:
+        """Get embedding index by date string."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM embedding_index WHERE date = ?', (date,))
+            row = cursor.fetchone()
+            if row:
+                return {
+                    "date": row["date"],
+                    "total_count": row["total_count"],
+                    "generated_at": row["generated_at"],
+                    "model_name": row["model_name"] or "",
+                }
+        return None
+
+    def insert_embedding_index(self, date: str, total_count: int, model_name: str = "") -> None:
+        """Insert or update embedding index."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT OR REPLACE INTO embedding_index (date, total_count, generated_at, model_name)
+                VALUES (?, ?, ?, ?)
+            ''', (date, total_count, datetime.utcnow().isoformat(), model_name))
+            conn.commit()
+
+    def get_all_embedding_indexes(self) -> List[Dict[str, Any]]:
+        """Get all embedding indexes."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM embedding_index ORDER BY date DESC')
+            rows = cursor.fetchall()
+            return [
+                {
+                    "date": row["date"],
+                    "total_count": row["total_count"],
+                    "generated_at": row["generated_at"],
+                    "model_name": row["model_name"] or "",
+                }
+                for row in rows
+            ]
+
+    def delete_embedding_index(self, date: str) -> None:
+        """Delete embedding index by date."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM embedding_index WHERE date = ?', (date,))
+            conn.commit()

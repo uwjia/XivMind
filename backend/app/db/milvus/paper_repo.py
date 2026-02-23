@@ -12,6 +12,7 @@ class MilvusPaperRepository(PaperRepository):
     def __init__(self):
         self._papers_collection: Optional[Collection] = None
         self._date_index_collection: Optional[Collection] = None
+        self._embedding_index_collection: Optional[Collection] = None
 
     def _get_papers_collection(self) -> Collection:
         if not self._papers_collection:
@@ -22,6 +23,11 @@ class MilvusPaperRepository(PaperRepository):
         if not self._date_index_collection:
             self._date_index_collection = milvus_client.get_collection("date_index")
         return self._date_index_collection
+
+    def _get_embedding_index_collection(self) -> Collection:
+        if not self._embedding_index_collection:
+            self._embedding_index_collection = milvus_client.get_collection("embedding_index")
+        return self._embedding_index_collection
 
     @staticmethod
     def _safe_str(value, max_len=None) -> str:
@@ -421,3 +427,67 @@ class MilvusPaperRepository(PaperRepository):
             return next_dt.strftime("%Y-%m-%d")
         except ValueError:
             return date
+
+    def _embedding_index_to_response(self, entity: Dict) -> Dict[str, Any]:
+        return {
+            "date": entity.get("date", ""),
+            "total_count": entity.get("total_count", 0),
+            "generated_at": entity.get("generated_at", ""),
+            "model_name": entity.get("model_name", ""),
+        }
+
+    def get_embedding_index(self, date: str) -> Optional[Dict[str, Any]]:
+        """Get embedding index by date string."""
+        collection = self._get_embedding_index_collection()
+        collection.load()
+        results = collection.query(
+            expr=f'date == "{date}"',
+            output_fields=["date", "total_count", "generated_at", "model_name"],
+        )
+        if results:
+            return self._embedding_index_to_response(results[0])
+        return None
+
+    def insert_embedding_index(self, date: str, total_count: int, model_name: str = "") -> None:
+        """Insert or update embedding index."""
+        collection = self._get_embedding_index_collection()
+        collection.load()
+        now = datetime.utcnow().isoformat()
+
+        existing = collection.query(expr=f'date == "{date}"', output_fields=["date"])
+        if existing:
+            collection.delete(f'date == "{date}"')
+
+        insert_data = [
+            [date],
+            [total_count],
+            [now],
+            [self._safe_str(model_name, 128)],
+            [[0.0] * 8],
+        ]
+        collection.insert(insert_data)
+        collection.flush()
+
+    def get_all_embedding_indexes(self) -> List[Dict[str, Any]]:
+        """Get all embedding indexes."""
+        collection = self._get_embedding_index_collection()
+        collection.load()
+        total = collection.num_entities
+        results = collection.query(
+            expr='date != ""',
+            output_fields=["date", "total_count", "generated_at", "model_name"],
+            limit=total,
+        )
+        sorted_results = sorted(
+            results,
+            key=lambda x: x.get("date", ""),
+            reverse=True
+        )
+        return [self._embedding_index_to_response(r) for r in sorted_results]
+
+    def delete_embedding_index(self, date: str) -> None:
+        """Delete embedding index by date."""
+        collection = self._get_embedding_index_collection()
+        collection.load()
+        collection.delete(f'date == "{date}"')
+        collection.flush()

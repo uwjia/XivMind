@@ -44,6 +44,13 @@ interface DateIndex {
   fetched_at: string
 }
 
+interface EmbeddingIndex {
+  date: string
+  total_count: number
+  generated_at: string
+  model_name?: string
+}
+
 interface Statistics {
   total_days: number
   total_papers: number
@@ -345,7 +352,15 @@ export const arxivBackendAPI = {
     }
     
     return response.json()
+  },
+
+  async getEmbeddingIndexes(): Promise<{ indexes: EmbeddingIndex[] }> {
+    const response = await fetch(`${BACKEND_API_BASE}/embedding-indexes`)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    return response.json()
   }
 }
 
-export type { Paper, BackendPaper, DateIndex, Statistics }
+export type { Paper, BackendPaper, DateIndex, EmbeddingIndex, Statistics }

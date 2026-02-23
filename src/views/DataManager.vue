@@ -13,6 +13,10 @@
             <div class="stat-label">Days Stored</div>
           </div>
           <div class="stat-item">
+            <div class="stat-value">{{ statistics.total_embedded_days }}</div>
+            <div class="stat-label">Days Embedded</div>
+          </div>
+          <div class="stat-item">
             <div class="stat-value">{{ formatNumber(statistics.total_papers) }}</div>
             <div class="stat-label">Total Papers</div>
           </div>
@@ -22,49 +26,107 @@
             <div class="stat-percent">{{ yearStats.daysPercent }}% of total</div>
           </div>
           <div class="stat-item">
+            <div class="stat-value">{{ yearStats.embeddedDays }}</div>
+            <div class="stat-label">Embedded in {{ selectedYear }}</div>
+            <div class="stat-percent">{{ yearStats.embeddedPercent }}% of total</div>
+          </div>
+          <div class="stat-item">
             <div class="stat-value">{{ formatNumber(yearStats.papers) }}</div>
             <div class="stat-label">Papers in {{ selectedYear }}</div>
             <div class="stat-percent">{{ yearStats.papersPercent }}% of total</div>
           </div>
         </div>
 
-        <div class="calendar-controls">
-          <div class="year-select-wrapper">
-            <button 
-              class="year-select-btn" 
-              @click="showYearDropdown = !showYearDropdown"
-              @blur="closeYearDropdown"
-            >
-              <span>{{ selectedYear }}</span>
+        <div class="calendar-toolbar">
+          <div class="toolbar-group navigation">
+            <button class="control-btn" @click="previousYear" title="Previous Year">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <polyline points="6 9 12 15 18 9"/>
+                <polyline points="15 18 9 12 15 6"/>
               </svg>
             </button>
-            <div class="year-dropdown" v-show="showYearDropdown">
-              <div class="year-dropdown-content">
-                <div 
-                  v-for="year in yearRange" 
-                  :key="year" 
-                  class="year-option"
-                  :class="{ 'selected': year === selectedYear }"
-                  @mousedown="selectYear(year)"
-                >
-                  {{ year }}
+            <div class="year-select-wrapper">
+              <button 
+                class="year-select-btn" 
+                @click="showYearDropdown = !showYearDropdown"
+                @blur="closeYearDropdown"
+              >
+                <span>{{ selectedYear }}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <div class="year-dropdown" v-show="showYearDropdown">
+                <div class="year-dropdown-content">
+                  <div 
+                    v-for="year in yearRange" 
+                    :key="year" 
+                    class="year-option"
+                    :class="{ 'selected': year === selectedYear }"
+                    @mousedown="selectYear(year)"
+                  >
+                    {{ year }}
+                  </div>
                 </div>
               </div>
             </div>
+            <button class="control-btn" @click="nextYear" title="Next Year">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+            <button class="control-btn today-btn" @click="goToToday">Today</button>
           </div>
-          <button class="control-btn" @click="previousYear" title="Previous Year">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-          </button>
-          <button class="control-btn today-btn" @click="goToToday">Today</button>
-          <button class="control-btn" @click="nextYear" title="Next Year">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </button>
+
+          <div class="toolbar-divider"></div>
+
+          <div class="toolbar-group legend">
+            <div class="legend-item">
+              <span class="legend-icon stored">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </span>
+              <span>Stored</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-icon embedding">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="6" cy="6" r="2"/>
+                  <circle cx="18" cy="6" r="2"/>
+                  <circle cx="6" cy="18" r="2"/>
+                  <circle cx="18" cy="18" r="2"/>
+                  <circle cx="12" cy="12" r="2.5"/>
+                  <line x1="7.5" y1="7.5" x2="10" y2="10"/>
+                  <line x1="13.5" y1="7.5" x2="14" y2="10"/>
+                  <line x1="7.5" y1="16.5" x2="10" y2="14"/>
+                  <line x1="13.5" y1="16.5" x2="14" y2="14"/>
+                </svg>
+              </span>
+              <span>Embedded</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-icon fetching">
+                <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg>
+              </span>
+              <span>Fetching</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-icon empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="15" y1="9" x2="9" y2="15"/>
+                  <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+              </span>
+              <span>No Papers</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-icon future"></span>
+              <span>Future</span>
+            </div>
+          </div>
         </div>
 
         <div class="year-view">
@@ -91,33 +153,50 @@
                   <span
                     class="day-cell"
                     :class="{
-                    'empty': !day.date,
-                    'today': day.isToday,
-                    'stored': day.stored,
-                    'future': day.isFuture,
-                    'selected': day.date === selectedDate,
-                    'fetching': day.fetching
-                  }"
-                  @click="handleDayClick(day)"
-                >
+                      'empty': !day.date,
+                      'today': day.isToday,
+                      'stored': day.stored,
+                      'future': day.isFuture,
+                      'selected': day.date === selectedDate,
+                      'fetching': day.fetching
+                    }"
+                    @click="handleDayClick(day)"
+                    @mouseenter="handleDayMouseEnter(day, $event)"
+                    @mouseleave="handleDayMouseLeave"
+                  >
                   <span v-if="day.date" class="day-number">{{ day.day }}</span>
-                  <span v-if="day.stored && day.count > 0" class="day-status stored-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  </span>
-                  <span v-else-if="day.fetching" class="day-status fetching-icon">
-                    <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-                    </svg>
-                  </span>
-                  <span v-else-if="day.count === 0 && day.fetched" class="day-status empty-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <circle cx="12" cy="12" r="10"/>
-                      <line x1="15" y1="9" x2="9" y2="15"/>
-                      <line x1="9" y1="9" x2="15" y2="15"/>
-                    </svg>
-                  </span>
+                  <div v-if="day.date" class="day-status-icons">
+                    <span v-if="day.hasEmbedding" class="day-status embedding-icon" title="Embeddings generated">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="6" cy="6" r="2"/>
+                        <circle cx="18" cy="6" r="2"/>
+                        <circle cx="6" cy="18" r="2"/>
+                        <circle cx="18" cy="18" r="2"/>
+                        <circle cx="12" cy="12" r="2.5"/>
+                        <line x1="7.5" y1="7.5" x2="10" y2="10"/>
+                        <line x1="13.5" y1="7.5" x2="14" y2="10"/>
+                        <line x1="7.5" y1="16.5" x2="10" y2="14"/>
+                        <line x1="13.5" y1="16.5" x2="14" y2="14"/>
+                      </svg>
+                    </span>
+                    <span v-else-if="day.stored && day.count > 0" class="day-status stored-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    </span>
+                    <span v-else-if="day.fetching" class="day-status fetching-icon">
+                      <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                      </svg>
+                    </span>
+                    <span v-else-if="day.count === 0 && day.fetched" class="day-status empty-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                      </svg>
+                    </span>
+                  </div>
                 </span>
                 </Tooltip>
               </div>
@@ -149,7 +228,7 @@
             v-if="!getSelectedDayInfo()?.isFuture"
             class="action-btn fetch-btn"
             :disabled="getSelectedDayInfo()?.fetching"
-            @click="fetchDate(selectedDate)"
+            @click="selectedDate && handleFetchDate(selectedDate)"
           >
             <svg v-if="!getSelectedDayInfo()?.fetching" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -159,7 +238,30 @@
             <svg v-else class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
             </svg>
-            {{ getSelectedDayInfo()?.fetching ? 'Fetching...' : 'Fetch Papers' }}
+            {{ getSelectedDayInfo()?.fetching ? 'Fetching...' : (getSelectedDayInfo()?.stored ? 'Re-fetch' : 'Fetch Papers') }}
+          </button>
+          <button
+            v-if="getSelectedDayInfo()?.stored"
+            class="action-btn embedding-btn"
+            :class="{ 'generated': getSelectedDayInfo()?.hasEmbedding }"
+            :disabled="!!(selectedDate && generatingEmbeddingDates.has(selectedDate))"
+            @click="selectedDate && handleGenerateEmbedding(selectedDate)"
+          >
+            <svg v-if="!generatingEmbeddingDates.has(selectedDate || '')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="6" cy="6" r="2"/>
+              <circle cx="18" cy="6" r="2"/>
+              <circle cx="6" cy="18" r="2"/>
+              <circle cx="18" cy="18" r="2"/>
+              <circle cx="12" cy="12" r="2.5"/>
+              <line x1="7.5" y1="7.5" x2="10" y2="10"/>
+              <line x1="13.5" y1="7.5" x2="14" y2="10"/>
+              <line x1="7.5" y1="16.5" x2="10" y2="14"/>
+              <line x1="13.5" y1="16.5" x2="14" y2="14"/>
+            </svg>
+            <svg v-else class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            {{ selectedDate && generatingEmbeddingDates.has(selectedDate) ? 'Generating...' : (getSelectedDayInfo()?.hasEmbedding ? 'Regenerate' : 'Embedding') }}
           </button>
           <button
             v-if="getSelectedDayInfo()?.stored"
@@ -170,68 +272,41 @@
               <polyline points="3 6 5 6 21 6"/>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
             </svg>
-            Clear Cache
+            Clear
           </button>
         </div>
       </div>
-
-      <div class="legend">
-        <div class="legend-item">
-          <span class="legend-icon stored">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-          </span>
-          <span>Stored</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-icon fetching">
-            <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-            </svg>
-          </span>
-          <span>Fetching</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-icon empty">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="15" y1="9" x2="9" y2="15"/>
-              <line x1="9" y1="9" x2="15" y2="15"/>
-            </svg>
-          </span>
-          <span>No Papers</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-icon future"></span>
-          <span>Future</span>
-        </div>
-      </div>
       </template>
-
       <template v-else>
         <MonthView
           :year="selectedYear"
           :month="selectedMonth"
-          :indexes="statistics.indexes"
-          :fetchingDates="fetchingDates"
           @back="viewMode = 'year'"
-          @fetchDate="fetchDate"
           @viewPapers="viewPapers"
         />
       </template>
-    </div>
 
-    <ConfirmDialog
-      :visible="showConfirmDialog"
-      :title="confirmDialogTitle"
-      :message="confirmDialogMessage"
-      type="danger"
-      confirmText="Clear Cache"
-      cancelText="Cancel"
-      @confirm="confirmClearCache"
-      @cancel="cancelClearCache"
-    />
+      <DayTooltip
+        :visible="isTooltipVisible"
+        :date="tooltipDate || ''"
+        :dateInfo="tooltipDateInfo"
+        :embeddingInfo="tooltipEmbeddingInfo"
+        :position="tooltipPosition"
+        :closable="false"
+        @close="closeTooltip"
+      />
+
+      <ConfirmDialog
+        :visible="showConfirmDialog"
+        :title="confirmDialogTitle"
+        :message="confirmDialogMessage"
+        type="danger"
+        confirmText="Clear Cache"
+        cancelText="Cancel"
+        @confirm="confirmClearCache"
+        @cancel="cancelClearCache"
+      />
+    </div>
   </div>
 </template>
 
@@ -240,10 +315,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useToastStore } from '../stores/toast-store'
 import { useRouter } from 'vue-router'
 import { arxivBackendAPI } from '../services/arxivBackend'
-import { useDateIndexes } from '../composables/useDateIndexes'
+import { useDateIndexes, useDayTooltip } from '../composables/useDateIndexes'
 import MonthView from '../components/MonthView.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import Tooltip from '../components/Tooltip.vue'
+import DayTooltip from '../components/DayTooltip.vue'
 
 interface DayInfo {
   date: string | null
@@ -251,6 +327,7 @@ interface DayInfo {
   isToday: boolean
   isFuture: boolean
   stored: boolean
+  hasEmbedding: boolean
   count: number
   fetching: boolean
   fetched: boolean
@@ -264,39 +341,59 @@ const selectedYear = ref<number>(new Date().getFullYear())
 const showYearDropdown = ref(false)
 const selectedMonth = ref(0)
 const selectedDate = ref<string | null>(null)
-const fetchingDates = ref<Set<string>>(new Set())
-
-function addFetchingDate(date: string) {
-  const newSet = new Set(fetchingDates.value)
-  newSet.add(date)
-  fetchingDates.value = newSet
-}
-
-function removeFetchingDate(date: string) {
-  const newSet = new Set(fetchingDates.value)
-  newSet.delete(date)
-  fetchingDates.value = newSet
-}
 
 const { 
   dateIndexes, 
+  embeddingIndexes,
   dateIndexMap, 
+  embeddingIndexMap,
+  dateIndexInfoMap,
+  embeddingIndexInfoMap,
+  fetchingDates,
+  generatingEmbeddingDates,
   totalDays, 
-  totalPapers, 
+  totalPapers,
+  totalEmbeddedDays,
   fetchDateIndexes, 
-  refreshDateIndexes 
+  fetchDate: fetchDateFromComposable,
+  generateEmbedding,
+  refreshDateIndexes
 } = useDateIndexes()
+
+const {
+  tooltipDate,
+  tooltipPosition,
+  tooltipDateInfo,
+  tooltipEmbeddingInfo,
+  isTooltipVisible,
+  showTooltip,
+  hideTooltip
+} = useDayTooltip(dateIndexInfoMap, embeddingIndexInfoMap)
+
+function handleDayMouseEnter(day: DayInfo, event: MouseEvent) {
+  if (!day.date || (!day.stored && !day.hasEmbedding)) return
+  showTooltip(day.date, event.clientX, event.clientY)
+}
+
+function handleDayMouseLeave() {
+  hideTooltip()
+}
+
+function closeTooltip() {
+  hideTooltip()
+}
 
 const statistics = computed(() => ({
   total_days: totalDays.value,
   total_papers: totalPapers.value,
-  indexes: dateIndexes.value
+  total_embedded_days: totalEmbeddedDays.value
 }))
 
 const yearStats = computed(() => {
   const yearStr = selectedYear.value.toString()
   let days = 0
   let papers = 0
+  let embeddedDays = 0
   
   for (const idx of dateIndexes.value) {
     if (idx.date && idx.date.startsWith(yearStr)) {
@@ -305,10 +402,17 @@ const yearStats = computed(() => {
     }
   }
   
+  for (const idx of embeddingIndexes.value) {
+    if (idx.date && idx.date.startsWith(yearStr)) {
+      embeddedDays++
+    }
+  }
+  
   const daysPercent = totalDays.value > 0 ? ((days / totalDays.value) * 100).toFixed(1) : '0.0'
   const papersPercent = totalPapers.value > 0 ? ((papers / totalPapers.value) * 100).toFixed(1) : '0.0'
+  const embeddedPercent = totalEmbeddedDays.value > 0 ? ((embeddedDays / totalEmbeddedDays.value) * 100).toFixed(1) : '0.0'
   
-  return { days, papers, daysPercent, papersPercent }
+  return { days, papers, embeddedDays, daysPercent, papersPercent, embeddedPercent }
 })
 
 const yearRange = computed(() => {
@@ -393,6 +497,7 @@ const months = computed(() => {
         isToday: false,
         isFuture: false,
         stored: false,
+        hasEmbedding: false,
         count: 0,
         fetching: false,
         fetched: false
@@ -403,6 +508,7 @@ const months = computed(() => {
       const dateStr = `${selectedYear.value}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
       const dateObj = new Date(selectedYear.value, m, d)
       const count = dateIndexMap.value.get(dateStr) ?? 0
+      const hasEmbedding = embeddingIndexMap.value.has(dateStr)
       
       days.push({
         date: dateStr,
@@ -410,6 +516,7 @@ const months = computed(() => {
         isToday: dateStr === todayStr,
         isFuture: dateObj > today,
         stored: count > 0,
+        hasEmbedding: hasEmbedding,
         count: count,
         fetching: fetchingDates.value.has(dateStr),
         fetched: dateIndexMap.value.has(dateStr)
@@ -491,7 +598,7 @@ function getDayTooltip(day: DayInfo): string {
   if (!day.date) return ''
   if (day.isFuture) return 'Future date'
   if (day.fetching) return 'Fetching papers...'
-  if (day.stored && day.count > 0) return `${day.count} papers stored`
+  if (day.stored && day.count > 0) return ``
   if (day.fetched && day.count === 0) return 'No papers (empty)'
   return 'Click to fetch papers'
 }
@@ -503,27 +610,25 @@ function getDayTooltipType(day: DayInfo): 'default' | 'info' | 'success' | 'warn
   return 'info'
 }
 
-async function fetchDate(date: string) {
-  if (fetchingDates.value.has(date)) return
+async function handleFetchDate(date: string) {
+  toastStore.showLoading(`Fetching papers for ${date}...`)
+  const result = await fetchDateFromComposable(date)
   
-  addFetchingDate(date)
+  if (result.success) {
+    toastStore.showSuccess(`Fetched ${result.count} papers for ${date}`)
+  } else {
+    toastStore.showError(result.error || `Failed to fetch papers for ${date}`)
+  }
+}
+
+async function handleGenerateEmbedding(date: string) {
+  toastStore.showLoading(`Generating embeddings for ${date}...`)
+  const result = await generateEmbedding(date)
   
-  try {
-    toastStore.showLoading(`Fetching papers for ${date}...`)
-    const result = await arxivBackendAPI.fetchPapersForDate(date)
-    
-    if (result.success) {
-      toastStore.showSuccess(`Fetched ${result.count} papers for ${date}`)
-    } else {
-      toastStore.showError(result.error || `Failed to fetch papers for ${date}`)
-    }
-    
-    await refreshDateIndexes()
-  } catch (error) {
-    console.error('Failed to fetch papers:', error)
-    toastStore.showError('Failed to fetch papers')
-  } finally {
-    removeFetchingDate(date)
+  if (result.success) {
+    toastStore.showSuccess(`Generated ${result.generated_count} embeddings for ${date}`)
+  } else {
+    toastStore.showError(result.error || `Failed to generate embeddings for ${date}`)
   }
 }
 
@@ -630,12 +735,37 @@ onMounted(() => {
   opacity: 0.8;
 }
 
-.calendar-controls {
+.calendar-toolbar {
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
+  justify-content: center;
+  gap: 20px;
+  padding: 14px 24px;
+  background: var(--bg-primary);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-group.navigation {
+  gap: 6px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border-color);
+  margin: 0 8px;
+}
+
+.toolbar-group.legend {
+  gap: 16px;
 }
 
 .year-select-wrapper {
@@ -914,7 +1044,7 @@ onMounted(() => {
 }
 
 .day-cell:not(.empty):hover {
-  background: var(--bg-secondary);
+  background: rgba(102, 126, 234, 0.1);
   transform: scale(1.1);
 }
 
@@ -954,6 +1084,10 @@ onMounted(() => {
   background: linear-gradient(135deg, rgba(67, 233, 123, 0.15) 0%, rgba(56, 249, 215, 0.15) 100%);
 }
 
+.day-cell.stored:hover {
+  background: linear-gradient(135deg, rgba(67, 233, 123, 0.25) 0%, rgba(56, 249, 215, 0.25) 100%);
+}
+
 .day-cell.future {
   opacity: 0.4;
   cursor: not-allowed;
@@ -975,9 +1109,15 @@ onMounted(() => {
   font-size: 0.7rem;
 }
 
-.day-status {
+.day-status-icons {
   position: absolute;
   bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.day-status {
   width: 10px;
   height: 10px;
 }
@@ -989,6 +1129,10 @@ onMounted(() => {
 
 .stored-icon svg {
   stroke: var(--success-color);
+}
+
+.embedding-icon svg {
+  stroke: #9C27B0;
 }
 
 .fetching-icon svg {
@@ -1005,7 +1149,8 @@ onMounted(() => {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  width: 300px;
+  min-width: 320px;
+  max-width: 380px;
   background: var(--bg-primary);
   border-radius: 16px;
   padding: 20px;
@@ -1068,19 +1213,21 @@ onMounted(() => {
 
 .detail-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .action-btn {
   flex: 1;
+  min-width: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 10px 12px;
+  gap: 4px;
+  padding: 8px 10px;
   border: none;
   border-radius: 10px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1118,40 +1265,68 @@ onMounted(() => {
   color: white;
 }
 
-.legend {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  margin-top: 32px;
-  padding: 16px 24px;
-  background: var(--bg-primary);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
+.embedding-btn {
+  background: linear-gradient(135deg, rgba(250, 112, 154, 0.2) 0%, rgba(254, 225, 64, 0.2) 100%);
+  color: var(--warning-color);
+  border: 1px solid rgba(250, 112, 154, 0.3);
 }
 
-.legend-item {
+.embedding-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(250, 112, 154, 0.3) 0%, rgba(254, 225, 64, 0.3) 100%);
+  transform: translateY(-2px);
+}
+
+.embedding-btn.generated {
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.15) 0%, rgba(103, 58, 183, 0.15) 100%);
+  color: #9C27B0;
+  border: 1px solid rgba(156, 39, 176, 0.3);
+}
+
+.embedding-btn.generated:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.25) 0%, rgba(103, 58, 183, 0.25) 100%);
+}
+
+.embedding-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.toolbar-group.legend .legend-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.toolbar-group.legend .legend-item:hover {
+  background: var(--bg-tertiary);
   color: var(--text-primary);
 }
 
-.legend-icon {
-  width: 16px;
-  height: 16px;
+.toolbar-group.legend .legend-icon {
+  width: 14px;
+  height: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.legend-icon svg {
-  width: 14px;
-  height: 14px;
+.toolbar-group.legend .legend-icon svg {
+  width: 12px;
+  height: 12px;
 }
 
 .legend-icon.stored svg {
   stroke: var(--success-color);
+}
+
+.legend-icon.embedding svg {
+  stroke: #9C27B0;
 }
 
 .legend-icon.fetching svg {

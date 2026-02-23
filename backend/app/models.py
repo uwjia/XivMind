@@ -156,6 +156,18 @@ class GenerateEmbeddingsResponse(BaseModel):
     skipped_count: int = 0
     error_count: int = 0
     error: Optional[str] = None
+    model_name: Optional[str] = None
+
+
+class EmbeddingIndexResponse(BaseModel):
+    date: str
+    total_count: int
+    generated_at: str
+    model_name: Optional[str] = None
+
+
+class EmbeddingIndexesResponse(BaseModel):
+    indexes: List[EmbeddingIndexResponse]
 
 
 class MessageResponse(BaseModel):

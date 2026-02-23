@@ -172,6 +172,26 @@ class PaperRepository(BaseRepository):
         """Get paper IDs filtered by category and/or date range."""
         pass
 
+    @abstractmethod
+    def get_embedding_index(self, date: str) -> Optional[Dict[str, Any]]:
+        """Get embedding index by date string."""
+        pass
+
+    @abstractmethod
+    def insert_embedding_index(self, date: str, total_count: int, model_name: str = "") -> None:
+        """Insert or update embedding index."""
+        pass
+
+    @abstractmethod
+    def get_all_embedding_indexes(self) -> List[Dict[str, Any]]:
+        """Get all embedding indexes."""
+        pass
+
+    @abstractmethod
+    def delete_embedding_index(self, date: str) -> None:
+        """Delete embedding index by date."""
+        pass
+
 
 class PaperEmbeddingRepository(ABC):
     """Abstract repository for paper embeddings."""
