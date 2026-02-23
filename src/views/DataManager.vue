@@ -473,10 +473,11 @@ const monthNames = [
 function openMonthView(month: number) {
   selectedMonth.value = month
   viewMode.value = 'month'
+  window.scrollTo({ top: 0, behavior: 'instant' })
 }
 
 function viewPapers(date: string) {
-  router.push({ path: '/search', query: { date } })
+  router.push({ path: '/', query: { date } })
 }
 
 const months = computed(() => {

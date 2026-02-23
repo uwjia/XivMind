@@ -140,7 +140,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onActivated, ref } from 'vue'
+import { computed, onMounted, onActivated, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { usePaperStore } from '../stores/paper-store'
 import { useConfigStore } from '../stores/config-store'
 import { useDownloadStore } from '../stores/download-store'
@@ -157,6 +158,8 @@ const paperStore = usePaperStore()
 const configStore = useConfigStore()
 const downloadStore = useDownloadStore()
 const jumpPageInput = ref<string>('')
+const route = useRoute()
+const router = useRouter()
 
 const {
   currentPage,
@@ -259,12 +262,40 @@ const refreshPapers = async () => {
   await loadPapers()
 }
 
+const handleRouteQuery = async () => {
+  const dateQuery = route.query.date as string | undefined
+  if (dateQuery) {
+    console.log('Loading papers for date from query:', dateQuery)
+    const date = new Date(dateQuery)
+    if (!isNaN(date.getTime())) {
+      handleDateSelect(date)
+      router.replace({ query: {} })
+      return true
+    }
+  }
+  return false
+}
+
+watch(() => route.query.date, async (newDate) => {
+  if (newDate) {
+    console.log('Route query date changed:', newDate)
+    const date = new Date(newDate as string)
+    if (!isNaN(date.getTime())) {
+      handleDateSelect(date)
+      router.replace({ query: {} })
+    }
+  }
+})
+
 onMounted(async () => {
   console.log('Home mounted')
   if (downloadStore.tasks.length === 0) {
     await downloadStore.fetchTasks()
   }
-  checkAndLoadPapers()
+  const handled = await handleRouteQuery()
+  if (!handled) {
+    checkAndLoadPapers()
+  }
 })
 
 onActivated(() => {
