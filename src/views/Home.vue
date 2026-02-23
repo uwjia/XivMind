@@ -7,49 +7,43 @@
           <p v-if="filterDescription" class="section-description">{{ filterDescription }}</p>
         </div>
         <div class="header-actions">
-          <button class="action-btn date-btn" @click="toggleDatePicker" title="Calendar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#FF9800" stroke-width="2">
+          <button class="icon-btn date-btn" @click="toggleDatePicker" title="Select date">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
               <line x1="16" y1="2" x2="16" y2="6"/>
               <line x1="8" y1="2" x2="8" y2="6"/>
               <line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
-            <span>Date</span>
           </button>
-          <button class="action-btn category-btn" @click="toggleCategoryPicker" title="Category">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#9C27B0" stroke-width="2">
+          <button class="icon-btn category-btn" @click="toggleCategoryPicker" title="Select category">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
             </svg>
-            <span>Category</span>
           </button>
-          <button class="toggle-btn" @click="configStore.setUseSimpleCard(!configStore.useSimpleCard)" :title="configStore.useSimpleCard ? 'Switch to detailed view' : 'Switch to simple view'">
-            <svg viewBox="0 0 24 24" fill="none" stroke="url(#toggleGradient)" stroke-width="2">
-              <defs>
-                <linearGradient id="toggleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style="stop-color:#667eea"/>
-                  <stop offset="100%" style="stop-color:#764ba2"/>
-                </linearGradient>
-              </defs>
+          <button class="icon-btn toggle-btn" @click="configStore.setUseSimpleCard(!configStore.useSimpleCard)" :title="configStore.useSimpleCard ? 'Switch to detailed view' : 'Switch to simple view'">
+            <svg v-if="configStore.useSimpleCard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
               <line x1="3" y1="9" x2="21" y2="9"/>
-              <line x1="9" y1="21" x2="9" y2="9"/>
+              <line x1="3" y1="15" x2="21" y2="15"/>
+              <line x1="9" y1="9" x2="9" y2="15"/>
             </svg>
-            <span>{{ configStore.useSimpleCard ? 'Detailed' : 'Simple' }}</span>
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="5" rx="1"/>
+              <rect x="3" y="10" width="18" height="5" rx="1"/>
+              <rect x="3" y="17" width="18" height="4" rx="1"/>
+            </svg>
           </button>
-          <button class="refresh-btn" @click="refreshPapers" :disabled="loading">
-            <svg viewBox="0 0 24 24" fill="none" stroke="url(#refreshGradient)" stroke-width="2">
-              <defs>
-                <linearGradient id="refreshGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style="stop-color:#00BCD4"/>
-                  <stop offset="100%" style="stop-color:#2196F3"/>
-                </linearGradient>
-              </defs>
+          <button class="icon-btn filter-btn" @click="toggleFilterDrawer" :title="isFilterDrawerOpen ? 'Hide categories' : 'Show categories'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V17C21 18.1046 20.1046 19 19 19H5C3.89543 19 3 18.1046 3 17V7Z" fill="currentColor" fill-opacity="0.2"/>
+            </svg>
+          </button>
+          <button class="icon-btn refresh-btn" @click="refreshPapers" :disabled="loading" title="Refresh papers">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M23 4v6h-6M1 20v-6h6"/>
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
             </svg>
-            <span v-if="loading">Loading...</span>
-            <span v-else>Refresh</span>
           </button>
         </div>
       </div>
@@ -136,6 +130,14 @@
       @update:model-value="handleCategorySelect"
       @update:is-open="closeCategoryPicker"
     />
+
+    <CategoryDrawer
+      :is-open="isFilterDrawerOpen"
+      :selected-category="localFilterCategory"
+      :category-counts="categoryCounts"
+      @close="closeFilterDrawer"
+      @select="handleFilterCategorySelect"
+    />
   </div>
 </template>
 
@@ -150,6 +152,7 @@ import PaperCard from '../components/PaperCard.vue'
 import PaperCardSimple from '../components/PaperCardSimple.vue'
 import DatePicker from '../components/DatePicker.vue'
 import CategoryPicker from '../components/CategoryPicker.vue'
+import CategoryDrawer from '../components/CategoryDrawer.vue'
 import { usePaperFilter } from '../composables/usePaperFilter'
 import { useDateIndexes } from '../composables/useDateIndexes'
 import type { Paper } from '../types'
@@ -184,8 +187,46 @@ const {
 
 const { storedDatesMap, dateIndexes, fetchDateIndexes } = useDateIndexes()
 
-const filteredPapers = computed<Paper[]>(() => {
+const isFilterDrawerOpen = ref(false)
+const localFilterCategory = ref<string | null>(null)
+
+const toggleFilterDrawer = () => {
+  isFilterDrawerOpen.value = !isFilterDrawerOpen.value
+}
+
+const closeFilterDrawer = () => {
+  isFilterDrawerOpen.value = false
+}
+
+const handleFilterCategorySelect = (categoryId: string | null) => {
+  localFilterCategory.value = categoryId
+}
+
+const allPapers = computed<Paper[]>(() => {
   return paperStore.getFilteredPapers()
+})
+
+const filteredPapers = computed<Paper[]>(() => {
+  const papers = allPapers.value
+  if (!localFilterCategory.value || localFilterCategory.value === 'cs*') {
+    return papers
+  }
+  if (localFilterCategory.value === 'other') {
+    const csCategoryIds = categories.map(cat => cat.id)
+    return papers.filter(paper => !csCategoryIds.includes(paper.primaryCategory))
+  }
+  return papers.filter(paper => paper.primaryCategory === localFilterCategory.value)
+})
+
+const categoryCounts = computed(() => {
+  const counts: Record<string, number> = {}
+  for (const paper of allPapers.value) {
+    const category = paper.primaryCategory
+    if (category) {
+      counts[category] = (counts[category] || 0) + 1
+    }
+  }
+  return counts
 })
 
 const getLatestStoredDate = (): string | null => {
@@ -287,6 +328,10 @@ watch(() => route.query.date, async (newDate) => {
   }
 })
 
+watch(selectedDate, () => {
+  localFilterCategory.value = null
+})
+
 onMounted(async () => {
   console.log('Home mounted')
   if (downloadStore.tasks.length === 0) {
@@ -326,166 +371,98 @@ onActivated(() => {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
-.action-btn {
+.icon-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  font-weight: 600;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid transparent;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 
-.action-btn svg {
-  width: 18px;
-  height: 18px;
+.icon-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.icon-btn svg {
+  width: 20px;
+  height: 20px;
   transition: transform 0.3s ease;
 }
 
-.action-btn:hover svg {
+.icon-btn:hover svg {
   transform: scale(1.1);
 }
 
 .date-btn {
-  background: linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(245, 124, 0, 0.1) 100%);
   color: #FF9800;
+  border-color: rgba(255, 152, 0, 0.2);
 }
 
 .date-btn:hover {
-  background: linear-gradient(135deg, rgba(255, 152, 0, 0.2) 0%, rgba(245, 124, 0, 0.2) 100%);
-  color: #F57C00;
-  border-color: rgba(255, 152, 0, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(255, 152, 0, 0.25);
+  background: rgba(255, 152, 0, 0.1);
+  border-color: rgba(255, 152, 0, 0.4);
 }
 
 .category-btn {
-  background: linear-gradient(135deg, rgba(156, 39, 176, 0.1) 0%, rgba(123, 31, 162, 0.1) 100%);
   color: #9C27B0;
+  border-color: rgba(156, 39, 176, 0.2);
 }
 
 .category-btn:hover {
-  background: linear-gradient(135deg, rgba(156, 39, 176, 0.2) 0%, rgba(123, 31, 162, 0.2) 100%);
-  color: #7B1FA2;
-  border-color: rgba(156, 39, 176, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(156, 39, 176, 0.25);
+  background: rgba(156, 39, 176, 0.1);
+  border-color: rgba(156, 39, 176, 0.4);
 }
 
 .toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border: 2px solid transparent;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-  border-radius: 12px;
   color: #667eea;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-  backdrop-filter: blur(10px);
+  border-color: rgba(102, 126, 234, 0.2);
 }
 
 .toggle-btn:hover {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
-  color: #764ba2;
-  border-color: rgba(102, 126, 234, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.25);
+  background: rgba(102, 126, 234, 0.1);
+  border-color: rgba(102, 126, 234, 0.4);
 }
 
-.toggle-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+.filter-btn {
+  color: #9C27B0;
+  border-color: rgba(156, 39, 176, 0.2);
 }
 
-.toggle-btn svg {
-  width: 18px;
-  height: 18px;
-  transition: transform 0.3s ease;
-}
-
-.toggle-btn:hover svg {
-  transform: rotate(5deg) scale(1.1);
-}
-
-.section-description {
-  font-size: 1.0rem;
-  font-weight: 600;
-  color: #00BCD4;
-  background-color: rgba(0, 188, 212, 0.1);
-  border: 1px solid rgba(0, 188, 212, 0.3);
-  border-radius: 20px;
-  padding: 6px 16px;
-  display: inline-block;
-  backdrop-filter: blur(10px);
-  margin: 8px 0 0 0;
+.filter-btn:hover {
+  background: rgba(156, 39, 176, 0.1);
+  border-color: rgba(156, 39, 176, 0.4);
 }
 
 .refresh-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border: 2px solid transparent;
-  background: linear-gradient(135deg, rgba(0, 188, 212, 0.1) 0%, rgba(33, 150, 243, 0.1) 100%);
-  border-radius: 12px;
   color: #00BCD4;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(0, 188, 212, 0.15);
-  backdrop-filter: blur(10px);
+  border-color: rgba(0, 188, 212, 0.2);
 }
 
 .refresh-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(0, 188, 212, 0.2) 0%, rgba(33, 150, 243, 0.2) 100%);
-  color: #2196F3;
-  border-color: rgba(0, 188, 212, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 188, 212, 0.25);
-}
-
-.refresh-btn:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(0, 188, 212, 0.2);
+  background: rgba(0, 188, 212, 0.1);
+  border-color: rgba(0, 188, 212, 0.4);
 }
 
 .refresh-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
 
-.refresh-btn svg {
-  width: 18px;
-  height: 18px;
-  transition: transform 0.3s ease;
-}
-
-.refresh-btn:hover:not(:disabled) svg {
-  animation: rotate 0.6s ease-in-out;
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.section-description {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
 .error-state {

@@ -79,7 +79,7 @@ const emit = defineEmits<{
 const isExpanded = ref(true)
 
 const childCategories = computed(() => {
-  const children = categories.filter(cat => cat.id !== 'cs*')
+  const children = categories.filter(cat => cat.id !== 'cs*' && (props.categoryCounts[cat.id] || 0) > 0)
   return children.sort((a, b) => {
     const countA = props.categoryCounts[a.id] || 0
     const countB = props.categoryCounts[b.id] || 0

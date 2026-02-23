@@ -36,6 +36,16 @@ export function usePaperFilter() {
     isCategoryPickerOpen.value = false
   }
 
+  const getDateTimestamps = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return {
+      startTimestamp: `${year}${month}${day}000000`,
+      endTimestamp: `${year}${month}${day}235959`
+    }
+  }
+
   const loadPapers = async (page?: number) => {
     const targetPage = page !== undefined ? page : currentPage.value
     const startIndex = targetPage * configStore.maxResults
@@ -47,34 +57,27 @@ export function usePaperFilter() {
       const category = selectedCategory.value === 'all' ? 'cs*' : selectedCategory.value
       const dateValue = selectedDate.value
       
-      if (dateValue === 'all') {
-        await paperStore.fetchPapers({ category, maxResults: configStore.maxResults, start: startIndex })
-      } else if (dateValue && (typeof dateValue === 'string' || dateValue instanceof Date || (typeof dateValue === 'object' && 'startDate' in dateValue && 'endDate' in dateValue))) {
-        let startDate: Date | null = null
-        let endDate: Date | null = null
-        
-        if (dateValue instanceof Date) {
-          const year = dateValue.getFullYear()
-          startDate = new Date(Date.UTC(year, dateValue.getMonth(), dateValue.getDate(), 0, 0, 0))
-          endDate = new Date(Date.UTC(year, dateValue.getMonth(), dateValue.getDate(), 23, 59, 59))
-        } else if ((dateValue as { startDate: string; endDate: string }).startDate && (dateValue as { startDate: string; endDate: string }).endDate) {
-          startDate = new Date((dateValue as { startDate: string; endDate: string }).startDate)
-          endDate = new Date((dateValue as { startDate: string; endDate: string }).endDate)
-        }
-        
-        if (startDate && endDate) {
-          const year = startDate.getFullYear()
-          const month = String(startDate.getMonth() + 1).padStart(2, '0')
-          const day = String(startDate.getDate()).padStart(2, '0')
-          
-          const startTimestamp = `${year}${month}${day}000000`
-          const endTimestamp = `${year}${month}${day}235959`
-          await paperStore.fetchPapersByDateRange(startTimestamp, endTimestamp, category, configStore.maxResults, startIndex)
-        } else {
-          await paperStore.fetchPapers({ category, maxResults: configStore.maxResults, start: startIndex })
-        }
+      const fetchDefault = () => paperStore.fetchPapers({ 
+        category, 
+        maxResults: configStore.maxResults, 
+        start: startIndex 
+      })
+
+      const fetchByDateRange = (startTimestamp: string, endTimestamp: string) => 
+        paperStore.fetchPapersByDateRange(startTimestamp, endTimestamp, category, configStore.maxResults, startIndex)
+      
+      let dateForQuery: Date | null = null
+      if (dateValue instanceof Date) {
+        dateForQuery = dateValue
+      } else if (dateValue && typeof dateValue === 'object' && 'startDate' in dateValue && dateValue.startDate) {
+        dateForQuery = new Date(dateValue.startDate)
+      }
+      
+      if (dateForQuery && !isNaN(dateForQuery.getTime())) {
+        const { startTimestamp, endTimestamp } = getDateTimestamps(dateForQuery)
+        await fetchByDateRange(startTimestamp, endTimestamp)
       } else {
-        await paperStore.fetchPapers({ category, maxResults: configStore.maxResults, start: startIndex })
+        await fetchDefault()
       }
       
       toastStore.showSuccess('Papers loaded successfully!')
