@@ -24,16 +24,10 @@
       </div>
       <div class="stat-card">
         <div class="stat-icon embedding-stat">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="6" cy="6" r="2"/>
-            <circle cx="18" cy="6" r="2"/>
-            <circle cx="6" cy="18" r="2"/>
-            <circle cx="18" cy="18" r="2"/>
-            <circle cx="12" cy="12" r="2.5"/>
-            <line x1="7.5" y1="7.5" x2="10" y2="10"/>
-            <line x1="13.5" y1="7.5" x2="14" y2="10"/>
-            <line x1="7.5" y1="16.5" x2="10" y2="14"/>
-            <line x1="13.5" y1="16.5" x2="14" y2="14"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M5 6 Q9 3, 12 6 T19 6"/>
+            <path d="M5 12 Q9 9, 12 12 T19 12"/>
+            <path d="M5 18 Q9 15, 12 18 T19 18"/>
           </svg>
         </div>
         <div class="stat-info">
@@ -94,16 +88,10 @@
               <span class="day-number">{{ day.day }}</span>
               <div class="day-badges">
                 <span v-if="day.hasEmbedding" class="day-badge embedding" title="Embeddings generated">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="6" cy="6" r="2"/>
-                    <circle cx="18" cy="6" r="2"/>
-                    <circle cx="6" cy="18" r="2"/>
-                    <circle cx="18" cy="18" r="2"/>
-                    <circle cx="12" cy="12" r="2.5"/>
-                    <line x1="7.5" y1="7.5" x2="10" y2="10"/>
-                    <line x1="13.5" y1="7.5" x2="14" y2="10"/>
-                    <line x1="7.5" y1="16.5" x2="10" y2="14"/>
-                    <line x1="13.5" y1="16.5" x2="14" y2="14"/>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M5 6 Q9 3, 12 6 T19 6"/>
+                    <path d="M5 12 Q9 9, 12 12 T19 12"/>
+                    <path d="M5 18 Q9 15, 12 18 T19 18"/>
                   </svg>
                 </span>
                 <span v-if="day.stored" class="day-badge stored" title="Papers stored">
@@ -162,16 +150,10 @@
                 :title="generatingEmbeddingDates.has(day.date || '') ? 'Generating...' : (day.hasEmbedding ? 'Regenerate embeddings for this date' : 'Generate embeddings for this date')"
                 @click.stop="day.date && handleGenerateEmbedding(day.date)"
               >
-                <svg v-if="!generatingEmbeddingDates.has(day.date || '')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="6" cy="6" r="2"/>
-                  <circle cx="18" cy="6" r="2"/>
-                  <circle cx="6" cy="18" r="2"/>
-                  <circle cx="18" cy="18" r="2"/>
-                  <circle cx="12" cy="12" r="2.5"/>
-                  <line x1="7.5" y1="7.5" x2="10" y2="10"/>
-                  <line x1="13.5" y1="7.5" x2="14" y2="10"/>
-                  <line x1="7.5" y1="16.5" x2="10" y2="14"/>
-                  <line x1="13.5" y1="16.5" x2="14" y2="14"/>
+                <svg v-if="!generatingEmbeddingDates.has(day.date || '')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M5 6 Q9 3, 12 6 T19 6"/>
+                  <path d="M5 12 Q9 9, 12 12 T19 12"/>
+                  <path d="M5 18 Q9 15, 12 18 T19 18"/>
                 </svg>
                 <svg v-else class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
@@ -728,7 +710,6 @@ async function handleGenerateEmbedding(date: string) {
 .action-btn.embedding.generated {
   background: rgba(156, 39, 176, 0.15);
   color: #9C27B0;
-  border: 1px solid rgba(156, 39, 176, 0.3);
 }
 
 .action-btn.embedding.generated:hover:not(:disabled) {

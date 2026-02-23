@@ -77,8 +77,6 @@
             <button class="control-btn today-btn" @click="goToToday">Today</button>
           </div>
 
-          <div class="toolbar-divider"></div>
-
           <div class="toolbar-group legend">
             <div class="legend-item">
               <span class="legend-icon stored">
@@ -90,16 +88,10 @@
             </div>
             <div class="legend-item">
               <span class="legend-icon embedding">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="6" cy="6" r="2"/>
-                  <circle cx="18" cy="6" r="2"/>
-                  <circle cx="6" cy="18" r="2"/>
-                  <circle cx="18" cy="18" r="2"/>
-                  <circle cx="12" cy="12" r="2.5"/>
-                  <line x1="7.5" y1="7.5" x2="10" y2="10"/>
-                  <line x1="13.5" y1="7.5" x2="14" y2="10"/>
-                  <line x1="7.5" y1="16.5" x2="10" y2="14"/>
-                  <line x1="13.5" y1="16.5" x2="14" y2="14"/>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M5 6 Q9 3, 12 6 T19 6"/>
+                  <path d="M5 12 Q9 9, 12 12 T19 12"/>
+                  <path d="M5 18 Q9 15, 12 18 T19 18"/>
                 </svg>
               </span>
               <span>Embedded</span>
@@ -121,10 +113,6 @@
                 </svg>
               </span>
               <span>No Papers</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-icon future"></span>
-              <span>Future</span>
             </div>
           </div>
         </div>
@@ -167,16 +155,10 @@
                   <span v-if="day.date" class="day-number">{{ day.day }}</span>
                   <div v-if="day.date" class="day-status-icons">
                     <span v-if="day.hasEmbedding" class="day-status embedding-icon" title="Embeddings generated">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="6" cy="6" r="2"/>
-                        <circle cx="18" cy="6" r="2"/>
-                        <circle cx="6" cy="18" r="2"/>
-                        <circle cx="18" cy="18" r="2"/>
-                        <circle cx="12" cy="12" r="2.5"/>
-                        <line x1="7.5" y1="7.5" x2="10" y2="10"/>
-                        <line x1="13.5" y1="7.5" x2="14" y2="10"/>
-                        <line x1="7.5" y1="16.5" x2="10" y2="14"/>
-                        <line x1="13.5" y1="16.5" x2="14" y2="14"/>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M5 6 Q9 3, 12 6 T19 6"/>
+                        <path d="M5 12 Q9 9, 12 12 T19 12"/>
+                        <path d="M5 18 Q9 15, 12 18 T19 18"/>
                       </svg>
                     </span>
                     <span v-else-if="day.stored && day.count > 0" class="day-status stored-icon">
@@ -247,16 +229,10 @@
             :disabled="!!(selectedDate && generatingEmbeddingDates.has(selectedDate))"
             @click="selectedDate && handleGenerateEmbedding(selectedDate)"
           >
-            <svg v-if="!generatingEmbeddingDates.has(selectedDate || '')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="6" cy="6" r="2"/>
-              <circle cx="18" cy="6" r="2"/>
-              <circle cx="6" cy="18" r="2"/>
-              <circle cx="18" cy="18" r="2"/>
-              <circle cx="12" cy="12" r="2.5"/>
-              <line x1="7.5" y1="7.5" x2="10" y2="10"/>
-              <line x1="13.5" y1="7.5" x2="14" y2="10"/>
-              <line x1="7.5" y1="16.5" x2="10" y2="14"/>
-              <line x1="13.5" y1="16.5" x2="14" y2="14"/>
+            <svg v-if="!generatingEmbeddingDates.has(selectedDate || '')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M5 6 Q9 3, 12 6 T19 6"/>
+              <path d="M5 12 Q9 9, 12 12 T19 12"/>
+              <path d="M5 18 Q9 15, 12 18 T19 18"/>
             </svg>
             <svg v-else class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
@@ -701,7 +677,7 @@ onMounted(() => {
 .stats-panel {
   display: flex;
   gap: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 0;
   padding: 24px;
   background: var(--bg-primary);
   border-radius: 16px;
@@ -739,7 +715,7 @@ onMounted(() => {
 .calendar-toolbar {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 20px;
   padding: 14px 24px;
   background: var(--bg-primary);
@@ -756,13 +732,6 @@ onMounted(() => {
 
 .toolbar-group.navigation {
   gap: 6px;
-}
-
-.toolbar-divider {
-  width: 1px;
-  height: 28px;
-  background: var(--border-color);
-  margin: 0 8px;
 }
 
 .toolbar-group.legend {
@@ -1337,14 +1306,6 @@ onMounted(() => {
 .legend-icon.empty svg {
   stroke: var(--text-secondary);
   stroke-width: 2;
-}
-
-.legend-icon.future {
-  width: 14px;
-  height: 14px;
-  background: var(--bg-secondary);
-  border-radius: 3px;
-  opacity: 0.6;
 }
 
 .spinner {

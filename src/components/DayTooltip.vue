@@ -37,16 +37,10 @@
           </div>
           <div v-if="embeddingInfo" class="tooltip-section">
             <div class="section-header embedding">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="6" cy="6" r="2"/>
-                <circle cx="18" cy="6" r="2"/>
-                <circle cx="6" cy="18" r="2"/>
-                <circle cx="18" cy="18" r="2"/>
-                <circle cx="12" cy="12" r="2.5"/>
-                <line x1="7.5" y1="7.5" x2="10" y2="10"/>
-                <line x1="13.5" y1="7.5" x2="14" y2="10"/>
-                <line x1="7.5" y1="16.5" x2="10" y2="14"/>
-                <line x1="13.5" y1="16.5" x2="14" y2="14"/>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M5 6 Q9 3, 12 6 T19 6"/>
+                <path d="M5 12 Q9 9, 12 12 T19 12"/>
+                <path d="M5 18 Q9 15, 12 18 T19 18"/>
               </svg>
               <span>Embeddings</span>
             </div>
