@@ -411,6 +411,7 @@ class PaperService:
             
             generated = 0
             errors = 0
+            model_name = ""
             
             for i in range(0, len(paper_ids), batch_size):
                 batch_ids = paper_ids[i:i + batch_size]
@@ -422,13 +423,15 @@ class PaperService:
                 ]
                 
                 try:
-                    embeddings, model_name = embedding_service.encode_batch(texts)
+                    embeddings, batch_model_name = embedding_service.encode_batch(texts)
+                    if not model_name:
+                        model_name = batch_model_name
                     
                     embeddings_data = [
                         {
                             "paper_id": papers[j]["id"],
                             "embedding": embeddings[j],
-                            "model_name": model_name,
+                            "model_name": batch_model_name,
                         }
                         for j in range(len(papers))
                     ]
@@ -441,11 +444,19 @@ class PaperService:
                     logger.error(f"Failed to generate embeddings for batch: {e}")
                     errors += len(batch_ids)
             
+            if generated > 0 and date:
+                self.paper_repo.insert_embedding_index(
+                    date=date,
+                    total_count=generated,
+                    model_name=model_name
+                )
+            
             return {
                 "success": True,
                 "generated_count": generated,
                 "skipped_count": len(paper_ids) - generated if not force else 0,
                 "error_count": errors,
+                "model_name": model_name,
             }
             
         except Exception as e:
@@ -457,3 +468,11 @@ class PaperService:
                 "error_count": 1,
                 "error": str(e),
             }
+    
+    def get_embedding_indexes(self) -> List[Dict[str, Any]]:
+        """Get all embedding indexes."""
+        return self.paper_repo.get_all_embedding_indexes()
+    
+    def get_embedding_index(self, date: str) -> Optional[Dict[str, Any]]:
+        """Get embedding index for a specific date."""
+        return self.paper_repo.get_embedding_index(date)
