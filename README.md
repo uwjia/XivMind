@@ -12,6 +12,11 @@ A modern arXiv paper management application with bookmark, download, and AI assi
 - 🔍 Advanced search and filtering by category and date
 - 🔖 Bookmark papers for later reading
 - 📥 Download PDFs with progress tracking
+- 🕸️ Knowledge Graph visualization for daily papers
+  - Discover relationships between papers
+  - Identify research clusters and trends
+  - Multiple layout options: force-directed, circular, hierarchical
+  - Interactive node exploration with similarity filtering
 - 🤖 AI Assistant for paper-related questions
   - Multiple LLM providers: OpenAI, Anthropic, GLM (Zhipu AI), Ollama (local)
   - Semantic search across papers
@@ -226,6 +231,16 @@ ollama pull qwen2
 - Category and date filters
 - Paper cards with bookmark/download actions
 - Toggle between detailed and simple card views
+- Knowledge Graph view for visualizing paper relationships
+
+### Knowledge Graph
+- Visualize paper relationships based on semantic similarity
+- Identify research clusters and trending topics
+- Interactive exploration with node click for details
+- Adjustable similarity threshold for edge filtering
+- Multiple layout algorithms: force-directed, circular, hierarchical
+- Category-based filtering and node coloring
+- Statistics panel showing total papers, connections, and top categories
 
 ### Paper Detail Page
 - Full paper information with LaTeX rendering
@@ -361,6 +376,13 @@ Your prompt template here with {paper.title} and {paper.abstract} placeholders.
 | POST | `/{task_id}/open` | Open downloaded file |
 | WebSocket | `/ws` | Real-time progress |
 
+### Graph `/api/graph`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/{date}` | Get knowledge graph data for a specific date |
+| GET | `/similarity/{date}` | Get paper similarity matrix for a date |
+
 ## Development
 
 ### Frontend
@@ -392,6 +414,7 @@ Access at http://localhost:6006
 
 Available component categories:
 - **PaperCard** - Paper display components
+- **Graph** - KnowledgeGraph, GraphControls, GraphLegend, GraphStatistics components
 - **Skills** - SkillCard, SkillForm components
 - **UI Components** - Buttons, dialogs, tooltips, etc.
 
