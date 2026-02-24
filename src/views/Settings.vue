@@ -195,7 +195,7 @@
           <div class="settings-item">
             <div class="item-info">
               <h3 class="item-title">XivMind</h3>
-              <p class="item-description">Version 1.0.0</p>
+              <p class="item-description">Version 0.2.0</p>
             </div>
             <div class="about-links">
               <a href="https://www.xivmind.com/" target="_blank" class="link-btn">
@@ -501,20 +501,20 @@ onMounted(() => {
 .theme-selector {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .theme-option {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 16px 24px;
-  border: 2px solid var(--border-color);
-  border-radius: 12px;
+  padding: 12px 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
   background: var(--bg-secondary);
-  color: var(--text-secondary);
-  font-size: 1rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
   transition: var(--transition);
@@ -523,6 +523,7 @@ onMounted(() => {
 .theme-option:hover {
   border-color: var(--accent-color);
   background: var(--bg-tertiary);
+  color: var(--accent-color);
 }
 
 .theme-option.active {
@@ -532,26 +533,26 @@ onMounted(() => {
 }
 
 .theme-option svg {
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
 }
 
 .sidebar-controls {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .control-btn {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 12px 20px;
-  border: 2px solid var(--border-color);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-secondary);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
@@ -561,6 +562,7 @@ onMounted(() => {
 .control-btn:hover {
   border-color: var(--accent-color);
   background: var(--bg-tertiary);
+  color: var(--accent-color);
 }
 
 .control-btn.active {

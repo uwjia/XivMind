@@ -36,6 +36,7 @@ interface BackendPaper {
   comment: string
   journal_ref: string
   doi: string
+  similarity_score?: number
 }
 
 interface DateIndex {

@@ -183,9 +183,9 @@
               <button 
                 @click="copyMessage(message)" 
                 class="action-icon-btn"
-                :title="copiedMessageId === getMessageId(message) ? 'Copied!' : 'Copy all'"
+                :title="isCopied(message) ? 'Copied!' : 'Copy all'"
               >
-                <svg v-if="copiedMessageId === getMessageId(message)" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <svg v-if="isCopied(message)" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
                 <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -254,19 +254,32 @@
           </div>
         </template>
         <template v-else>
-          <textarea
-            v-model="inputMessage"
-            @keydown.enter.exact.prevent="sendMessage()"
-            :placeholder="mode === 'search' ? 'Enter your search query...' : 'Ask a question about research...'"
-            rows="1"
-            ref="inputRef"
-          ></textarea>
-          <button @click="sendMessage()" :disabled="!inputMessage.trim() || isLoading" class="send-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <line x1="22" y1="2" x2="11" y2="13"/>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
-          </button>
+          <div class="input-container" :title="'Enter to send · Shift+Enter for new line'">
+            <div class="input-wrapper">
+              <textarea
+                v-model="inputMessage"
+                @keydown="handleInputKeydown"
+                @input="autoResize"
+                :placeholder="mode === 'search' ? 'Enter your search query...' : 'Ask a question about research...'"
+                ref="inputRef"
+                rows="2"
+              ></textarea>
+              <button 
+                @click="sendMessage()" 
+                :disabled="!inputMessage.trim() || isLoading" 
+                class="send-btn"
+                :title="inputMessage.trim() ? 'Send message' : 'Type a message'"
+              >
+                <svg v-if="!isLoading" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+                <svg v-else class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32"/>
+                </svg>
+              </button>
+            </div>
+          </div>
         </template>
       </div>
     </div>
@@ -274,160 +287,61 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { arxivBackendAPI } from '../services/arxivBackend'
-import type { Skill, RelatedPaper } from '../services/skills'
 import { useLLMStore } from '../stores/llm-store'
-import { useSkills } from '../composables/useSkills'
-import { useConfigError } from '../composables/useConfigError'
+import { useChatMessages, type Message, type ChatMode } from '../composables/useChatMessages'
+import { useSkillExecution } from '../composables/useSkillExecution'
+import { useMessageCopy } from '../composables/useMessageCopy'
 import SkillForm from '../components/skills/SkillForm.vue'
-
-interface Paper {
-  id: string
-  title: string
-  abstract: string
-  authors: string[]
-  primary_category: string
-  categories: string[]
-  published: string
-  similarity_score: number
-}
-
-interface Reference {
-  id: string
-  title: string
-  authors: string[]
-  published?: string
-  relevance_score: number
-}
-
-interface Message {
-  role: 'user' | 'assistant'
-  content: string
-  papers?: Paper[]
-  answer?: string
-  references?: Reference[]
-  model?: string
-  isConfigError?: boolean
-  skillId?: string
-  skillName?: string
-  paperIds?: string[]
-  skillParams?: Record<string, unknown>
-}
 
 const router = useRouter()
 const llmStore = useLLMStore()
 
-const { 
-  skills, 
-  loading: skillsLoading, 
-  loadSkills, 
-  executeSkill: executeSkillApi 
-} = useSkills()
-
-const { isConfigError } = useConfigError()
-
-const mode = ref<'search' | 'ask' | 'skills'>('search')
-const searchMessages = ref<Message[]>([])
-const askMessages = ref<Message[]>([])
-const skillsMessages = ref<Message[]>([])
+const mode = ref<ChatMode>('search')
 const inputMessage = ref('')
-const isLoading = ref(false)
-const messagesContainer = ref<HTMLElement | null>(null)
 const inputRef = ref<HTMLTextAreaElement | null>(null)
 
-const currentModeMessages = computed({
-  get: () => {
-    switch (mode.value) {
-      case 'search': return searchMessages.value
-      case 'ask': return askMessages.value
-      case 'skills': return skillsMessages.value
-      default: return searchMessages.value
-    }
-  },
-  set: (value: Message[]) => {
-    switch (mode.value) {
-      case 'search': searchMessages.value = value; break
-      case 'ask': askMessages.value = value; break
-      case 'skills': skillsMessages.value = value; break
-    }
-  }
-})
+const {
+  skillsMessages,
+  currentModeMessages,
+  currentUserMessageIndex,
+  isLoading: chatLoading,
+  setMessageRef,
+  scrollToBottom,
+  sendMessage: sendChatMessage,
+  retryMessage: retryChatMessage,
+  addUserMessage
+} = useChatMessages(mode)
 
-const selectedSkill = ref<Skill | null>(null)
-const skillExecuted = ref(false)
-const copiedMessageId = ref<string | null>(null)
-const messageRefs = ref<Map<number, HTMLElement>>(new Map())
-const currentUserMessageIndex = ref<number | null>(null)
+const {
+  skills,
+  skillsLoading,
+  selectedSkill,
+  skillExecuted,
+  isLoading: skillLoading,
+  selectSkill,
+  handleSkillExecute,
+  runSkillAgain,
+  backToSkills,
+  loadSkills
+} = useSkillExecution(skillsMessages, addUserMessage, scrollToBottom)
 
-const setMessageRef = (el: any, index: number) => {
-  if (el) {
-    messageRefs.value.set(index, el as HTMLElement)
-  }
-}
+const {
+  copyMessage,
+  isCopied
+} = useMessageCopy()
 
-const getMessageId = (message: Message): string => {
-  return `${message.role}-${message.content.substring(0, 50)}-${message.papers?.length || 0}-${message.answer?.substring(0, 50) || ''}`
-}
-
-const copyMessage = async (message: Message) => {
-  let textToCopy = ''
-  
-  if (message.answer) {
-    textToCopy = message.answer
-    if (message.references && message.references.length > 0) {
-      textToCopy += '\n\nReferences:\n'
-      message.references.forEach((ref, index) => {
-        textToCopy += `${index + 1}. ${ref.title} - ${ref.authors?.join(', ')}\n`
-      })
-    }
-  } else if (message.papers && message.papers.length > 0) {
-    textToCopy = `Found ${message.papers.length} papers:\n\n`
-    message.papers.forEach((paper, index) => {
-      textToCopy += `${index + 1}. ${paper.title}\n   Authors: ${paper.authors?.join(', ')}\n   Category: ${paper.primary_category}\n   Published: ${paper.published}\n   Similarity: ${(paper.similarity_score * 100).toFixed(1)}%\n\n`
-    })
-  } else {
-    textToCopy = message.content
-  }
-  
-  try {
-    await navigator.clipboard.writeText(textToCopy)
-    const msgId = getMessageId(message)
-    copiedMessageId.value = msgId
-    setTimeout(() => {
-      if (copiedMessageId.value === msgId) {
-        copiedMessageId.value = null
-      }
-    }, 2000)
-  } catch (err) {
-    console.error('Failed to copy:', err)
-  }
-}
+const isLoading = computed(() => chatLoading.value || skillLoading.value)
 
 const retryMessage = async (message: Message) => {
-  const messageIndex = currentModeMessages.value.findIndex(m => getMessageId(m) === getMessageId(message))
-  if (messageIndex <= 0) return
-  
-  const userMessage = currentModeMessages.value[messageIndex - 1]
-  if (userMessage.role !== 'user') return
-  
-  currentModeMessages.value = currentModeMessages.value.slice(0, messageIndex)
-  
-  if (userMessage.skillId && userMessage.paperIds && userMessage.skillParams) {
-    const skill = skills.value.find(s => s.id === userMessage.skillId)
+  await retryChatMessage(message, skills.value, async (skillId, paperIds, params) => {
+    const skill = skills.value.find(s => s.id === skillId)
     if (skill) {
-      selectedSkill.value = skill
-      skillExecuted.value = false
-      
-      await handleSkillExecute(userMessage.paperIds, userMessage.skillParams)
+      selectSkill(skill)
+      await handleSkillExecute(paperIds, params)
     }
-  } else {
-    const originalInput = userMessage.content
-    inputMessage.value = originalInput
-    
-    await sendMessage(true)
-  }
+  })
 }
 
 watch(mode, (newMode) => {
@@ -443,96 +357,6 @@ watch(mode, (newMode) => {
     }
   }
 })
-
-const selectSkill = (skill: Skill) => {
-  if (!skill.available) return
-  selectedSkill.value = skill
-  skillExecuted.value = false
-  currentModeMessages.value = []
-}
-
-const handleSkillExecute = async (paperIds: string[], params: Record<string, unknown>) => {
-  if (!selectedSkill.value) return
-  
-  skillExecuted.value = true
-  
-  const currentMessages = skillsMessages
-  
-  const paperIdText = paperIds.length > 0 ? paperIds.join(', ') : 'No paper ID'
-  currentMessages.value.push({ 
-    role: 'user', 
-    content: `**${selectedSkill.value.name}** on: ${paperIdText}`,
-    skillId: selectedSkill.value.id,
-    skillName: selectedSkill.value.name,
-    paperIds: paperIds,
-    skillParams: params
-  })
-  
-  currentUserMessageIndex.value = currentMessages.value.length - 1
-  scrollToBottom()
-  isLoading.value = true
-  
-  try {
-    const result = await executeSkillApi({
-      skillId: selectedSkill.value.id,
-      paperIds,
-      params
-    })
-    
-    if (result && result.success) {
-      let responseContent = ''
-      
-      if (result.summary) {
-        responseContent = `**Summary**\n\n${result.summary}`
-      } else if (result.translation) {
-        responseContent = `**Translation (${result.target_language})**\n\n${result.translation}`
-      } else if (result.citations) {
-        responseContent = '**Citations**\n\n'
-        for (const [format, citation] of Object.entries(result.citations)) {
-          responseContent += `**${format}:**\n\`\`\`\n${citation}\n\`\`\`\n\n`
-        }
-      } else if (result.related_papers && Array.isArray(result.related_papers)) {
-        responseContent = `**Related Papers** (${result.total || result.related_papers.length} found)\n\n`
-        result.related_papers.forEach((paper: RelatedPaper, index: number) => {
-          responseContent += `${index + 1}. **${paper.title}**\n   ${paper.authors?.slice(0, 2).join(', ')}\n   Similarity: ${(paper.similarity_score * 100).toFixed(1)}%\n\n`
-        })
-      } else if (result.result) {
-        responseContent = `**${result.skill_name || 'Result'}**\n\n${result.result}`
-      } else {
-        responseContent = JSON.stringify(result, null, 2)
-      }
-      
-      currentMessages.value.push({
-        role: 'assistant',
-        content: responseContent
-      })
-    } else {
-      currentMessages.value.push({
-        role: 'assistant',
-        content: `Error: ${result?.error || 'Failed to execute skill'}`
-      })
-    }
-  } catch (error) {
-    currentMessages.value.push({
-      role: 'assistant',
-      content: `Error: ${error instanceof Error ? error.message : 'Something went wrong'}`
-    })
-  } finally {
-    isLoading.value = false
-    scrollToBottom()
-  }
-}
-
-const runSkillAgain = () => {
-  skillExecuted.value = false
-  currentModeMessages.value = []
-}
-
-const backToSkills = () => {
-  selectedSkill.value = null
-  skillExecuted.value = false
-  currentModeMessages.value = []
-}
 
 const searchSuggestions = [
   'transformer attention mechanisms',
@@ -560,101 +384,42 @@ const formatMessage = (content: string) => {
     .replace(/\n/g, '<br>')
 }
 
-const scrollToBottom = () => {
-  nextTick(() => {
-    if (messagesContainer.value) {
-      if (currentUserMessageIndex.value !== null) {
-        const userMessageEl = messageRefs.value.get(currentUserMessageIndex.value)
-        if (userMessageEl) {
-          userMessageEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          return
-        }
-      }
-      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
-    }
-  })
-}
-
 const sendMessage = async (isRetry: boolean = false) => {
   const message = inputMessage.value.trim()
   if (!message || isLoading.value) return
-
-  const currentMode = mode.value
-  const currentMessages = currentMode === 'search' ? searchMessages : 
-                          currentMode === 'ask' ? askMessages : 
-                          skillsMessages
-
-  if (!isRetry) {
-    currentMessages.value.push({ role: 'user', content: message })
-  }
-  currentUserMessageIndex.value = currentMessages.value.length - 1
-  inputMessage.value = ''
-  scrollToBottom()
-
-  isLoading.value = true
   
-  try {
-    if (currentMode === 'search') {
-      const result = await arxivBackendAPI.semanticSearch(message, 10)
-      
-      currentMessages.value.push({
-        role: 'assistant',
-        content: '',
-        papers: result.papers.map((p: any) => ({
-          id: p.id,
-          title: p.title,
-          abstract: p.abstract,
-          authors: p.authors || [],
-          primary_category: p.primary_category || '',
-          categories: p.categories || [],
-          published: p.published || '',
-          similarity_score: p.similarity_score || 0
-        })),
-        model: result.model
-      })
-    } else {
-      const result = await arxivBackendAPI.askQuestion(
-        message, 
-        5, 
-        llmStore.selectedProvider || undefined,
-        llmStore.selectedModel || undefined
-      )
-      
-      if (result.error) {
-        const configError = isConfigError(result.error)
-        currentMessages.value.push({
-          role: 'assistant',
-          content: `Error: ${result.error}`,
-          isConfigError: configError
-        })
-      } else {
-        currentMessages.value.push({
-          role: 'assistant',
-          content: '',
-          answer: result.answer,
-          references: result.references || [],
-          model: result.model
-        })
-      }
-    }
-  } catch (error) {
-    console.error('Error:', error)
-    const errorMsg = error instanceof Error ? error.message : 'Something went wrong'
-    const configError = isConfigError(errorMsg)
-    currentMessages.value.push({
-      role: 'assistant',
-      content: `Error: ${errorMsg}`,
-      isConfigError: configError
-    })
-  } finally {
-    isLoading.value = false
-    scrollToBottom()
-  }
+  inputMessage.value = ''
+  resetTextareaHeight()
+  await sendChatMessage(message, isRetry)
 }
 
 const sendSuggestion = (suggestion: string) => {
   inputMessage.value = suggestion
+  autoResize()
   sendMessage()
+}
+
+const handleInputKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault()
+    sendMessage()
+  }
+}
+
+const autoResize = () => {
+  const textarea = inputRef.value
+  if (textarea) {
+    textarea.style.height = 'auto'
+    const newHeight = Math.min(textarea.scrollHeight, 200)
+    textarea.style.height = `${newHeight}px`
+  }
+}
+
+const resetTextareaHeight = () => {
+  const textarea = inputRef.value
+  if (textarea) {
+    textarea.style.height = '72px'
+  }
 }
 
 const goToSettings = () => {
@@ -672,7 +437,7 @@ onMounted(() => {
 <style scoped>
 .assistant-page {
   padding: 88px 24px 24px 24px;
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
   height: 100vh;
   display: flex;
@@ -1272,37 +1037,59 @@ onMounted(() => {
 }
 
 .input-area {
-  display: flex;
-  gap: 12px;
-  padding: 16px 24px;
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  padding: 16px 24px 12px;
+  background: var(--bg-primary);
 }
 
-.input-area textarea {
+.input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: 16px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.input-wrapper:focus-within {
+  border-color: #10B981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1), 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.input-wrapper textarea {
   flex: 1;
-  padding: 12px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  background: var(--bg-primary);
+  padding: 14px 16px;
+  padding-right: 56px;
+  border: none;
+  background: transparent;
   color: var(--text-primary);
   font-size: 0.95rem;
+  line-height: 1.5;
   resize: none;
   outline: none;
   font-family: inherit;
+  min-height: 72px;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
-.input-area textarea:focus {
-  border-color: #10B981;
-}
-
-.input-area textarea::placeholder {
+.input-wrapper textarea::placeholder {
   color: var(--text-muted);
 }
 
 .send-btn {
-  width: 48px;
-  height: 48px;
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 40px;
+  height: 40px;
   border: none;
   border-radius: 12px;
   background: #10B981;
@@ -1311,21 +1098,32 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .send-btn:hover:not(:disabled) {
   background: #059669;
+  transform: scale(1.05);
 }
 
 .send-btn:disabled {
-  opacity: 0.5;
+  background: var(--border-color);
   cursor: not-allowed;
 }
 
 .send-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
+}
+
+.send-btn .spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .skill-actions-bar {
