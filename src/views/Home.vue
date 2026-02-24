@@ -7,7 +7,26 @@
           <p v-if="filterDescription" class="section-description">{{ filterDescription }}</p>
         </div>
         <div class="header-actions">
-          <button class="icon-btn date-btn" @click="toggleDatePicker" title="Select date">
+          <button class="icon-btn view-toggle-btn" @click="toggleGraphView" :title="isGraphView ? 'Switch to list view' : 'Switch to graph view'">
+            <svg v-if="isGraphView" viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7" fill="#10B981" stroke="#10B981"/>
+              <rect x="14" y="3" width="7" height="7" fill="#3B82F6" stroke="#3B82F6"/>
+              <rect x="3" y="14" width="7" height="7" fill="#F59E0B" stroke="#F59E0B"/>
+              <rect x="14" y="14" width="7" height="7" fill="#EF4444" stroke="#EF4444"/>
+            </svg>
+            <svg v-else viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="4" fill="#10B981"/>
+              <circle cx="5" cy="5" r="3" fill="#3B82F6"/>
+              <circle cx="19" cy="5" r="3" fill="#F59E0B"/>
+              <circle cx="5" cy="19" r="3" fill="#EF4444"/>
+              <circle cx="19" cy="19" r="3" fill="#8B5CF6"/>
+              <line x1="7.5" y1="7.5" x2="9" y2="9" stroke="#6B7280" stroke-width="1.5"/>
+              <line x1="15" y1="9" x2="16.5" y2="7.5" stroke="#6B7280" stroke-width="1.5"/>
+              <line x1="7.5" y1="16.5" x2="9" y2="15" stroke="#6B7280" stroke-width="1.5"/>
+              <line x1="15" y1="15" x2="16.5" y2="16.5" stroke="#6B7280" stroke-width="1.5"/>
+            </svg>
+          </button>
+          <button v-if="!isGraphView" class="icon-btn date-btn" @click="toggleDatePicker" title="Select date">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
               <line x1="16" y1="2" x2="16" y2="6"/>
@@ -15,13 +34,13 @@
               <line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
           </button>
-          <button class="icon-btn category-btn" @click="toggleCategoryPicker" title="Select category">
+          <button v-if="!isGraphView" class="icon-btn category-btn" @click="toggleCategoryPicker" title="Select category">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
             </svg>
           </button>
-          <button class="icon-btn toggle-btn" @click="configStore.setUseSimpleCard(!configStore.useSimpleCard)" :title="configStore.useSimpleCard ? 'Switch to detailed view' : 'Switch to simple view'">
+          <button v-if="!isGraphView" class="icon-btn toggle-btn" @click="configStore.setUseSimpleCard(!configStore.useSimpleCard)" :title="configStore.useSimpleCard ? 'Switch to detailed view' : 'Switch to simple view'">
             <svg v-if="configStore.useSimpleCard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
               <line x1="3" y1="9" x2="21" y2="9"/>
@@ -34,12 +53,12 @@
               <rect x="3" y="17" width="18" height="4" rx="1"/>
             </svg>
           </button>
-          <button class="icon-btn filter-btn" @click="toggleFilterDrawer" :title="isFilterDrawerOpen ? 'Hide categories' : 'Show categories'">
+          <button v-if="!isGraphView" class="icon-btn filter-btn" @click="toggleFilterDrawer" :title="isFilterDrawerOpen ? 'Hide categories' : 'Show categories'">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V17C21 18.1046 20.1046 19 19 19H5C3.89543 19 3 18.1046 3 17V7Z" fill="currentColor" fill-opacity="0.2"/>
             </svg>
           </button>
-          <button class="icon-btn refresh-btn" @click="refreshPapers" :disabled="loading" title="Refresh papers">
+          <button v-if="!isGraphView" class="icon-btn refresh-btn" @click="refreshPapers" :disabled="loading" title="Refresh papers">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M23 4v6h-6M1 20v-6h6"/>
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
@@ -56,6 +75,22 @@
         </svg>
         <p>{{ error }}</p>
         <button class="retry-btn" @click="refreshPapers">Retry</button>
+      </div>
+
+      <div v-else-if="isGraphView" class="graph-view-container">
+        <KnowledgeGraph
+          :date="graphDate"
+          @node-click="handleNodeClick"
+          @graph-ready="handleGraphReady"
+        />
+        <GraphControls
+          :config="graphConfig"
+          :categories="graphCategories"
+          @config-change="handleGraphConfigChange"
+          @layout-change="handleLayoutChange"
+          @reset="handleGraphReset"
+        />
+        <GraphStatistics :statistics="graphStatistics" />
       </div>
 
       <div v-else class="papers-grid">
@@ -75,7 +110,7 @@
         />
       </div>
 
-      <div v-if="!loading && (filteredPapers.length > 0 || currentPage > 0)" class="pagination">
+      <div v-if="!isGraphView && !loading && (filteredPapers.length > 0 || currentPage > 0)" class="pagination">
         <button class="pagination-btn" @click="goToFirstPage" :disabled="currentPage === 0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/>
@@ -152,9 +187,11 @@ import PaperCard from '../components/PaperCard.vue'
 import PaperCardSimple from '../components/PaperCardSimple.vue'
 import DatePicker from '../components/DatePicker.vue'
 import CategoryPicker from '../components/CategoryPicker.vue'
+import { KnowledgeGraph, GraphControls, GraphStatistics } from '../components/graph'
 import CategoryDrawer from '../components/CategoryDrawer.vue'
 import { usePaperFilter } from '../composables/usePaperFilter'
 import { useDateIndexes } from '../composables/useDateIndexes'
+import { useKnowledgeGraph } from '../composables/useKnowledgeGraph'
 import type { Paper } from '../types'
 
 const paperStore = usePaperStore()
@@ -186,6 +223,20 @@ const {
 } = usePaperFilter()
 
 const { storedDatesMap, dateIndexes, fetchDateIndexes } = useDateIndexes()
+
+const {
+  isGraphView,
+  graphDate,
+  graphConfig,
+  graphStatistics,
+  graphCategories,
+  toggleGraphView,
+  handleNodeClick,
+  handleGraphReady,
+  handleGraphConfigChange,
+  handleLayoutChange,
+  handleGraphReset
+} = useKnowledgeGraph(selectedDate, selectedCategory)
 
 const isFilterDrawerOpen = ref(false)
 const localFilterCategory = ref<string | null>(null)
@@ -423,6 +474,15 @@ onActivated(() => {
   border-color: rgba(156, 39, 176, 0.4);
 }
 
+.view-toggle-btn {
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.view-toggle-btn:hover {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
 .toggle-btn {
   color: #667eea;
   border-color: rgba(102, 126, 234, 0.2);
@@ -536,6 +596,19 @@ onActivated(() => {
   .papers-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.graph-view-container {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  grid-template-rows: 1fr auto;
+  gap: 16px;
+  height: calc(100vh - 200px);
+  min-height: 500px;
+}
+
+.graph-view-container > :first-child {
+  grid-row: 1 / 3;
 }
 
 .pagination {
