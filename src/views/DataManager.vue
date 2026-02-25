@@ -600,7 +600,7 @@ async function handleFetchDate(date: string) {
 
 async function handleGenerateEmbedding(date: string) {
   toastStore.showLoading(`Generating embeddings for ${date}...`)
-  const result = await generateEmbedding(date)
+  const result = await generateEmbedding(date, true)
   
   if (result.success) {
     toastStore.showSuccess(`Generated ${result.generated_count} embeddings for ${date}`)

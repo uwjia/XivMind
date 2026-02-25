@@ -154,7 +154,6 @@
     <DatePicker
       :is-open="isDatePickerOpen"
       :model-value="selectedDate as string | Date | null"
-      :stored-dates="storedDatesMap"
       @update:model-value="handleDateSelect"
       @update:is-open="closeDatePicker"
     />
@@ -222,7 +221,7 @@ const {
   goToPage
 } = usePaperFilter()
 
-const { storedDatesMap, dateIndexes, fetchDateIndexes } = useDateIndexes()
+const { dateIndexes, fetchDateIndexes } = useDateIndexes()
 
 const {
   isGraphView,

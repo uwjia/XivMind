@@ -30,7 +30,7 @@
                 </div>
               </div>
             </div>
-            <button class="month-nav-btn" @click="prevMonth" title="Previous Month">
+            <button class="month-nav-btn" :class="{ dark: isDark }" @click="prevMonth" title="Previous Month">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <polyline points="15 18 9 12 15 6"/>
               </svg>
@@ -61,7 +61,7 @@
                 </div>
               </div>
             </div>
-            <button class="month-nav-btn" @click="nextMonth" title="Next Month">
+            <button class="month-nav-btn" :class="{ dark: isDark }" @click="nextMonth" title="Next Month">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <polyline points="9 18 15 12 9 6"/>
               </svg>
@@ -85,14 +85,23 @@
                 'today': day.isToday,
                 'selected': day.isSelected,
                 'disabled': day.isDisabled,
-                'stored': day.isStored
+                'stored': day.isStored,
+                'has-embedding': day.hasEmbedding
               }"
               :disabled="day.isDisabled"
-              :title="day.isStored ? `${day.paperCount} papers stored` : ''"
+              :title="getDayTooltip(day)"
               @click="tempSelectDate(day.date)"
+              @dblclick="handleDayDblClick(day.date)"
             >
               <span class="day-number">{{ day.day }}</span>
-              <span v-if="day.isStored" class="stored-indicator">
+              <span v-if="day.hasEmbedding" class="embedding-indicator" title="Embedding generated">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M5 6 Q9 3, 12 6 T19 6"/>
+                  <path d="M5 12 Q9 9, 12 12 T19 12"/>
+                  <path d="M5 18 Q9 15, 12 18 T19 18"/>
+                </svg>
+              </span>
+              <span v-else-if="day.isStored" class="stored-indicator" title="Papers stored">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
@@ -127,14 +136,15 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useThemeStore } from '../stores/theme-store'
+import { useDateIndexes } from '../composables/useDateIndexes'
 
 const themeStore = useThemeStore()
 const isDark = computed(() => themeStore.isDark)
+const { storedDatesMap, embeddingIndexMap } = useDateIndexes()
 
 const props = defineProps<{
   isOpen: boolean
   modelValue: string | Date | null
-  storedDates?: Map<string, number>
 }>()
 
 const emit = defineEmits<{
@@ -160,6 +170,7 @@ interface CalendarDay {
   isDisabled: boolean
   key: string | number
   isStored: boolean
+  hasEmbedding: boolean
   paperCount: number
 }
 
@@ -256,7 +267,8 @@ const calendarDays = computed<CalendarDay[]>(() => {
   for (let i = 0; i < firstDay; i++) {
     const day = daysInPrevMonth - firstDay + i + 1
     const dateStr = getDateStr(year, month - 1, day)
-    const paperCount = props.storedDates?.get(dateStr) ?? 0
+    const paperCount = storedDatesMap.value.get(dateStr) ?? 0
+    const hasEmbedding = embeddingIndexMap.value.has(dateStr)
     days.push({
       day,
       date: new Date(year, month - 1, day),
@@ -266,6 +278,7 @@ const calendarDays = computed<CalendarDay[]>(() => {
       isDisabled: true,
       key: `prev-${i}`,
       isStored: paperCount > 0,
+      hasEmbedding,
       paperCount
     })
   }
@@ -275,7 +288,8 @@ const calendarDays = computed<CalendarDay[]>(() => {
     const isTodayDate = date.toDateString() === today.toDateString()
     const isSelectedDate = tempSelectedDate.value && typeof tempSelectedDate.value === 'object' && date.toDateString() === tempSelectedDate.value.toDateString() || false
     const dateStr = getDateStr(year, month, i)
-    const paperCount = props.storedDates?.get(dateStr) ?? 0
+    const paperCount = storedDatesMap.value.get(dateStr) ?? 0
+    const hasEmbedding = embeddingIndexMap.value.has(dateStr)
     days.push({
       day: i,
       date,
@@ -285,14 +299,17 @@ const calendarDays = computed<CalendarDay[]>(() => {
       isDisabled: date > today,
       key: i,
       isStored: paperCount > 0,
+      hasEmbedding,
       paperCount
     })
   }
   
-  const remainingDays = 42 - days.length
+  const totalCells = Math.ceil(days.length / 7) * 7
+  const remainingDays = totalCells - days.length
   for (let i = 1; i <= remainingDays; i++) {
     const dateStr = getDateStr(year, month + 1, i)
-    const paperCount = props.storedDates?.get(dateStr) ?? 0
+    const paperCount = storedDatesMap.value.get(dateStr) ?? 0
+    const hasEmbedding = embeddingIndexMap.value.has(dateStr)
     days.push({
       day: i,
       date: new Date(year, month + 1, i),
@@ -302,12 +319,23 @@ const calendarDays = computed<CalendarDay[]>(() => {
       isDisabled: true,
       key: `next-${i}`,
       isStored: paperCount > 0,
+      hasEmbedding,
       paperCount
     })
   }
   
   return days
 })
+
+const getDayTooltip = (day: CalendarDay): string => {
+  if (day.hasEmbedding) {
+    return `${day.paperCount} papers stored, embedding generated`
+  }
+  if (day.isStored) {
+    return `${day.paperCount} papers stored`
+  }
+  return ''
+}
 
 const prevMonth = () => {
   const year = currentDate.value.getFullYear()
@@ -359,6 +387,11 @@ const confirmSelection = () => {
     }
     emit('update:isOpen', false)
   }
+}
+
+const handleDayDblClick = (date: Date) => {
+  tempSelectedDate.value = date
+  confirmSelection()
 }
 
 const closeOutside = () => {
@@ -831,6 +864,22 @@ watch(() => props.isOpen, (newVal) => {
   stroke-width: 3;
 }
 
+.embedding-indicator {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.embedding-indicator svg {
+  width: 14px;
+  height: 14px;
+  stroke: #A855F7;
+  stroke-width: 2;
+  fill: none;
+}
+
 .day-btn:hover:not(.disabled) {
   background: var(--bg-tertiary);
   color: var(--text-primary);
@@ -847,9 +896,13 @@ watch(() => props.isOpen, (newVal) => {
 }
 
 .day-btn.selected {
-  background: var(--accent-color) !important;
-  color: white !important;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%) !important;
   border-color: var(--accent-color) !important;
+}
+
+.day-btn.selected .day-number {
+  color: var(--accent-color);
+  font-weight: 600;
 }
 
 .day-btn.disabled {
@@ -857,7 +910,8 @@ watch(() => props.isOpen, (newVal) => {
   cursor: not-allowed;
 }
 
-.day-btn.stored {
+.day-btn.stored,
+.day-btn.has-embedding {
   background: linear-gradient(135deg, rgba(67, 233, 123, 0.1) 0%, rgba(56, 249, 215, 0.1) 100%);
 }
 
@@ -939,13 +993,14 @@ watch(() => props.isOpen, (newVal) => {
 
 .confirm-btn {
   border: 1px solid var(--accent-color);
-  background: var(--accent-color);
-  color: white;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+  color: var(--accent-color);
+  font-weight: 500;
 }
 
 .confirm-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
+  color: var(--accent-color);
   border-color: var(--accent-color);
 }
 

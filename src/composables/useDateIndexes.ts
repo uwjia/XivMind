@@ -181,7 +181,7 @@ export function useDateIndexes() {
     }
   }
 
-  const generateEmbedding = async (date: string): Promise<EmbeddingResult> => {
+  const generateEmbedding = async (date: string, force: boolean = false): Promise<EmbeddingResult> => {
     if (generatingEmbeddingDates.value.has(date)) {
       return { success: false, error: 'Already generating' }
     }
@@ -191,7 +191,7 @@ export function useDateIndexes() {
     generatingEmbeddingDates.value = newSet
     
     try {
-      const result = await arxivBackendAPI.generateEmbeddings({ date })
+      const result = await arxivBackendAPI.generateEmbeddings({ date, force })
       
       if (result.success) {
         await refreshDateIndexes()

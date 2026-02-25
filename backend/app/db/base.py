@@ -215,6 +215,14 @@ class PaperEmbeddingRepository(ABC):
         pass
 
     @abstractmethod
+    def upsert_embeddings_batch(
+        self, 
+        embeddings_data: List[Dict[str, Any]]
+    ) -> int:
+        """Upsert multiple paper embeddings."""
+        pass
+
+    @abstractmethod
     def get_embedding(self, paper_id: str) -> Optional[Dict[str, Any]]:
         """Get embedding for a single paper."""
         pass

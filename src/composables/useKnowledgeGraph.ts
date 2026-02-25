@@ -3,12 +3,14 @@ import { useGraphStore } from '../stores/graph-store'
 import { graphAPI } from '../services/graphAPI'
 import type { GraphNode, GraphConfig } from '../types/graph'
 import { storeToRefs } from 'pinia'
+import { useDateIndexes } from './useDateIndexes'
 
 export function useKnowledgeGraph(
   selectedDate: Ref<Date | string | { startDate: string; endDate: string }>,
   selectedCategory: Ref<string>
 ) {
   const graphStore = useGraphStore()
+  const { hasEmbedding, generateEmbedding } = useDateIndexes()
   
   const isGraphView = ref(false)
   const graphDate = ref(new Date().toISOString().split('T')[0])
@@ -42,6 +44,13 @@ export function useKnowledgeGraph(
       }
       
       graphDate.value = date
+      
+      if (!hasEmbedding(date)) {
+        const result = await generateEmbedding(date, true)
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to generate embeddings')
+        }
+      }
       
       const graphData = await graphAPI.getOrBuildGraph(
         date, 

@@ -100,7 +100,50 @@ class MilvusPaperEmbeddingRepository:
         
         if inserted > 0:
             insert_data = [paper_ids, embeddings, model_names, created_ats]
-            collection.insert(insert_data)
+            collection.upsert(insert_data)
+            collection.flush()
+        
+        return inserted
+    
+    def upsert_embeddings_batch(
+        self, 
+        embeddings_data: List[Dict[str, Any]]
+    ) -> int:
+        """
+        Upsert multiple paper embeddings.
+        
+        Args:
+            embeddings_data: List of dicts with paper_id, embedding, model_name
+        
+        Returns:
+            Number of embeddings inserted
+        """
+        if not embeddings_data:
+            return 0
+        
+        collection = self._get_collection()
+        collection.load()
+        
+        paper_ids = []
+        embeddings = []
+        model_names = []
+        created_ats = []
+        
+        inserted = 0
+        now = datetime.utcnow().isoformat()
+        
+        for data in embeddings_data:
+            paper_id = data.get("paper_id")
+            
+            paper_ids.append(paper_id)
+            embeddings.append(data.get("embedding", []))
+            model_names.append(data.get("model_name", ""))
+            created_ats.append(now)
+            inserted += 1
+        
+        if inserted > 0:
+            insert_data = [paper_ids, embeddings, model_names, created_ats]
+            collection.upsert(insert_data)
             collection.flush()
         
         return inserted

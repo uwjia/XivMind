@@ -148,7 +148,7 @@
                 :class="{ 'loading': generatingEmbeddingDates.has(day.date || ''), 'generated': day.hasEmbedding }"
                 :disabled="generatingEmbeddingDates.has(day.date || '')"
                 :title="generatingEmbeddingDates.has(day.date || '') ? 'Generating...' : (day.hasEmbedding ? 'Regenerate embeddings for this date' : 'Generate embeddings for this date')"
-                @click.stop="day.date && handleGenerateEmbedding(day.date)"
+                @click.stop="day.date && handleGenerateEmbedding(day.date, true)"
               >
                 <svg v-if="!generatingEmbeddingDates.has(day.date || '')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                   <path d="M5 6 Q9 3, 12 6 T19 6"/>
@@ -350,8 +350,8 @@ async function handleFetchDate(date: string) {
   await fetchDate(date)
 }
 
-async function handleGenerateEmbedding(date: string) {
-  await generateEmbedding(date)
+async function handleGenerateEmbedding(date: string, hasEmbedding: boolean = false) {
+  await generateEmbedding(date, hasEmbedding)
 }
 </script>
 

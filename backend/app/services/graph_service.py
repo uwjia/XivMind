@@ -97,7 +97,8 @@ class GraphService:
 
     async def get_or_generate_embeddings(
         self,
-        papers: List[Dict[str, Any]]
+        papers: List[Dict[str, Any]],
+        date: Optional[str] = None
     ) -> Dict[str, List[float]]:
         embeddings = {}
         papers_need_embedding = []
@@ -115,21 +116,36 @@ class GraphService:
             logger.info(f"Generating embeddings for {len(papers_need_embedding)} papers")
             
             texts = [
-                f"{p.get('title', '')} {p.get('abstract', '')}"
+                f"Title: {p.get('title', '')}\nAbstract: {p.get('abstract', '')}"
                 for p in papers_need_embedding
             ]
             
-            batch_embeddings, model_name = embedding_service.encode_batch(texts)
+            batch_embeddings, batch_model_name = embedding_service.encode_batch(texts)
+            
+            embeddings_data = [
+                {
+                    "paper_id": papers_need_embedding[j]["id"],
+                    "embedding": batch_embeddings[j],
+                    "model_name": batch_model_name,
+                }
+                for j in range(len(papers_need_embedding))
+            ]
+            
+            logger.info(f"inserting embeddings for {len(papers_need_embedding)} papers")
+            inserted = self.embedding_repo.upsert_embeddings_batch(embeddings_data)
+            logger.info(f"embeddings inserted: {inserted}， date: {date}")
+            
+            if inserted > 0 and date:
+                self.paper_repo.insert_embedding_index(
+                    date=date,
+                    total_count=inserted,
+                    model_name=batch_model_name
+                )
             
             for paper, embedding in zip(papers_need_embedding, batch_embeddings):
                 paper_id = paper["id"]
                 embeddings[paper_id] = embedding
                 
-                self.embedding_repo.insert_embedding(
-                    paper_id=paper_id,
-                    embedding=embedding,
-                    model_name=model_name
-                )
         
         return embeddings
 
@@ -265,7 +281,7 @@ class GraphService:
                 )
             )
         
-        embeddings = await self.get_or_generate_embeddings(papers)
+        embeddings = await self.get_or_generate_embeddings(papers, normalized_date)
         
         similarities = self.calculate_similarity_matrix(embeddings, threshold)
         
@@ -285,7 +301,7 @@ class GraphService:
         if not papers:
             return [], 0
         
-        embeddings = await self.get_or_generate_embeddings(papers)
+        embeddings = await self.get_or_generate_embeddings(papers, normalized_date)
         
         similarities = self.calculate_similarity_matrix(embeddings, threshold)
         

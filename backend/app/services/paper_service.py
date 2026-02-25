@@ -436,7 +436,7 @@ class PaperService:
                         for j in range(len(papers))
                     ]
                     
-                    inserted = self.embedding_repo.insert_embeddings_batch(embeddings_data)
+                    inserted = self.embedding_repo.upsert_embeddings_batch(embeddings_data)
                     generated += inserted
                     logger.info(f"Generated embeddings for batch {i//batch_size + 1}: {inserted} papers")
                     
