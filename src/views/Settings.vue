@@ -459,8 +459,8 @@ onMounted(() => {
 }
 
 .status-badge.available {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10B981;
+  background: rgba(0, 188, 212, 0.1);
+  color: #00BCD4;
 }
 
 .status-badge.unavailable {

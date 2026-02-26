@@ -128,14 +128,14 @@ defineEmits<{
 }
 
 .skill-card:hover:not(.disabled) {
-  border-color: #10B981;
+  border-color: #00BCD4;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 188, 212, 0.1);
 }
 
 .skill-card.selected {
-  border-color: #10B981;
-  background: rgba(16, 185, 129, 0.05);
+  border-color: #00BCD4;
+  background: rgba(0, 188, 212, 0.05);
 }
 
 .skill-card.disabled {
@@ -144,7 +144,7 @@ defineEmits<{
 }
 
 .skill-card.dynamic {
-  border-left: 3px solid #10B981;
+  border-left: 3px solid #00BCD4;
 }
 
 .skill-header {
@@ -167,7 +167,7 @@ defineEmits<{
 .skill-icon svg {
   width: 24px;
   height: 24px;
-  stroke: #10B981;
+  stroke: #00BCD4;
 }
 
 .skill-info {
@@ -217,8 +217,8 @@ defineEmits<{
 }
 
 .skill-source.dynamic {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10B981;
+  background: rgba(0, 188, 212, 0.1);
+  color: #00BCD4;
 }
 
 .skill-source.builtin {

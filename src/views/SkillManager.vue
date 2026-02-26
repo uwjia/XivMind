@@ -393,8 +393,8 @@ onMounted(loadSkills)
 }
 
 .reload-btn:hover:not(:disabled) {
-  border-color: #10B981;
-  color: #10B981;
+  border-color: #00BCD4;
+  color: #00BCD4;
 }
 
 .reload-btn:disabled {
@@ -438,13 +438,13 @@ onMounted(loadSkills)
 }
 
 .filter-btn:hover {
-  border-color: #10B981;
+  border-color: #00BCD4;
   color: var(--text-primary);
 }
 
 .filter-btn.active {
-  background: #10B981;
-  border-color: #10B981;
+  background: #00BCD4;
+  border-color: #00BCD4;
   color: white;
 }
 
@@ -517,7 +517,7 @@ onMounted(loadSkills)
 }
 
 .notification.success {
-  background: #10B981;
+  background: #00BCD4;
   color: white;
 }
 
@@ -604,7 +604,7 @@ onMounted(loadSkills)
 
 .skill-editor:focus {
   outline: none;
-  border-color: #10B981;
+  border-color: #00BCD4;
 }
 
 .modal-actions {
@@ -626,7 +626,7 @@ onMounted(loadSkills)
 
 .save-btn {
   padding: 10px 20px;
-  background: #10B981;
+  background: #00BCD4;
   border: none;
   border-radius: 8px;
   color: white;
@@ -689,8 +689,8 @@ onMounted(loadSkills)
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: rgba(16, 185, 129, 0.1);
-  color: #10B981;
+  background: rgba(0, 188, 212, 0.1);
+  color: #00BCD4;
   border-radius: 6px;
   font-size: 0.85rem;
 }
@@ -757,7 +757,7 @@ onMounted(loadSkills)
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: #10B981;
+  background: #00BCD4;
   border: none;
   border-radius: 8px;
   color: white;
@@ -798,8 +798,8 @@ onMounted(loadSkills)
 }
 
 .skill-source.dynamic {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10B981;
+  background: rgba(0, 188, 212, 0.1);
+  color: #00BCD4;
 }
 
 .skill-source.builtin {

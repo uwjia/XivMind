@@ -41,13 +41,13 @@
           </button>
           <button class="icon-btn view-toggle-btn" @click="toggleGraphView" :title="isGraphView ? 'Switch to list view' : 'Switch to graph view'">
             <svg v-if="isGraphView" viewBox="0 0 24 24" fill="none" stroke-width="2">
-              <rect x="3" y="3" width="7" height="7" fill="#10B981" stroke="#10B981"/>
+              <rect x="3" y="3" width="7" height="7" fill="#00BCD4" stroke="#00BCD4"/>
               <rect x="14" y="3" width="7" height="7" fill="#3B82F6" stroke="#3B82F6"/>
               <rect x="3" y="14" width="7" height="7" fill="#F59E0B" stroke="#F59E0B"/>
               <rect x="14" y="14" width="7" height="7" fill="#EF4444" stroke="#EF4444"/>
             </svg>
             <svg v-else viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="4" fill="#10B981"/>
+              <circle cx="12" cy="12" r="4" fill="#00BCD4"/>
               <circle cx="5" cy="5" r="3" fill="#3B82F6"/>
               <circle cx="19" cy="5" r="3" fill="#F59E0B"/>
               <circle cx="5" cy="19" r="3" fill="#EF4444"/>
@@ -474,12 +474,12 @@ onActivated(() => {
 }
 
 .view-toggle-btn {
-  border-color: rgba(16, 185, 129, 0.2);
+  border-color: rgba(0, 188, 212, 0.2);
 }
 
 .view-toggle-btn:hover {
-  background: rgba(16, 185, 129, 0.1);
-  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(0, 188, 212, 0.1);
+  border-color: rgba(0, 188, 212, 0.4);
 }
 
 .toggle-btn {

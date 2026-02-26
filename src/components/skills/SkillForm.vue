@@ -252,7 +252,7 @@ watch(() => props.skill, () => {
 .form-select:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: #10B981;
+  border-color: #00BCD4;
 }
 
 .form-textarea {
@@ -269,7 +269,7 @@ watch(() => props.skill, () => {
 .form-checkbox input {
   width: 18px;
   height: 18px;
-  accent-color: #10B981;
+  accent-color: #00BCD4;
 }
 
 .form-checkbox label {
@@ -314,7 +314,7 @@ watch(() => props.skill, () => {
   justify-content: center;
   gap: 8px;
   padding: 12px 24px;
-  background: #10B981;
+  background: #00BCD4;
   color: white;
   border: none;
   border-radius: 8px;

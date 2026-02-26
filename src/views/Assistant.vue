@@ -41,11 +41,11 @@
       <div class="messages" ref="messagesContainer">
         <div v-if="currentModeMessages.length === 0" class="empty-state">
           <div class="empty-icon">
-            <svg v-if="mode === 'search'" viewBox="0 0 24 24" fill="none" stroke="#10B981">
+            <svg v-if="mode === 'search'" viewBox="0 0 24 24" fill="none" stroke="#00BCD4">
               <circle cx="11" cy="11" r="8"/>
               <line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
-            <svg v-else viewBox="0 0 24 24" fill="none" stroke="#10B981">
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="#00BCD4">
               <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2"/>
             </svg>
           </div>
@@ -132,7 +132,7 @@
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
               <circle cx="12" cy="7" r="4"/>
             </svg>
-            <svg v-else viewBox="0 0 24 24" fill="none" stroke="#10B981">
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="#00BCD4">
               <circle cx="11" cy="11" r="8"/>
               <line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
@@ -211,7 +211,7 @@
 
         <div v-if="isLoading" class="message assistant">
           <div class="message-avatar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#10B981">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#00BCD4">
               <circle cx="11" cy="11" r="8"/>
               <line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
@@ -492,13 +492,13 @@ onMounted(() => {
 }
 
 .mode-btn:hover {
-  border-color: #10B981;
-  color: #10B981;
+  border-color: #00BCD4;
+  color: #00BCD4;
 }
 
 .mode-btn.active {
-  background: #10B981;
-  border-color: #10B981;
+  background: #00BCD4;
+  border-color: #00BCD4;
   color: white;
 }
 
@@ -595,9 +595,9 @@ onMounted(() => {
 }
 
 .skill-card:hover:not(.disabled) {
-  border-color: #10B981;
+  border-color: #00BCD4;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 188, 212, 0.1);
 }
 
 .skill-card.disabled {
@@ -619,7 +619,7 @@ onMounted(() => {
 .skill-icon svg {
   width: 24px;
   height: 24px;
-  stroke: #10B981;
+  stroke: #00BCD4;
 }
 
 .skill-info {
@@ -666,8 +666,8 @@ onMounted(() => {
 }
 
 .skill-source.dynamic {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10B981;
+  background: rgba(0, 188, 212, 0.1);
+  color: #00BCD4;
 }
 
 .skill-source.builtin {
@@ -676,7 +676,7 @@ onMounted(() => {
 }
 
 .skill-card.dynamic {
-  border-left: 3px solid #10B981;
+  border-left: 3px solid #00BCD4;
 }
 
 .empty-state p {
@@ -704,8 +704,8 @@ onMounted(() => {
 }
 
 .suggestion-btn:hover {
-  border-color: #10B981;
-  color: #10B981;
+  border-color: #00BCD4;
+  color: #00BCD4;
 }
 
 .message {
@@ -734,7 +734,7 @@ onMounted(() => {
 }
 
 .message.assistant .message-avatar {
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(0, 188, 212, 0.1);
 }
 
 .message-avatar svg {
@@ -861,8 +861,8 @@ onMounted(() => {
 }
 
 .model-badge {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10B981;
+  background: rgba(0, 188, 212, 0.1);
+  color: #00BCD4;
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 0.75rem;
@@ -884,7 +884,7 @@ onMounted(() => {
 }
 
 .paper-card:hover {
-  border-color: #10B981;
+  border-color: #00BCD4;
   transform: translateY(-2px);
 }
 
@@ -905,8 +905,8 @@ onMounted(() => {
 }
 
 .similarity-score {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10B981;
+  background: rgba(0, 188, 212, 0.1);
+  color: #00BCD4;
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 0.75rem;
@@ -996,8 +996,8 @@ onMounted(() => {
 }
 
 .ref-score {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10B981;
+  background: rgba(0, 188, 212, 0.1);
+  color: #00BCD4;
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 0.75rem;
@@ -1012,7 +1012,7 @@ onMounted(() => {
 .typing-indicator span {
   width: 8px;
   height: 8px;
-  background: #10B981;
+  background: #00BCD4;
   border-radius: 50%;
   animation: typing 1.4s infinite ease-in-out;
 }
@@ -1052,15 +1052,15 @@ onMounted(() => {
   display: flex;
   align-items: flex-end;
   background: var(--bg-secondary);
-  border: 2px solid var(--border-color);
+  border: 1px solid var(--border-color);
   border-radius: 16px;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .input-wrapper:focus-within {
-  border-color: #10B981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1), 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #00BCD4;
+  box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1), 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .input-wrapper textarea {
@@ -1092,7 +1092,7 @@ onMounted(() => {
   height: 40px;
   border: none;
   border-radius: 12px;
-  background: #10B981;
+  background: #00BCD4;
   color: white;
   cursor: pointer;
   display: flex;
@@ -1152,7 +1152,7 @@ onMounted(() => {
 }
 
 .action-btn.run-again {
-  background: #10B981;
+  background: #00BCD4;
   color: white;
 }
 

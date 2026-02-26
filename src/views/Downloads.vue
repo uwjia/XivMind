@@ -66,7 +66,7 @@
         </div>
 
         <div v-if="task.status === 'completed' && task.file_path" class="file-path">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#4CAF50">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#00BCD4">
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
             <polyline points="22 4 12 14.01 9 11.01"/>
           </svg>
@@ -328,8 +328,8 @@ onUnmounted(() => {
 }
 
 .ws-status.connected {
-  background: rgba(76, 175, 80, 0.1);
-  color: #4CAF50;
+  background: rgba(0, 188, 212, 0.1);
+  color: #00BCD4;
 }
 
 .ws-status.disconnected {
@@ -444,7 +444,7 @@ onUnmounted(() => {
 }
 
 .download-card.completed {
-  border-color: #4CAF50;
+  border-color: #00BCD4;
 }
 
 .download-card.failed {
@@ -486,8 +486,8 @@ onUnmounted(() => {
 }
 
 .status-badge.completed {
-  background: rgba(76, 175, 80, 0.2);
-  color: #4CAF50;
+  background: rgba(0, 188, 212, 0.2);
+  color: #00BCD4;
 }
 
 .status-badge.failed {
@@ -551,11 +551,11 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: rgba(76, 175, 80, 0.1);
+  background: rgba(0, 188, 212, 0.1);
   border-radius: 8px;
   margin-bottom: 12px;
   font-size: 0.85rem;
-  color: #4CAF50;
+  color: #00BCD4;
   word-break: break-all;
 }
 
@@ -613,8 +613,8 @@ onUnmounted(() => {
 }
 
 .action-btn.open:hover {
-  border-color: #4CAF50;
-  color: #4CAF50;
+  border-color: #00BCD4;
+  color: #00BCD4;
 }
 
 .action-btn.delete:hover {
