@@ -7,6 +7,38 @@
           <p v-if="filterDescription" class="section-description">{{ filterDescription }}</p>
         </div>
         <div class="header-actions">
+          <button v-if="!isGraphView" class="icon-btn date-btn" @click="toggleDatePicker" title="Select date">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </button>
+          <button v-if="!isGraphView" class="icon-btn category-btn" @click="toggleCategoryPicker" title="Select category">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+          </button>
+          <button v-if="!isGraphView" class="icon-btn filter-btn" @click="toggleFilterDrawer" :title="isFilterDrawerOpen ? 'Hide categories' : 'Show categories'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V17C21 18.1046 20.1046 19 19 19H5C3.89543 19 3 18.1046 3 17V7Z" fill="currentColor" fill-opacity="0.2"/>
+            </svg>
+          </button>
+          <button v-if="!isGraphView" class="icon-btn toggle-btn" @click="configStore.setUseSimpleCard(!configStore.useSimpleCard)" :title="configStore.useSimpleCard ? 'Switch to detailed view' : 'Switch to simple view'">
+            <svg v-if="configStore.useSimpleCard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="3" y1="9" x2="21" y2="9"/>
+              <line x1="3" y1="15" x2="21" y2="15"/>
+              <line x1="9" y1="9" x2="9" y2="15"/>
+            </svg>
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="5" rx="1"/>
+              <rect x="3" y="10" width="18" height="5" rx="1"/>
+              <rect x="3" y="17" width="18" height="4" rx="1"/>
+            </svg>
+          </button>
           <button class="icon-btn view-toggle-btn" @click="toggleGraphView" :title="isGraphView ? 'Switch to list view' : 'Switch to graph view'">
             <svg v-if="isGraphView" viewBox="0 0 24 24" fill="none" stroke-width="2">
               <rect x="3" y="3" width="7" height="7" fill="#10B981" stroke="#10B981"/>
@@ -24,38 +56,6 @@
               <line x1="15" y1="9" x2="16.5" y2="7.5" stroke="#6B7280" stroke-width="1.5"/>
               <line x1="7.5" y1="16.5" x2="9" y2="15" stroke="#6B7280" stroke-width="1.5"/>
               <line x1="15" y1="15" x2="16.5" y2="16.5" stroke="#6B7280" stroke-width="1.5"/>
-            </svg>
-          </button>
-          <button v-if="!isGraphView" class="icon-btn date-btn" @click="toggleDatePicker" title="Select date">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-          </button>
-          <button v-if="!isGraphView" class="icon-btn category-btn" @click="toggleCategoryPicker" title="Select category">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            </svg>
-          </button>
-          <button v-if="!isGraphView" class="icon-btn toggle-btn" @click="configStore.setUseSimpleCard(!configStore.useSimpleCard)" :title="configStore.useSimpleCard ? 'Switch to detailed view' : 'Switch to simple view'">
-            <svg v-if="configStore.useSimpleCard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <line x1="3" y1="9" x2="21" y2="9"/>
-              <line x1="3" y1="15" x2="21" y2="15"/>
-              <line x1="9" y1="9" x2="9" y2="15"/>
-            </svg>
-            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="5" rx="1"/>
-              <rect x="3" y="10" width="18" height="5" rx="1"/>
-              <rect x="3" y="17" width="18" height="4" rx="1"/>
-            </svg>
-          </button>
-          <button v-if="!isGraphView" class="icon-btn filter-btn" @click="toggleFilterDrawer" :title="isFilterDrawerOpen ? 'Hide categories' : 'Show categories'">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V17C21 18.1046 20.1046 19 19 19H5C3.89543 19 3 18.1046 3 17V7Z" fill="currentColor" fill-opacity="0.2"/>
             </svg>
           </button>
           <button v-if="!isGraphView" class="icon-btn refresh-btn" @click="refreshPapers" :disabled="loading" title="Refresh papers">
