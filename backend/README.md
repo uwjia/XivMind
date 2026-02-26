@@ -4,33 +4,6 @@
 
 FastAPI backend service for paper bookmark management and download task management. Supports both Milvus (vector database) and SQLite (lightweight database).
 
-## Directory Structure
-
-```
-backend/
-├── app/
-│   ├── __init__.py
-│   ├── main.py           # FastAPI application entry
-│   ├── config.py         # Configuration management
-│   ├── models.py         # Pydantic model definitions
-│   ├── db/
-│   │   ├── base.py       # Abstract repository interfaces
-│   │   ├── factory.py    # Database factory
-│   │   ├── milvus/       # Milvus implementations
-│   │   └── sqlite/       # SQLite implementations
-│   └── routers/
-│       ├── __init__.py
-│       ├── bookmarks.py  # Bookmark management API
-│       └── downloads.py  # Download task API
-├── docker-compose.yml    # Milvus standard deployment
-├── docker-compose.lite.yml # Milvus lite deployment
-├── milvus.sh / milvus.bat # Milvus startup scripts
-├── start.sh / start.bat  # Backend startup scripts
-├── requirements.txt
-├── .env.example
-└── README.md
-```
-
 ## Requirements
 
 ### SQLite Mode (Recommended for Development)
@@ -40,7 +13,7 @@ backend/
 ### Milvus Mode (Recommended for Production)
 - Python 3.10+
 - Docker & Docker Compose
-- Milvus 2.3.6+
+- Milvus 2.6.4+
 
 ## Quick Start
 
@@ -208,28 +181,76 @@ uvicorn app.main:app --reload --port 8000
 
 ## API Endpoints
 
+### arXiv `/api/arxiv`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/query` | Query papers by date with optional category filter |
+| GET | `/paper/{paper_id}` | Get paper by ID |
+| POST | `/fetch/{date}` | Fetch papers for a specific date |
+| DELETE | `/cache/{date}` | Clear cache for a specific date |
+| DELETE | `/cache` | Clear all date index cache |
+| GET | `/indexes` | Get all date indexes |
+| GET | `/statistics` | Get storage statistics |
+| GET | `/search/semantic` | Semantic search across papers |
+| POST | `/ask` | Ask question with paper context |
+| GET | `/llm/providers` | Get available LLM providers |
+| GET | `/llm/ollama/status` | Check Ollama service status |
+
 ### Bookmarks `/api/bookmarks`
 
-| Method | Path                | Description         |
-| ------ | ------------------- | ------------------- |
-| POST   | `/`                 | Add bookmark        |
-| DELETE | `/{paper_id}`       | Remove bookmark     |
-| GET    | `/check/{paper_id}` | Check if bookmarked |
-| GET    | `/`                 | Get bookmark list   |
-| GET    | `/search`           | Search bookmarks    |
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/` | Add bookmark |
+| DELETE | `/{paper_id}` | Remove bookmark |
+| GET | `/check/{paper_id}` | Check if bookmarked |
+| GET | `/` | Get bookmark list |
+| GET | `/search` | Search bookmarks |
+
+### Skills `/api/skills`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/` | Get all available skills |
+| GET | `/categories` | Get skills grouped by category |
+| GET | `/{skill_id}` | Get a specific skill |
+| POST | `/{skill_id}/execute` | Execute a skill with paper IDs |
+| POST | `/reload` | Reload all dynamic skills |
+| POST | `/reload/{skill_id}` | Reload a specific skill |
+
+### SubAgents `/api/subagents`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/` | Get all available SubAgents |
+| GET | `/{agent_id}` | Get a specific SubAgent |
+| GET | `/{agent_id}/raw` | Get raw AGENT.md content |
+| POST | `/{agent_id}/execute` | Execute a SubAgent task |
+| POST | `/{agent_id}/reload` | Reload a specific SubAgent |
+| POST | `/reload` | Reload all dynamic SubAgents |
+| POST | `/` | Create a new dynamic SubAgent |
+| PUT | `/{agent_id}` | Update a SubAgent's AGENT.md |
+| DELETE | `/{agent_id}` | Delete a dynamic SubAgent |
 
 ### Downloads `/api/downloads`
 
-| Method | Path               | Description          |
-| ------ | ------------------ | -------------------- |
-| POST   | `/`                | Create download task |
-| GET    | `/`                | Get task list        |
-| GET    | `/{task_id}`       | Get task details     |
-| DELETE | `/{task_id}`       | Delete task          |
-| POST   | `/{task_id}/retry` | Retry failed task    |
-| POST   | `/{task_id}/cancel`| Cancel task          |
-| POST   | `/{task_id}/open`  | Open downloaded file |
-| WebSocket | `/ws`           | Real-time progress   |
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/` | Create download task |
+| GET | `/` | Get task list |
+| GET | `/{task_id}` | Get task details |
+| DELETE | `/{task_id}` | Delete task |
+| POST | `/{task_id}/retry` | Retry failed task |
+| POST | `/{task_id}/cancel` | Cancel task |
+| POST | `/{task_id}/open` | Open downloaded file |
+| WebSocket | `/ws` | Real-time progress |
+
+### Graph `/api/graph`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/{date}` | Get knowledge graph data for a specific date |
+| GET | `/similarity/{date}` | Get paper similarity matrix for a date |
 
 ## Docker Compose Services
 

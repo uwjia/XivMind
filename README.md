@@ -22,6 +22,11 @@ A modern arXiv paper management application with bookmark, download, and AI assi
   - Semantic search across papers
   - Q&A with context from your paper library
   - Dynamic Skills system with customizable tasks
+- 🤖 SubAgents - AI agents for complex research tasks
+  - Research Assistant: Literature search and analysis
+  - Analysis Assistant: Deep paper analysis and comparison
+  - Writing Assistant: Academic writing support
+  - Dynamic agent creation with custom tools and skills
 - 🌙 Dark/Light theme toggle
 - 📱 Responsive design
 - 🎨 Modern UI with smooth animations
@@ -271,6 +276,24 @@ ollama pull qwen2
 - Copy and retry functionality
 - Multiple LLM provider support with easy switching in Settings
 
+### SubAgents Page
+- **Research Assistant**: Literature search and research analysis
+  - Search papers using semantic search
+  - Get detailed paper information
+  - Execute skill analysis on papers
+- **Analysis Assistant**: Deep analysis and comparative research
+  - Paper methodology analysis
+  - Results evaluation and trend discovery
+- **Writing Assistant**: Academic writing support
+  - Literature review writing
+  - Abstract generation
+  - Translation and polishing
+- **Dynamic Agents**: Create custom agents with AGENT.md files
+- **Tool System**: Built-in tools for paper operations
+  - `search_papers`: Semantic paper search
+  - `get_paper_details`: Retrieve paper information
+  - `execute_skill`: Run skills on papers
+
 ### Settings Page
 - Theme configuration (Dark/Light)
 - LLM Provider configuration
@@ -324,64 +347,74 @@ metadata:
 Your prompt template here with {paper.title} and {paper.abstract} placeholders.
 ```
 
-## API Endpoints
+## SubAgents System
 
-### arXiv `/api/arxiv`
+XivMind features a dynamic SubAgents system that allows AI agents to perform complex research tasks using tools and skills.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/query` | Query papers by date with optional category filter |
-| GET | `/paper/{paper_id}` | Get paper by ID |
-| POST | `/fetch/{date}` | Fetch papers for a specific date |
-| DELETE | `/cache/{date}` | Clear cache for a specific date |
-| DELETE | `/cache` | Clear all date index cache |
-| GET | `/indexes` | Get all date indexes |
-| GET | `/statistics` | Get storage statistics |
-| GET | `/search/semantic` | Semantic search across papers |
-| POST | `/ask` | Ask question with paper context |
-| GET | `/llm/providers` | Get available LLM providers |
-| GET | `/llm/ollama/status` | Check Ollama service status |
+### Built-in SubAgents
+- **Research Assistant**: Literature search and research analysis
+  - Search papers using semantic search
+  - Get paper details
+  - Execute skill analysis
+- **Analysis Assistant**: Deep analysis and comparative research
+  - Paper methodology analysis
+  - Results evaluation
+  - Trend discovery
+- **Writing Assistant**: Academic writing support
+  - Literature review writing
+  - Abstract generation
+  - Translation and polishing
 
-### Bookmarks `/api/bookmarks`
+### Dynamic SubAgents
+Create custom agents by adding `AGENT.md` files in `backend/subagents/` directory:
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/` | Add bookmark |
-| DELETE | `/{paper_id}` | Remove bookmark |
-| GET | `/check/{paper_id}` | Check if bookmarked |
-| GET | `/` | Get bookmark list |
-| GET | `/search` | Search bookmarks |
+```markdown
+---
+id: my-agent
+name: My Custom Agent
+description: My custom agent description
+icon: search
+skills:
+  - summary
+  - citation
+tools:
+  - search_papers
+  - get_paper_details
+  - execute_skill
+max_turns: 15
+temperature: 0.3
+model: gpt-4o-mini
+---
 
-### Skills `/api/skills`
+# My Custom Agent
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/` | Get all available skills |
-| GET | `/categories` | Get skills grouped by category |
-| GET | `/{skill_id}` | Get a specific skill |
-| POST | `/{skill_id}/execute` | Execute a skill with paper IDs |
-| POST | `/reload` | Reload all dynamic skills |
-| POST | `/reload/{skill_id}` | Reload a specific skill |
+You are a professional assistant specialized in...
 
-### Downloads `/api/downloads`
+## Tool Call Format
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/` | Create download task |
-| GET | `/` | Get task list |
-| GET | `/{task_id}` | Get task details |
-| DELETE | `/{task_id}` | Delete task |
-| POST | `/{task_id}/retry` | Retry failed task |
-| POST | `/{task_id}/cancel` | Cancel task |
-| POST | `/{task_id}/open` | Open downloaded file |
-| WebSocket | `/ws` | Real-time progress |
+When using tools, use this format:
+[TOOL: tool_name({"arg1": "value1"})]
 
-### Graph `/api/graph`
+## Available Tools
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/{date}` | Get knowledge graph data for a specific date |
-| GET | `/similarity/{date}` | Get paper similarity matrix for a date |
+- search_papers: Search for papers
+- get_paper_details: Get paper details
+- execute_skill: Execute skill analysis
+```
+
+### Tool System
+SubAgents can use the following built-in tools:
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `search_papers` | Search papers using semantic search | `query`, `top_k` |
+| `get_paper_details` | Get detailed paper information | `paper_id` |
+| `execute_skill` | Execute a skill on papers | `skill_id`, `paper_ids` |
+
+### Global LLM Integration
+SubAgents use the global LLM settings configured in the Settings page. This ensures consistent AI behavior across all features.
+
+For complete API documentation, see [backend/README.md](backend/README.md#api-endpoints).
 
 ## Development
 

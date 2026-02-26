@@ -22,6 +22,11 @@
   - 论文语义搜索
   - 基于论文库的问答
   - 动态技能系统，支持自定义任务
+- 🤖 SubAgents - 用于复杂研究任务的 AI 代理
+  - 研究助手：文献搜索和分析
+  - 分析助手：深度论文分析和比较
+  - 写作助手：学术写作支持
+  - 动态代理创建，支持自定义工具和技能
 - 🌙 深色/浅色主题切换
 - 📱 响应式设计
 - 🎨 现代化 UI，流畅动画
@@ -271,6 +276,24 @@ ollama pull qwen2
 - 复制和重试功能
 - 支持多种 LLM 提供商，可在设置中轻松切换
 
+### SubAgents 页面
+- **研究助手**：文献搜索和研究分析
+  - 使用语义搜索搜索论文
+  - 获取详细论文信息
+  - 对论文执行技能分析
+- **分析助手**：深度分析和比较研究
+  - 论文方法论分析
+  - 结果评估和趋势发现
+- **写作助手**：学术写作支持
+  - 文献综述写作
+  - 摘要生成
+  - 翻译和润色
+- **动态代理**：通过 AGENT.md 文件创建自定义代理
+- **工具系统**：内置工具用于论文操作
+  - `search_papers`：语义论文搜索
+  - `get_paper_details`：获取论文信息
+  - `execute_skill`：对论文执行技能
+
 ### 设置页
 - 主题配置（深色/浅色）
 - LLM 提供商配置
@@ -324,64 +347,74 @@ metadata:
 在这里编写提示词模板，使用 {paper.title} 和 {paper.abstract} 占位符。
 ```
 
-## API 端点
+## SubAgents 系统
 
-### arXiv `/api/arxiv`
+XivMind 具有动态 SubAgents 系统，允许 AI 代理使用工具和技能执行复杂的研究任务。
 
-| 方法 | 路径 | 描述 |
+### 内置 SubAgents
+- **研究助手**：文献搜索和研究分析
+  - 使用语义搜索搜索论文
+  - 获取论文详情
+  - 执行技能分析
+- **分析助手**：深度分析和比较研究
+  - 论文方法论分析
+  - 结果评估
+  - 趋势发现
+- **写作助手**：学术写作支持
+  - 文献综述写作
+  - 摘要生成
+  - 翻译和润色
+
+### 动态 SubAgents
+通过在 `backend/subagents/` 目录中添加 `AGENT.md` 文件来创建自定义代理：
+
+```markdown
+---
+id: my-agent
+name: 我的自定义代理
+description: 我的自定义代理描述
+icon: search
+skills:
+  - summary
+  - citation
+tools:
+  - search_papers
+  - get_paper_details
+  - execute_skill
+max_turns: 15
+temperature: 0.3
+model: gpt-4o-mini
+---
+
+# 我的自定义代理
+
+你是一个专业的助手，专门...
+
+## 工具调用格式
+
+使用工具时，使用以下格式
+[TOOL: tool_name({"arg1": "value1"})]
+
+## 可用工具
+
+- search_papers: 搜索论文
+- get_paper_details: 获取论文详情
+- execute_skill: 执行技能分析
+```
+
+### 工具系统
+SubAgents 可以使用以下内置工具：
+
+| 工具 | 描述 | 参数 |
 |------|------|------|
-| GET | `/query` | 按日期查询论文，可选分类筛选 |
-| GET | `/paper/{paper_id}` | 按 ID 获取论文 |
-| POST | `/fetch/{date}` | 获取特定日期的论文 |
-| DELETE | `/cache/{date}` | 清除特定日期的缓存 |
-| DELETE | `/cache` | 清除所有日期索引缓存 |
-| GET | `/indexes` | 获取所有日期索引 |
-| GET | `/statistics` | 获取存储统计 |
-| GET | `/search/semantic` | 论文语义搜索 |
-| POST | `/ask` | 基于论文内容提问 |
-| GET | `/llm/providers` | 获取可用的 LLM 提供商 |
-| GET | `/llm/ollama/status` | 检查 Ollama 服务状态 |
+| `search_papers` | 使用语义搜索搜索论文 | `query`, `top_k` |
+| `get_paper_details` | 获取详细论文信息 | `paper_id` |
+| `execute_skill` | 对论文执行技能 | `skill_id`, `paper_ids` |
 
-### 收藏 `/api/bookmarks`
+### 全局 LLM 集成
+SubAgents 使用在设置页面配置的全局 LLM 设置。这确保了所有功能之间 AI 行为的一致性。
 
-| 方法 | 路径 | 描述 |
-|------|------|------|
-| POST | `/` | 添加收藏 |
-| DELETE | `/{paper_id}` | 移除收藏 |
-| GET | `/check/{paper_id}` | 检查是否已收藏 |
-| GET | `/` | 获取收藏列表 |
-| GET | `/search` | 搜索收藏 |
-
-### 技能 `/api/skills`
-
-| 方法 | 路径 | 描述 |
-|------|------|------|
-| GET | `/` | 获取所有可用技能 |
-| GET | `/categories` | 按类别获取技能 |
-| GET | `/{skill_id}` | 获取特定技能 |
-| POST | `/{skill_id}/execute` | 执行技能 |
-| POST | `/reload` | 重载所有动态技能 |
-| POST | `/reload/{skill_id}` | 重载特定技能 |
-
-### 下载 `/api/downloads`
-
-| 方法 | 路径 | 描述 |
-|------|------|------|
-| POST | `/` | 创建下载任务 |
-| GET | `/` | 获取任务列表 |
-| GET | `/{task_id}` | 获取任务详情 |
-| DELETE | `/{task_id}` | 删除任务 |
-| POST | `/{task_id}/retry` | 重试失败任务 |
-| POST | `/{task_id}/cancel` | 取消任务 |
-| POST | `/{task_id}/open` | 打开已下载文件 |
-| WebSocket | `/ws` | 实时进度 |
-
-### 图谱 `/api/graph`
-
-| 方法 | 路径 | 描述 |
-|------|------|------|
-| GET | `/{date}` | 获取指定日期的知识图谱数据 |
-| GET | `/similarity/{date}` | 获取指定日期的论文相似度矩阵 |
+完整 API 文档请参阅 [backend/README_CN.md](backend/README_CN.md#api-接口)。
 
 ## 开发
 

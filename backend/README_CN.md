@@ -4,33 +4,6 @@
 
 FastAPI 后端服务，用于论文收藏管理和下载任务管理。支持 Milvus（向量数据库）和 SQLite（轻量级数据库）两种数据库模式。
 
-## 目录结构
-
-```
-backend/
-├── app/
-│   ├── __init__.py
-│   ├── main.py           # FastAPI 应用入口
-│   ├── config.py         # 配置管理
-│   ├── models.py         # Pydantic 模型定义
-│   ├── db/
-│   │   ├── base.py       # 抽象仓库接口
-│   │   ├── factory.py    # 数据库工厂
-│   │   ├── milvus/       # Milvus 实现
-│   │   └── sqlite/       # SQLite 实现
-│   └── routers/
-│       ├── __init__.py
-│       ├── bookmarks.py  # 收藏管理 API
-│       └── downloads.py  # 下载任务 API
-├── docker-compose.yml    # Milvus 标准部署
-├── docker-compose.lite.yml # Milvus 精简部署
-├── milvus.sh / milvus.bat # Milvus 启动脚本
-├── start.sh / start.bat  # 后端启动脚本
-├── requirements.txt
-├── .env.example
-└── README.md
-```
-
 ## 环境要求
 
 ### SQLite 模式（推荐开发使用）
@@ -40,7 +13,7 @@ backend/
 ### Milvus 模式（推荐生产使用）
 - Python 3.10+
 - Docker & Docker Compose
-- Milvus 2.3.6+
+- Milvus 2.6.4+
 
 ## 快速开始
 
@@ -208,6 +181,22 @@ uvicorn app.main:app --reload --port 8000
 
 ## API 接口
 
+### arXiv `/api/arxiv`
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| GET | `/query` | 按日期查询论文，可选分类筛选 |
+| GET | `/paper/{paper_id}` | 按 ID 获取论文 |
+| POST | `/fetch/{date}` | 获取特定日期的论文 |
+| DELETE | `/cache/{date}` | 清除特定日期的缓存 |
+| DELETE | `/cache` | 清除所有日期索引缓存 |
+| GET | `/indexes` | 获取所有日期索引 |
+| GET | `/statistics` | 获取存储统计 |
+| GET | `/search/semantic` | 论文语义搜索 |
+| POST | `/ask` | 基于论文内容提问 |
+| GET | `/llm/providers` | 获取可用的 LLM 提供商 |
+| GET | `/llm/ollama/status` | 检查 Ollama 服务状态 |
+
 ### 收藏管理 `/api/bookmarks`
 
 | 方法 | 路径 | 说明 |
@@ -217,6 +206,31 @@ uvicorn app.main:app --reload --port 8000
 | GET | `/check/{paper_id}` | 检查是否已收藏 |
 | GET | `/` | 获取收藏列表 |
 | GET | `/search` | 搜索收藏 |
+
+### 技能 `/api/skills`
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| GET | `/` | 获取所有可用技能 |
+| GET | `/categories` | 按类别获取技能 |
+| GET | `/{skill_id}` | 获取特定技能 |
+| POST | `/{skill_id}/execute` | 执行技能 |
+| POST | `/reload` | 重载所有动态技能 |
+| POST | `/reload/{skill_id}` | 重载特定技能 |
+
+### SubAgents `/api/subagents`
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| GET | `/` | 获取所有可用的 SubAgents |
+| GET | `/{agent_id}` | 获取特定 SubAgent |
+| GET | `/{agent_id}/raw` | 获取原始 AGENT.md 内容 |
+| POST | `/{agent_id}/execute` | 执行 SubAgent 任务 |
+| POST | `/{agent_id}/reload` | 重载特定 SubAgent |
+| POST | `/reload` | 重载所有动态 SubAgents |
+| POST | `/` | 创建新的动态 SubAgent |
+| PUT | `/{agent_id}` | 更新 SubAgent 的 AGENT.md |
+| DELETE | `/{agent_id}` | 删除动态 SubAgent |
 
 ### 下载管理 `/api/downloads`
 
@@ -230,6 +244,13 @@ uvicorn app.main:app --reload --port 8000
 | POST | `/{task_id}/cancel` | 取消任务 |
 | POST | `/{task_id}/open` | 打开已下载文件 |
 | WebSocket | `/ws` | 实时进度更新 |
+
+### 图谱 `/api/graph`
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| GET | `/{date}` | 获取指定日期的知识图谱数据 |
+| GET | `/similarity/{date}` | 获取指定日期的论文相似度矩阵 |
 
 ## Docker Compose 服务说明
 
