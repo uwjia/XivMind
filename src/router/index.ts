@@ -8,6 +8,7 @@ import Downloads from '../views/Downloads.vue'
 import Assistant from '../views/Assistant.vue'
 import DataManager from '../views/DataManager.vue'
 import SkillManager from '../views/SkillManager.vue'
+import SubAgentManager from '../views/SubAgentManager.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -54,6 +55,11 @@ const routes: RouteRecordRaw[] = [
     path: '/skills',
     name: 'SkillManager',
     component: SkillManager
+  },
+  {
+    path: '/subagents',
+    name: 'SubAgentManager',
+    component: SubAgentManager
   }
 ]
 

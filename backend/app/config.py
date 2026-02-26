@@ -57,6 +57,13 @@ class Settings(BaseSettings):
     SKILLS_WATCH_ENABLED: bool = True
     SKILLS_WATCH_DEBOUNCE_MS: int = 250
     SKILLS_RELOAD_ON_START: bool = True
+    
+    SUBAGENTS_DIR: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "subagents")
+    SUBAGENTS_WATCH_ENABLED: bool = True
+    SUBAGENTS_WATCH_DEBOUNCE_MS: int = 250
+    SUBAGENTS_RELOAD_ON_START: bool = True
+    SUBAGENTS_MAX_TURNS: int = 10
+    SUBAGENTS_DEFAULT_MODEL: str = "glm-4"
 
     class Config:
         env_file = ".env"

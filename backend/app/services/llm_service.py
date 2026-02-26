@@ -522,5 +522,40 @@ is available. Reference specific papers when relevant."""}
         messages = [{"role": "user", "content": prompt}]
         return await active_provider.generate(messages, **kwargs)
 
+    async def generate_with_messages(
+        self,
+        messages: List[Dict[str, str]],
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
+        **kwargs
+    ) -> str:
+        """
+        Generate a response from the LLM with structured messages.
+        
+        This method is designed for SubAgents and other use cases that require
+        full control over the message structure, including system prompts and
+        conversation history.
+        
+        Args:
+            messages: List of message dicts with 'role' and 'content' keys.
+                     Roles can be 'system', 'user', 'assistant', or 'tool'.
+            provider: Optional provider to use (overrides default)
+            model: Optional model to use
+            **kwargs: Additional parameters for the LLM (temperature, max_tokens, etc.)
+        
+        Returns:
+            Generated response string
+        """
+        if provider:
+            cache_key = f"{provider}:{model or 'default'}"
+            if cache_key not in self._providers_cache:
+                self._providers_cache[cache_key] = self._create_provider(provider, model)
+            active_provider = self._providers_cache[cache_key]
+        else:
+            self._initialize()
+            active_provider = self._provider
+        
+        return await active_provider.generate(messages, **kwargs)
+
 
 llm_service = LLMService()

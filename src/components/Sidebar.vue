@@ -101,6 +101,32 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          @click="goToSubAgents"
+          :title="isCollapsed ? 'SubAgents' : ''"
+        >
+          <svg v-if="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="#6366F1">
+            <rect x="3" y="11" width="18" height="10" rx="2"/>
+            <circle cx="12" cy="5" r="2"/>
+            <path d="M12 7v4"/>
+            <line x1="8" y1="16" x2="8" y2="16"/>
+            <line x1="16" y1="16" x2="16" y2="16"/>
+          </svg>
+          <div v-else class="picker-trigger-content">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#6366F1">
+              <rect x="3" y="11" width="18" height="10" rx="2"/>
+              <circle cx="12" cy="5" r="2"/>
+              <path d="M12 7v4"/>
+              <line x1="8" y1="16" x2="8" y2="16"/>
+              <line x1="16" y1="16" x2="16" y2="16"/>
+            </svg>
+            <span class="picker-label">SubAgents</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        <button
+          class="picker-trigger-btn"
           @click="goToDataManager"
           :title="isCollapsed ? 'Data Manager' : ''"
         >
@@ -245,6 +271,13 @@ const goToDataManager = () => {
 
 const goToSkills = () => {
   router.push('/skills')
+  if (isMobileOpen.value) {
+    sidebarStore.closeMobileSidebar()
+  }
+}
+
+const goToSubAgents = () => {
+  router.push('/subagents')
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }
