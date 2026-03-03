@@ -112,12 +112,44 @@
             </ul>
           </div>
           <div class="insight-card">
-            <h3>Related Papers</h3>
-            <div class="related-papers">
+            <div class="related-header">
+              <h3>Related Papers</h3>
+              <button 
+                v-if="!relatedLoading && !relatedError" 
+                @click="fetchRelatedPapers" 
+                class="refresh-related-btn"
+                title="Find similar papers"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" :class="{ 'spinning': relatedLoading }">
+                  <path d="M23 4v6h-6"/>
+                  <path d="M1 20v-6h6"/>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+              </button>
+            </div>
+            <div v-if="relatedLoading" class="related-loading">
+              <div class="spinner small"></div>
+              <p>Finding similar papers...</p>
+            </div>
+            <div v-else-if="relatedError" class="related-error">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <p>{{ relatedError }}</p>
+              <button @click="fetchRelatedPapers" class="retry-btn">Retry</button>
+            </div>
+            <div v-else-if="relatedPapers.length > 0" class="related-papers">
               <div v-for="related in relatedPapers" :key="related.id" class="related-paper" @click="goToPaper(related.id)">
                 <span class="related-id">{{ related.id }}</span>
                 <span class="related-title">{{ related.title }}</span>
+                <span class="related-score">{{ (related.similarity_score * 100).toFixed(1) }}%</span>
               </div>
+            </div>
+            <div v-else class="no-related">
+              <p>No similar papers found</p>
+              <button @click="fetchRelatedPapers" class="retry-btn">Search Again</button>
             </div>
           </div>
         </div>
@@ -207,41 +239,36 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { usePaperStore } from '../stores/paper-store'
-import { useBookmarkStore } from '../stores/bookmark-store'
-import { useDownloadStore } from '../stores/download-store'
-import { useToastStore } from '../stores/toast-store'
 import { getTagStyle, categories } from '../utils/categoryColors'
-import type { Paper } from '../types'
 import { useMarkdown } from '../composables/useMarkdown'
 import { useDateFormatter } from '../composables/useDateFormatter'
-import { useDownloadHandler } from '../composables/useDownloadHandler'
+import { usePaperDetail } from '../composables/usePaperDetail'
 
 const route = useRoute()
 const router = useRouter()
-const paperStore = usePaperStore()
-const bookmarkStore = useBookmarkStore()
-const downloadStore = useDownloadStore()
-const toastStore = useToastStore()
 
 const { render, renderWithDefault } = useMarkdown()
 const { formatDate } = useDateFormatter()
-const { getStatus: getDownloadStatus, getProgress: getDownloadProgress, handleDownload } = useDownloadHandler()
 
-const loading = ref<boolean>(false)
-const error = ref<string | null>(null)
-const paper = ref<Paper | null>(null)
-const isBookmarked = ref(false)
-const downloadStatus = computed(() => {
-  if (!paper.value?.id) return 'none'
-  return getDownloadStatus(paper.value.id)
-})
-const downloadProgress = computed(() => {
-  if (!paper.value?.id) return 0
-  return getDownloadProgress(paper.value.id)
-})
+const {
+  loading,
+  error,
+  paper,
+  isBookmarked,
+  downloadStatus,
+  downloadProgress,
+  relatedPapers,
+  relatedLoading,
+  relatedError,
+  fetchPaperById,
+  fetchRelatedPapers,
+  checkBookmark,
+  toggleBookmark,
+  downloadPdf,
+  initDownloadStore,
+} = usePaperDetail()
 
 const renderedAbstract = computed(() => {
   return renderWithDefault(paper.value?.abstract, 'No abstract available')
@@ -251,42 +278,13 @@ const renderedComment = computed(() => {
   return render(paper.value?.comment)
 })
 
-const relatedPapers = computed(() => {
-  if (!paper.value) return []
-  const currentPaper = paper.value
-  return paperStore.papers
-    .filter((p: Paper) => p.id !== currentPaper.id && p.category === currentPaper.category)
-    .slice(0, 3)
-})
-
-const fetchPaperById = async (id: string) => {
-  try {
-    loading.value = true
-    error.value = null
-    
-    const papers = await paperStore.fetchPapersByIds([id])
-    
-    if (papers.length === 0) {
-      error.value = 'Paper not found'
-    } else {
-      paper.value = papers[0]
-    }
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to load paper'
-    console.error('Error fetching paper:', err)
-  } finally {
-    loading.value = false
-  }
-}
-
 onMounted(async () => {
   const paperId = route.params.id as string
   await fetchPaperById(paperId)
   if (paper.value?.id) {
-    isBookmarked.value = await bookmarkStore.checkBookmark(paper.value.id)
-    if (downloadStore.tasks.length === 0) {
-      await downloadStore.fetchTasks()
-    }
+    await checkBookmark()
+    await initDownloadStore()
+    await fetchRelatedPapers()
   }
 })
 
@@ -294,7 +292,8 @@ watch(() => route.params.id, async (newId) => {
   if (newId) {
     await fetchPaperById(newId as string)
     if (paper.value?.id) {
-      isBookmarked.value = await bookmarkStore.checkBookmark(paper.value.id)
+      await checkBookmark()
+      await fetchRelatedPapers()
     }
   }
 })
@@ -305,41 +304,6 @@ const goToPaper = (id: string) => {
 
 const goBack = () => {
   router.back()
-}
-
-const toggleBookmark = async () => {
-  if (!paper.value?.id) return
-  try {
-    const result = await bookmarkStore.toggleBookmark({
-      paper_id: paper.value.id,
-      arxiv_id: paper.value.arxivId,
-      title: paper.value.title,
-      authors: paper.value.authors,
-      abstract: paper.value.abstract,
-      comment: paper.value.comment,
-      primary_category: paper.value.primaryCategory,
-      categories: paper.value.categories,
-      pdf_url: paper.value.pdfUrl,
-      abs_url: paper.value.absUrl,
-      published: paper.value.published?.toString(),
-      updated: paper.value.updated?.toString(),
-    })
-    isBookmarked.value = result
-    toastStore.showSuccess(result ? 'Added to bookmarks' : 'Removed from bookmarks')
-  } catch (error) {
-    console.error('Failed to toggle bookmark:', error)
-    toastStore.showError('Failed to update bookmark')
-  }
-}
-
-const downloadPdf = async () => {
-  if (!paper.value?.pdfUrl || !paper.value?.id) return
-  await handleDownload({
-    paperId: paper.value.id,
-    arxivId: paper.value.arxivId,
-    title: paper.value.title,
-    pdfUrl: paper.value.pdfUrl
-  })
 }
 
 const getCategoryFullName = (category: string) => {
@@ -934,6 +898,123 @@ const getCategoryFullName = (category: string) => {
   color: var(--text-primary);
   font-size: 0.9rem;
   font-weight: 500;
+  flex: 1;
+}
+
+.related-score {
+  font-size: 0.75rem;
+  color: var(--accent-color);
+  font-weight: 600;
+  background: rgba(var(--accent-color-rgb), 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.related-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.related-header h3 {
+  margin: 0;
+}
+
+.refresh-related-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.refresh-related-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent-color);
+}
+
+.refresh-related-btn svg {
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+}
+
+.refresh-related-btn svg.spinning {
+  animation: spin 1s linear infinite;
+}
+
+.related-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  color: var(--text-secondary);
+}
+
+.spinner.small {
+  width: 24px;
+  height: 24px;
+  border-width: 2px;
+}
+
+.related-loading p {
+  margin: 12px 0 0 0;
+  font-size: 0.9rem;
+}
+
+.related-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.related-error svg {
+  width: 32px;
+  height: 32px;
+  color: #ef4444;
+  margin-bottom: 8px;
+}
+
+.related-error p {
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
+}
+
+.no-related {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.no-related p {
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
+}
+
+.retry-btn {
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.retry-btn:hover {
+  opacity: 0.9;
 }
 
 .sidebar {

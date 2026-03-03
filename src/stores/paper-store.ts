@@ -152,14 +152,12 @@ export const usePaperStore = defineStore('paper', () => {
     return papers.value.find(paper => paper.id === id)
   }
 
-  const fetchPapersByIds = async (idList: string[]) => {
+  const fetchPaperById = async (id: string) => {
     try {
       setLoading(true)
       setError(null)
 
-      const data = await arxivAPI.fetchPapersByIdList(idList)
-      // addOrUpdatePapers(data)
-
+      const data = await arxivBackendAPI.getPaperById(id)
       return data
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
@@ -195,7 +193,7 @@ export const usePaperStore = defineStore('paper', () => {
     fetchTodayPapers,
     fetchPapersByDateRange,
     searchPapers,
-    fetchPapersByIds,
+    fetchPaperById,
     getPaperById,
     getFilteredPapers
   }
