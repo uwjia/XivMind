@@ -306,8 +306,8 @@ onUnmounted(() => {
 }
 
 .page-header h1 {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 1.75rem;
+  font-weight: 600;
   color: var(--text-primary);
   margin: 0;
 }

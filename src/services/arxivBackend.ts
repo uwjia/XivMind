@@ -355,6 +355,56 @@ export const arxivBackendAPI = {
     return response.json()
   },
 
+  async askQuestionWithMemory(
+    question: string, 
+    topK: number = 5, 
+    useMemory: boolean = true,
+    provider?: string, 
+    model?: string
+  ): Promise<{
+    answer: string
+    references: Array<{
+      id: string
+      title: string
+      authors: string[]
+      published?: string
+      relevance_score: number
+    }>
+    model?: string
+    memory_used: boolean
+    relevant_memories_count: number
+    error?: string
+  }> {
+    const body: Record<string, any> = {
+      question,
+      top_k: topK,
+      include_references: true,
+      use_memory: useMemory,
+      user_id: 'default'
+    }
+    
+    if (provider) {
+      body.provider = provider
+    }
+    if (model) {
+      body.model = model
+    }
+    
+    const response = await fetch(`${BACKEND_API_BASE}/ask-with-memory`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return response.json()
+  },
+
   async getEmbeddingIndexes(): Promise<{ indexes: EmbeddingIndex[] }> {
     const response = await fetch(`${BACKEND_API_BASE}/embedding-indexes`)
     if (!response.ok) {

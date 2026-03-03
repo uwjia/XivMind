@@ -27,6 +27,10 @@ A modern arXiv paper management application with bookmark, download, and AI assi
   - Analysis Assistant: Deep paper analysis and comparison
   - Writing Assistant: Academic writing support
   - Dynamic agent creation with custom tools and skills
+- 🧠 Long-term Memory System for personalized AI experience
+  - Core Memory: User profile with research interests and preferences
+  - Recall Memory: Semantic search across conversation history
+  - Archival Memory: Long-term knowledge storage for notes and insights
 - 🌙 Dark/Light theme toggle
 - 📱 Responsive design
 - 🎨 Modern UI with smooth animations

@@ -1,7 +1,11 @@
 import { ref, computed, nextTick, type Ref } from 'vue'
 import { arxivBackendAPI } from '../services/arxivBackend'
 import { useLLMStore } from '../stores/llm-store'
+import { useMemoryStore } from '../stores/memory-store'
+import { useConversationStore } from '../stores/conversation-store'
 import { useConfigError } from './useConfigError'
+import { memoryService } from '../services/memory'
+import type { ConversationMessage } from '../types/conversation'
 
 export interface Paper {
   id: string
@@ -30,39 +34,33 @@ export interface Message {
   references?: Reference[]
   model?: string
   isConfigError?: boolean
-  skillId?: string
-  skillName?: string
-  paperIds?: string[]
-  skillParams?: Record<string, unknown>
+  memoryUsed?: boolean
+  relevantMemoriesCount?: number
 }
 
-export type ChatMode = 'search' | 'ask' | 'skills'
+export type ChatMode = 'search' | 'ask'
 
 export function useChatMessages(mode: Ref<ChatMode>) {
   const llmStore = useLLMStore()
+  const memoryStore = useMemoryStore()
+  const conversationStore = useConversationStore()
   const { isConfigError } = useConfigError()
 
   const searchMessages = ref<Message[]>([])
   const askMessages = ref<Message[]>([])
-  const skillsMessages = ref<Message[]>([])
   const messageRefs = ref<Map<number, HTMLElement>>(new Map())
   const currentUserMessageIndex = ref<number | null>(null)
   const isLoading = ref(false)
 
   const currentModeMessages = computed({
     get: () => {
-      switch (mode.value) {
-        case 'search': return searchMessages.value
-        case 'ask': return askMessages.value
-        case 'skills': return skillsMessages.value
-        default: return searchMessages.value
-      }
+      return mode.value === 'search' ? searchMessages.value : askMessages.value
     },
     set: (value: Message[]) => {
-      switch (mode.value) {
-        case 'search': searchMessages.value = value; break
-        case 'ask': askMessages.value = value; break
-        case 'skills': skillsMessages.value = value; break
+      if (mode.value === 'search') {
+        searchMessages.value = value
+      } else {
+        askMessages.value = value
       }
     }
   })
@@ -93,109 +91,166 @@ export function useChatMessages(mode: Ref<ChatMode>) {
     })
   }
 
-  const sendMessage = async (messageContent: string, isRetry: boolean = false): Promise<void> => {
+  const executeSearch = async (query: string): Promise<Message> => {
+    const result = await arxivBackendAPI.semanticSearch(query, 10)
+    
+    if (result.error) {
+      return {
+        role: 'assistant' as const,
+        content: `Error: ${result.error}`,
+        isConfigError: isConfigError(result.error)
+      }
+    }
+    
+    const papers = result.papers.map((p) => ({
+      id: p.id,
+      title: p.title,
+      abstract: p.abstract,
+      authors: p.authors || [],
+      primary_category: p.primary_category || '',
+      categories: p.categories || [],
+      published: p.published || '',
+      similarity_score: p.similarity_score || 0
+    }))
+    
+    return {
+      role: 'assistant' as const,
+      content: papers.length > 0 ? `Found ${papers.length} papers for "${query}"` : `No papers found for "${query}"`,
+      papers: papers,
+      model: result.model
+    }
+  }
+
+  const executeAsk = async (query: string): Promise<Message> => {
+    const useMemory = localStorage.getItem('use_memory') !== 'false'
+    
+    const result = await arxivBackendAPI.askQuestionWithMemory(
+      query, 
+      5, 
+      useMemory,
+      llmStore.selectedProvider || undefined,
+      llmStore.selectedModel || undefined
+    )
+    
+    if (result.error) {
+      return {
+        role: 'assistant' as const,
+        content: `Error: ${result.error}`,
+        isConfigError: isConfigError(result.error)
+      }
+    }
+    
+    return {
+      role: 'assistant' as const,
+      content: result.answer || '',
+      answer: result.answer,
+      references: result.references || [],
+      model: result.model,
+      memoryUsed: result.memory_used,
+      relevantMemoriesCount: result.relevant_memories_count
+    }
+  }
+
+  const handleRequestError = (error: unknown): Message => {
+    console.error('Error:', error)
+    const errorMsg = error instanceof Error ? error.message : 'Something went wrong'
+    return {
+      role: 'assistant' as const,
+      content: `Error: ${errorMsg}`,
+      isConfigError: isConfigError(errorMsg)
+    }
+  }
+
+  const sendMessage = async (messageContent: string): Promise<void> => {
     const message = messageContent.trim()
     if (!message || isLoading.value) return
 
-    const currentMode = mode.value
-    const currentMessages = currentMode === 'search' ? searchMessages : 
-                            currentMode === 'ask' ? askMessages : 
-                            skillsMessages
-
-    if (!isRetry) {
-      currentMessages.value.push({ role: 'user', content: message })
+    if (!conversationStore.currentSessionId) {
+      await conversationStore.ensureConversationForMode()
     }
-    currentUserMessageIndex.value = currentMessages.value.length - 1
-    scrollToBottom()
+
+    await addUserMessage(message)
 
     isLoading.value = true
     
     try {
-      if (currentMode === 'search') {
-        const result = await arxivBackendAPI.semanticSearch(message, 10)
-        
-        currentMessages.value.push({
-          role: 'assistant',
-          content: '',
-          papers: result.papers.map((p) => ({
-            id: p.id,
-            title: p.title,
-            abstract: p.abstract,
-            authors: p.authors || [],
-            primary_category: p.primary_category || '',
-            categories: p.categories || [],
-            published: p.published || '',
-            similarity_score: p.similarity_score || 0
-          })),
-          model: result.model
-        })
-      } else {
-        const result = await arxivBackendAPI.askQuestion(
-          message, 
-          5, 
-          llmStore.selectedProvider || undefined,
-          llmStore.selectedModel || undefined
-        )
-        
-        if (result.error) {
-          const configError = isConfigError(result.error)
-          currentMessages.value.push({
-            role: 'assistant',
-            content: `Error: ${result.error}`,
-            isConfigError: configError
-          })
-        } else {
-          currentMessages.value.push({
-            role: 'assistant',
-            content: '',
-            answer: result.answer,
-            references: result.references || [],
-            model: result.model
-          })
+      const assistantMsg = mode.value === 'search' 
+        ? await executeSearch(message)
+        : await executeAsk(message)
+      
+      await addAssistantMessage(assistantMsg.content, assistantMsg)
+      
+      if (!assistantMsg.isConfigError) {
+        const assistantContent = assistantMsg.answer || assistantMsg.content || 
+          (assistantMsg.papers ? `Found ${assistantMsg.papers.length} papers` : '')
+        if (assistantContent) {
+          recordConversationToMemory(message, assistantContent)
         }
       }
     } catch (error) {
-      console.error('Error:', error)
-      const errorMsg = error instanceof Error ? error.message : 'Something went wrong'
-      const configError = isConfigError(errorMsg)
-      currentMessages.value.push({
-        role: 'assistant',
-        content: `Error: ${errorMsg}`,
-        isConfigError: configError
-      })
+      const errorMsg = handleRequestError(error)
+      await addAssistantMessage(errorMsg.content, errorMsg)
     } finally {
       isLoading.value = false
       scrollToBottom()
     }
   }
 
-  const retryMessage = async (
-    message: Message, 
-    _skills: Array<{ id: string }>,
-    onSkillRetry?: (skillId: string, paperIds: string[], params: Record<string, unknown>) => Promise<void>
-  ): Promise<void> => {
-    const messageIndex = currentModeMessages.value.findIndex(m => getMessageId(m) === getMessageId(message))
-    if (messageIndex <= 0) return
+  const retryMessage = async (messageIndex: number): Promise<void> => {
+    if (messageIndex < 0 || messageIndex >= currentModeMessages.value.length) return
+    
+    const message = currentModeMessages.value[messageIndex]
+    if (message.role !== 'assistant') return
+    
+    if (messageIndex === 0) return
     
     const userMessage = currentModeMessages.value[messageIndex - 1]
     if (userMessage.role !== 'user') return
     
-    currentModeMessages.value = currentModeMessages.value.slice(0, messageIndex)
-    
-    if (userMessage.skillId && userMessage.paperIds && userMessage.skillParams && onSkillRetry) {
-      await onSkillRetry(userMessage.skillId, userMessage.paperIds, userMessage.skillParams)
-    } else {
-      const originalInput = userMessage.content
-      await sendMessage(originalInput, true)
-    }
+    await sendMessage(userMessage.content)
   }
 
   const clearMessages = () => {
-    currentModeMessages.value = []
+    searchMessages.value = []
+    askMessages.value = []
     currentUserMessageIndex.value = null
   }
 
-  const addUserMessage = (content: string, options?: Partial<Message>) => {
+  const setMessages = (messages: Message[]) => {
+    clearMessages()
+    currentModeMessages.value = messages
+  }
+
+  const recordConversationToMemory = async (userMessage: string, assistantResponse: string) => {
+    try {
+      const sessionId = conversationStore.currentSessionId || `chat-${Date.now()}`
+      const extractProfile = localStorage.getItem('extract_profile') === 'true'
+      
+      const result = await memoryService.processConversation({
+        session_id: sessionId,
+        user_message: userMessage,
+        assistant_message: assistantResponse,
+        extract: extractProfile,
+      })
+      
+      if (result.status === 'processing') {
+        setTimeout(async () => {
+          await memoryStore.fetchStats()
+          if (extractProfile) {
+            await memoryStore.fetchCoreMemory()
+          }
+        }, 5000)
+      }
+    } catch (error) {
+      console.warn('Failed to record conversation to memory:', error)
+    }
+  }
+
+  const addUserMessage = async (content: string, options?: Partial<Message>) => {
+    if (!conversationStore.currentSessionId) {
+      await conversationStore.ensureConversationForMode()
+    }
+    
     currentModeMessages.value.push({
       role: 'user',
       content,
@@ -203,21 +258,67 @@ export function useChatMessages(mode: Ref<ChatMode>) {
     })
     currentUserMessageIndex.value = currentModeMessages.value.length - 1
     scrollToBottom()
+    
+    if (conversationStore.currentSessionId) {
+      const message: ConversationMessage = {
+        id: `msg-${Date.now()}`,
+        role: 'user',
+        content: content,
+        timestamp: new Date().toISOString(),
+      }
+      await conversationStore.addMessage(message)
+    }
   }
 
-  const addAssistantMessage = (content: string, options?: Partial<Message>) => {
+  const addAssistantMessage = async (content: string, options?: Partial<Message>) => {
+    if (!conversationStore.currentSessionId) {
+      await conversationStore.ensureConversationForMode()
+    }
+    
     currentModeMessages.value.push({
       role: 'assistant',
       content,
       ...options
     })
-    scrollToBottom()
+    // currentUserMessageIndex.value = currentModeMessages.value.length - 1
+    // scrollToBottom()
+    
+    if (conversationStore.currentSessionId) {
+      const message: ConversationMessage = {
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        content: content,
+        timestamp: new Date().toISOString(),
+        papers: options?.papers,
+        answer: options?.answer,
+        references: options?.references,
+      }
+      await conversationStore.addMessage(message)
+    }
+  }
+
+  const saveToKnowledge = async (message: Message) => {
+    const content = message.answer || message.content || ''
+    if (!content) return
+    
+    const title = content.slice(0, 50) + (content.length > 50 ? '...' : '')
+    
+    try {
+      await memoryStore.createArchivalMemory({
+        content_type: 'insight',
+        title: title,
+        content: content,
+        source_papers: message.references?.map(r => r.id) || [],
+        tags: [],
+      })
+    } catch (error) {
+      console.error('Failed to save to knowledge base:', error)
+    }
   }
 
   return {
     searchMessages,
     askMessages,
-    skillsMessages,
     currentModeMessages,
     messageRefs,
     currentUserMessageIndex,
@@ -228,7 +329,10 @@ export function useChatMessages(mode: Ref<ChatMode>) {
     sendMessage,
     retryMessage,
     clearMessages,
+    setMessages,
     addUserMessage,
-    addAssistantMessage
+    addAssistantMessage,
+    recordConversationToMemory,
+    saveToKnowledge,
   }
 }

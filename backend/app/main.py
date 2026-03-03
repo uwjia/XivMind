@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html
 from fastapi.staticfiles import StaticFiles
-from app.routers import arxiv, bookmarks, downloads, skills, llm, graph, subagents
+from app.routers import arxiv, bookmarks, downloads, skills, llm, graph, subagents, memory, conversation
 from app.db.milvus.client import milvus_client
 from app.services import download_service
 from app.config import get_settings
@@ -91,6 +91,8 @@ app.include_router(skills.router, prefix="/api")
 app.include_router(llm.router, prefix="/api")
 app.include_router(graph.router, prefix="/api")
 app.include_router(subagents.router, prefix="/api")
+app.include_router(memory.router, prefix="/api")
+app.include_router(conversation.router, prefix="/api")
 
 
 @app.get("/")

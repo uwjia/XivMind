@@ -5,6 +5,8 @@ from .papers import PaperSchema
 from .date_index import DateIndexSchema
 from .embedding_index import EmbeddingIndexSchema
 from .paper_embeddings import PaperEmbeddingSchema
+from .memorys import RecallMemorySchema, ArchivalMemorySchema, CoreMemorySchema
+from .conversation import ConversationMetaSchema
 from .registry import SchemaRegistry
 
 __all__ = [
@@ -15,5 +17,9 @@ __all__ = [
     "DateIndexSchema",
     "EmbeddingIndexSchema",
     "PaperEmbeddingSchema",
+    "RecallMemorySchema",
+    "ArchivalMemorySchema",
+    "CoreMemorySchema",
+    "ConversationMetaSchema",
     "SchemaRegistry",
 ]

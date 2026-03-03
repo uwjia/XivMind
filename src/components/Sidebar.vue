@@ -127,6 +127,28 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          @click="goToMemory"
+          :title="isCollapsed ? 'Memory' : ''"
+        >
+          <svg v-if="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="#E91E63">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/>
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+          </svg>
+          <div v-else class="picker-trigger-content">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#E91E63">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+            </svg>
+            <span class="picker-label">Memory</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        <button
+          class="picker-trigger-btn"
           @click="goToDataManager"
           :title="isCollapsed ? 'Data Manager' : ''"
         >
@@ -278,6 +300,13 @@ const goToSkills = () => {
 
 const goToSubAgents = () => {
   router.push('/subagents')
+  if (isMobileOpen.value) {
+    sidebarStore.closeMobileSidebar()
+  }
+}
+
+const goToMemory = () => {
+  router.push('/memory')
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }

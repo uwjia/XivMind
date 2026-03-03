@@ -398,7 +398,16 @@ class PaperService:
             )
             
             if not force:
-                paper_ids = self.embedding_repo.get_paper_ids_without_embeddings(paper_ids)
+                try:
+                    paper_ids = self.embedding_repo.get_paper_ids_without_embeddings(paper_ids)
+                except NotImplementedError as e:
+                    return {
+                        "success": False,
+                        "generated_count": 0,
+                        "skipped_count": 0,
+                        "error_count": 1,
+                        "error": str(e),
+                    }
             
             if not paper_ids:
                 total_papers = self.paper_repo.get_total_paper_count()
@@ -440,6 +449,14 @@ class PaperService:
                     generated += inserted
                     logger.info(f"Generated embeddings for batch {i//batch_size + 1}: {inserted} papers")
                     
+                except NotImplementedError as e:
+                    return {
+                        "success": False,
+                        "generated_count": generated,
+                        "skipped_count": 0,
+                        "error_count": len(batch_ids),
+                        "error": str(e),
+                    }
                 except Exception as e:
                     logger.error(f"Failed to generate embeddings for batch: {e}")
                     errors += len(batch_ids)

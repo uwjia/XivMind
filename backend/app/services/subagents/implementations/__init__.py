@@ -1,5 +1,6 @@
 from ..base import SubAgentBase
-from ..types import SubAgentConfig
+from ..types import SubAgentConfig, SubAgentTask, SubAgentResult
+from ..executor import SubAgentExecutor
 
 
 class BuiltinSubAgent(SubAgentBase):
@@ -7,6 +8,11 @@ class BuiltinSubAgent(SubAgentBase):
     
     def __init__(self, config: SubAgentConfig):
         super().__init__(config)
+        self._executor = SubAgentExecutor()
+    
+    async def execute(self, task: SubAgentTask) -> SubAgentResult:
+        """Execute a task using the SubAgentExecutor."""
+        return await self._executor.execute(self, task)
 
 
 def get_default_agent_configs() -> dict:

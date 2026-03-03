@@ -240,11 +240,18 @@ class MilvusPaperEmbeddingRepository:
         similar_papers = []
         if results and len(results) > 0:
             for hit in results[0]:
+                # hit.entity is a dict with 'entity' key containing the actual fields
+                entity_data = hit.entity
+                if isinstance(entity_data, dict) and 'entity' in entity_data:
+                    fields = entity_data['entity']
+                else:
+                    fields = entity_data
+                
                 similar_papers.append({
-                    "paper_id": hit.entity.get("paper_id"),
+                    "paper_id": fields.get("paper_id"),
                     "similarity_score": hit.score,
-                    "embedding_model": hit.entity.get("embedding_model"),
-                    "created_at": hit.entity.get("created_at"),
+                    "embedding_model": fields.get("embedding_model"),
+                    "created_at": fields.get("created_at"),
                 })
         
         return similar_papers

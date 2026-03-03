@@ -663,15 +663,15 @@ onMounted(() => {
 }
 
 .page-title {
-  font-size: 2.5rem;
-  font-weight: 700;
+  font-size: 1.75rem;
+  font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 8px;
+  margin: 0 0 8px 0;  
 }
 
 .page-subtitle {
-  font-size: 1.1rem;
-  color: var(--text-secondary);
+  color: var(--text-muted);
+  margin: 0 0 16px 0;
 }
 
 .stats-panel {

@@ -66,6 +66,13 @@ class RelatedPapersSkill(SkillProvider):
                 top_k=top_k + 1,
             )
             
+            if result.get("error"):
+                return {
+                    "paper_id": paper.get("id"),
+                    "error": result["error"],
+                    "success": False
+                }
+            
             related = [
                 p for p in result.get("papers", [])
                 if p.get("id") != paper.get("id")

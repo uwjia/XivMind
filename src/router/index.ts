@@ -9,6 +9,7 @@ import Assistant from '../views/Assistant.vue'
 import DataManager from '../views/DataManager.vue'
 import SkillManager from '../views/SkillManager.vue'
 import SubAgentManager from '../views/SubAgentManager.vue'
+import Memory from '../views/Memory.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -60,6 +61,11 @@ const routes: RouteRecordRaw[] = [
     path: '/subagents',
     name: 'SubAgentManager',
     component: SubAgentManager
+  },
+  {
+    path: '/memory',
+    name: 'Memory',
+    component: Memory
   }
 ]
 

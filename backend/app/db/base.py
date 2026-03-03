@@ -264,3 +264,107 @@ class PaperEmbeddingRepository(ABC):
     ) -> List[str]:
         """Get paper IDs that don't have embeddings yet."""
         pass
+
+
+class MemoryRepository(ABC):
+    """Abstract repository for memory storage (Core, Recall, Archival)."""
+
+    @abstractmethod
+    async def get_core_memory(self, user_id: str):
+        pass
+    
+    @abstractmethod
+    async def save_core_memory(self, memory) -> bool:
+        pass
+    
+    @abstractmethod
+    async def insert_recall_memory(self, memory) -> bool:
+        pass
+    
+    @abstractmethod
+    async def get_recall_memories(self, user_id: str, limit: int = 50, offset: int = 0) -> List[Any]:
+        pass
+    
+    @abstractmethod
+    async def delete_recall_memory(self, memory_id: str, flush: bool = True) -> bool:
+        pass
+    
+    @abstractmethod
+    async def delete_recall_memories_batch(self, memory_ids: List[str]) -> int:
+        pass
+    
+    @abstractmethod
+    async def search_recall_memories(self, query_embedding: List[float], user_id: str, top_k: int = 10) -> List[Any]:
+        pass
+    
+    @abstractmethod
+    async def insert_archival_memory(self, memory) -> bool:
+        pass
+    
+    @abstractmethod
+    async def get_archival_memories(self, user_id: str, limit: int = 50, offset: int = 0) -> List[Any]:
+        pass
+    
+    @abstractmethod
+    async def delete_archival_memory(self, memory_id: str, flush: bool = True) -> bool:
+        pass
+    
+    @abstractmethod
+    async def delete_archival_memories_batch(self, memory_ids: List[str]) -> int:
+        pass
+    
+    @abstractmethod
+    async def search_archival_memories(self, query_embedding: List[float], user_id: str, top_k: int = 10) -> List[Any]:
+        pass
+    
+    @abstractmethod
+    async def get_memory_stats(self, user_id: str):
+        pass
+    
+    @abstractmethod
+    async def clear_all_memories(self, user_id: str) -> bool:
+        pass
+    
+    @abstractmethod
+    async def clear_core_memory(self, user_id: str) -> bool:
+        pass
+    
+    @abstractmethod
+    async def clear_recall_memories(self, user_id: str) -> bool:
+        pass
+    
+    @abstractmethod
+    async def clear_archival_memories(self, user_id: str) -> bool:
+        pass
+
+
+class ConversationRepository(ABC):
+    """Abstract repository for conversation metadata."""
+
+    @abstractmethod
+    async def get_conversation(self, conversation_id: str):
+        pass
+    
+    @abstractmethod
+    async def save_conversation(self, conversation) -> bool:
+        pass
+    
+    @abstractmethod
+    async def get_conversations(self, user_id: str, limit: int = 50) -> List[Any]:
+        pass
+    
+    @abstractmethod
+    async def get_conversations_by_mode(self, user_id: str, mode: str, limit: int = 50) -> List[Any]:
+        pass
+    
+    @abstractmethod
+    async def get_latest_conversation_by_mode(self, user_id: str, mode: str):
+        pass
+    
+    @abstractmethod
+    async def delete_conversation(self, conversation_id: str) -> bool:
+        pass
+    
+    @abstractmethod
+    async def search_conversations(self, query: str, user_id: str) -> List[Any]:
+        pass

@@ -1,262 +1,11 @@
+"""LLM Service for managing multiple LLM providers."""
 import logging
 from typing import List, Dict, Any, Optional
-from abc import ABC, abstractmethod
 
 from app.config import get_settings
+from app.services.llm import LLMProvider, OpenAIProvider, AnthropicProvider, GLMProvider, OllamaProvider
 
 logger = logging.getLogger(__name__)
-
-
-class LLMProvider(ABC):
-    """Abstract base class for LLM providers."""
-    
-    @abstractmethod
-    async def generate(
-        self, 
-        messages: List[Dict[str, str]], 
-        **kwargs
-    ) -> str:
-        """Generate response from messages."""
-        pass
-    
-    @abstractmethod
-    def get_model_name(self) -> str:
-        """Return the model name."""
-        pass
-
-
-class OpenAIProvider(LLMProvider):
-    """OpenAI LLM provider."""
-    
-    def __init__(self, api_key: str, model: str, temperature: float = 0.7, max_tokens: int = 2048):
-        self.api_key = api_key
-        self.model = model
-        self.temperature = temperature
-        self.max_tokens = max_tokens
-        self._client = None
-    
-    def _get_client(self):
-        if self._client is None:
-            from openai import AsyncOpenAI
-            self._client = AsyncOpenAI(api_key=self.api_key)
-        return self._client
-    
-    async def generate(
-        self, 
-        messages: List[Dict[str, str]], 
-        **kwargs
-    ) -> str:
-        client = self._get_client()
-        
-        response = await client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=kwargs.get("temperature", self.temperature),
-            max_tokens=kwargs.get("max_tokens", self.max_tokens),
-        )
-        
-        return response.choices[0].message.content
-    
-    def get_model_name(self) -> str:
-        return self.model
-
-
-class AnthropicProvider(LLMProvider):
-    """Anthropic Claude LLM provider."""
-    
-    def __init__(self, api_key: str, model: str, temperature: float = 0.7, max_tokens: int = 2048):
-        self.api_key = api_key
-        self.model = model
-        self.temperature = temperature
-        self.max_tokens = max_tokens
-        self._client = None
-    
-    def _get_client(self):
-        if self._client is None:
-            from anthropic import AsyncAnthropic
-            self._client = AsyncAnthropic(api_key=self.api_key)
-        return self._client
-    
-    async def generate(
-        self, 
-        messages: List[Dict[str, str]], 
-        **kwargs
-    ) -> str:
-        client = self._get_client()
-        
-        system_message = ""
-        chat_messages = []
-        for msg in messages:
-            if msg["role"] == "system":
-                system_message = msg["content"]
-            else:
-                chat_messages.append(msg)
-        
-        response = await client.messages.create(
-            model=self.model,
-            max_tokens=kwargs.get("max_tokens", self.max_tokens),
-            temperature=kwargs.get("temperature", self.temperature),
-            system=system_message if system_message else None,
-            messages=chat_messages,
-        )
-        
-        return response.content[0].text
-    
-    def get_model_name(self) -> str:
-        return self.model
-
-
-class GLMProvider(LLMProvider):
-    """ZhipuAI GLM LLM provider (OpenAI-compatible API)."""
-    
-    def __init__(self, api_key: str, model: str, base_url: str, temperature: float = 0.7, max_tokens: int = 2048):
-        self.api_key = api_key
-        self.model = model
-        self.base_url = base_url
-        self.temperature = temperature
-        self.max_tokens = max_tokens
-        self._client = None
-    
-    def _get_client(self):
-        if self._client is None:
-            from openai import AsyncOpenAI
-            self._client = AsyncOpenAI(
-                api_key=self.api_key,
-                base_url=self.base_url,
-            )
-        return self._client
-    
-    async def generate(
-        self, 
-        messages: List[Dict[str, str]], 
-        **kwargs
-    ) -> str:
-        client = self._get_client()
-        
-        response = await client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=kwargs.get("temperature", self.temperature),
-            max_tokens=kwargs.get("max_tokens", self.max_tokens),
-        )
-        
-        return response.choices[0].message.content
-    
-    def get_model_name(self) -> str:
-        return self.model
-
-
-class OllamaProvider(LLMProvider):
-    """Local Ollama LLM provider."""
-    
-    def __init__(self, base_url: str, model: str, temperature: float = 0.7, max_tokens: int = 2048):
-        self.base_url = base_url.rstrip("/")
-        self.model = model
-        self.temperature = temperature
-        self.max_tokens = max_tokens
-        self._client = None
-        self._available_models: Optional[List[str]] = None
-    
-    def _get_client(self):
-        if self._client is None:
-            import httpx
-            self._client = httpx.AsyncClient(timeout=120.0)
-        return self._client
-    
-    async def _get_available_models(self) -> List[str]:
-        """Get list of available models from Ollama."""
-        if self._available_models is not None:
-            return self._available_models
-        
-        try:
-            client = self._get_client()
-            response = await client.get(f"{self.base_url}/api/tags")
-            if response.status_code == 200:
-                data = response.json()
-                self._available_models = [m.get("name", "") for m in data.get("models", [])]
-            else:
-                self._available_models = []
-        except Exception:
-            self._available_models = []
-        
-        return self._available_models
-    
-    async def check_available(self) -> tuple[bool, str]:
-        """Check if Ollama service and model are available.
-        
-        Returns:
-            Tuple of (is_available, error_message)
-        """
-        try:
-            client = self._get_client()
-            
-            response = await client.get(f"{self.base_url}/api/tags", timeout=5.0)
-            if response.status_code != 200:
-                return False, f"Ollama service returned status {response.status_code}"
-            
-            data = response.json()
-            models = data.get("models", [])
-            model_names = [m.get("name", "") for m in models]
-            
-            if self.model in model_names:
-                return True, ""
-            
-            model_base = self.model.split(":")[0]
-            matching_model = next((m for m in model_names if m.startswith(model_base + ":") or m == model_base), None)
-            
-            if matching_model:
-                self.model = matching_model
-                return True, ""
-            
-            available = ", ".join(model_names) if model_names else "none"
-            return False, f"Model '{self.model}' not found. Available models: {available}"
-            
-        except Exception as e:
-            return False, f"Cannot connect to Ollama service ({self.base_url}): {str(e)}"
-    
-    async def generate(
-        self, 
-        messages: List[Dict[str, str]], 
-        **kwargs
-    ) -> str:
-        import json
-        
-        available, error = await self.check_available()
-        if not available:
-            raise ValueError(f"Ollama not available: {error}")
-        
-        client = self._get_client()
-        
-        payload = {
-            "model": self.model,
-            "messages": messages,
-            "stream": False,
-            "options": {
-                "temperature": kwargs.get("temperature", self.temperature),
-                "num_predict": kwargs.get("max_tokens", self.max_tokens),
-            }
-        }
-        
-        response = await client.post(
-            f"{self.base_url}/api/chat",
-            json=payload,
-        )
-        
-        if response.status_code == 404:
-            raise ValueError(f"Model '{self.model}' not found. Please run: ollama pull {self.model}")
-        
-        response.raise_for_status()
-        
-        result = response.json()
-        return result["message"]["content"]
-    
-    def get_model_name(self) -> str:
-        return f"ollama/{self.model}"
-    
-    async def close(self):
-        if self._client:
-            await self._client.aclose()
-            self._client = None
 
 
 class LLMService:
@@ -306,6 +55,8 @@ Always be helpful, accurate, and scholarly in your responses."""
         """Create a provider instance."""
         provider = provider_name.lower()
         
+        logger.info(f"[LLM Service] Creating provider: {provider}, model: {model or 'default'}")
+        
         if provider == "openai":
             if not self.settings.OPENAI_API_KEY:
                 raise ValueError("OPENAI_API_KEY is required for OpenAI provider")
@@ -332,7 +83,7 @@ Always be helpful, accurate, and scholarly in your responses."""
                 raise ValueError("GLM_API_KEY is required for GLM provider")
             return GLMProvider(
                 api_key=self.settings.GLM_API_KEY,
-                model=model or self.settings.LLM_MODEL or "glm-4-plus",
+                model=model or self.settings.LLM_MODEL or "glm-5",
                 base_url=self.settings.GLM_BASE_URL,
                 temperature=self.settings.LLM_TEMPERATURE,
                 max_tokens=self.settings.LLM_MAX_TOKENS,
@@ -355,7 +106,7 @@ Always be helpful, accurate, and scholarly in your responses."""
         
         provider = self.settings.LLM_PROVIDER.lower()
         self._provider = self._create_provider(provider)
-        logger.info(f"Initialized {provider} provider with model: {self._provider.get_model_name()}")
+        logger.info(f"[LLM Service] Initialized {provider} provider with model: {self._provider.get_model_name()}")
     
     def get_providers(self) -> List[Dict[str, Any]]:
         """Get list of all available LLM providers."""
@@ -419,6 +170,17 @@ Abstract: {abstract}
         
         return "\n".join(context_parts)
     
+    def _get_provider(self, provider: Optional[str], model: Optional[str]) -> LLMProvider:
+        """Get or create a provider instance."""
+        if provider:
+            cache_key = f"{provider}:{model or 'default'}"
+            if cache_key not in self._providers_cache:
+                self._providers_cache[cache_key] = self._create_provider(provider, model)
+            return self._providers_cache[cache_key]
+        else:
+            self._initialize()
+            return self._provider
+    
     async def ask_question(
         self, 
         question: str, 
@@ -440,14 +202,9 @@ Abstract: {abstract}
         Returns:
             Generated answer string
         """
-        if provider:
-            cache_key = f"{provider}:{model or 'default'}"
-            if cache_key not in self._providers_cache:
-                self._providers_cache[cache_key] = self._create_provider(provider, model)
-            active_provider = self._providers_cache[cache_key]
-        else:
-            self._initialize()
-            active_provider = self._provider
+        active_provider = self._get_provider(provider, model)
+        
+        logger.info(f"[LLM Service] ask_question - Provider: {active_provider.get_provider_name()}, Model: {active_provider.get_model_name()}")
         
         context = self._build_context(papers)
         
@@ -465,16 +222,96 @@ is available. Reference specific papers when relevant."""}
         
         return await active_provider.generate(messages, **kwargs)
     
+    async def ask_question_with_memory(
+        self,
+        question: str,
+        papers: List[Dict[str, Any]],
+        memory_context: Optional[str] = None,
+        core_memory = None,
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
+        **kwargs
+    ) -> str:
+        """
+        Generate an answer with memory-based personalization.
+        
+        This method enhances the basic ask_question with:
+        - User profile context (research interests, preferences)
+        - Relevant conversation history (included in memory_context)
+        - Personalized response style (language, summary format)
+        
+        Args:
+            question: The user's question
+            papers: List of relevant papers to use as context
+            memory_context: Pre-built memory context string (includes user profile and history)
+            core_memory: User's CoreMemory object with preferences (for language/style settings)
+            provider: Optional provider to use (overrides default)
+            model: Optional model to use
+            **kwargs: Additional parameters for the LLM
+        
+        Returns:
+            Generated answer string with personalization
+        """
+        active_provider = self._get_provider(provider, model)
+        
+        logger.info(f"[LLM Service] ask_question_with_memory - Provider: {active_provider.get_provider_name()}, Model: {active_provider.get_model_name()}, Memory: {memory_context is not None}")
+        
+        system_prompt = self.SYSTEM_PROMPT
+        
+        language_instruction = ""
+        if core_memory and hasattr(core_memory, 'language_preference'):
+            if core_memory.language_preference == "zh-CN":
+                language_instruction = "\n\n**IMPORTANT: You MUST respond in Chinese (中文). All your output must be in Chinese language.**"
+            elif core_memory.language_preference == "en-US":
+                language_instruction = "\n\n**IMPORTANT: You MUST respond in English.**"
+        
+        if language_instruction:
+            system_prompt = language_instruction + "\n\n" + system_prompt
+        
+        if memory_context:
+            system_prompt += f"\n\n## User Memory Context\n{memory_context}"
+        
+        if core_memory:
+            if hasattr(core_memory, 'summary_style'):
+                if core_memory.summary_style == "brief":
+                    system_prompt += "\n\nPlease answer concisely, avoid being verbose."
+                elif core_memory.summary_style == "bullet_points":
+                    system_prompt += "\n\nPlease use bullet points to answer the question."
+                elif core_memory.summary_style == "detailed":
+                    system_prompt += "\n\nPlease answer in detail, providing sufficient information."
+            
+            #if hasattr(core_memory, 'custom_instructions') and core_memory.custom_instructions:
+            #    system_prompt += f"\n\nUser Custom Instructions: {core_memory.custom_instructions}"
+        
+        # logger.info(f"[LLM Service] ask_question_with_memory - System Prompt: {system_prompt}")
+        
+        context = self._build_context(papers)
+        
+        user_language_hint = ""
+        if core_memory and hasattr(core_memory, 'language_preference'):
+            if core_memory.language_preference == "zh-CN":
+                user_language_hint = "\n\n请用中文回答这个问题。"
+            elif core_memory.language_preference == "en-US":
+                user_language_hint = "\n\nPlease answer this question in English."
+        
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"""Context:
+{context}
+
+Question: {question}
+
+Please answer the question based on the provided context. If the context doesn't contain 
+enough information to fully answer the question, please say so and provide what information 
+is available. Reference specific papers when relevant.{user_language_hint}"""}
+        ]
+        
+        return await active_provider.generate(messages, **kwargs)
+    
     def get_model_name(self, provider: Optional[str] = None, model: Optional[str] = None) -> str:
         """Return the current model name."""
-        if provider:
-            cache_key = f"{provider}:{model or 'default'}"
-            if cache_key not in self._providers_cache:
-                self._providers_cache[cache_key] = self._create_provider(provider, model)
-            return self._providers_cache[cache_key].get_model_name()
-        
-        self._initialize()
-        return self._provider.get_model_name()
+        active_provider = self._get_provider(provider, model)
+        return active_provider.get_model_name()
     
     def is_available(self, provider: Optional[str] = None) -> bool:
         """Check if LLM service is available.
@@ -510,14 +347,9 @@ is available. Reference specific papers when relevant."""}
         Returns:
             Generated response string
         """
-        if provider:
-            cache_key = f"{provider}:{model or 'default'}"
-            if cache_key not in self._providers_cache:
-                self._providers_cache[cache_key] = self._create_provider(provider, model)
-            active_provider = self._providers_cache[cache_key]
-        else:
-            self._initialize()
-            active_provider = self._provider
+        active_provider = self._get_provider(provider, model)
+        
+        logger.info(f"[LLM Service] generate - Provider: {active_provider.get_provider_name()}, Model: {active_provider.get_model_name()}")
         
         messages = [{"role": "user", "content": prompt}]
         return await active_provider.generate(messages, **kwargs)
@@ -546,16 +378,40 @@ is available. Reference specific papers when relevant."""}
         Returns:
             Generated response string
         """
-        if provider:
-            cache_key = f"{provider}:{model or 'default'}"
-            if cache_key not in self._providers_cache:
-                self._providers_cache[cache_key] = self._create_provider(provider, model)
-            active_provider = self._providers_cache[cache_key]
-        else:
-            self._initialize()
-            active_provider = self._provider
+        active_provider = self._get_provider(provider, model)
+        
+        logger.info(f"[LLM Service] generate_with_messages - Provider: {active_provider.get_provider_name()}, Model: {active_provider.get_model_name()}, Messages: {len(messages)}")
         
         return await active_provider.generate(messages, **kwargs)
+    
+    async def chat(
+        self,
+        messages: List[Dict[str, str]],
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Chat with the LLM and return a structured response.
+        
+        This method is designed for memory extraction and other use cases
+        that need the full response structure.
+        
+        Args:
+            messages: List of message dicts with 'role' and 'content' keys.
+            provider: Optional provider to use (overrides default)
+            model: Optional model to use
+            **kwargs: Additional parameters for the LLM
+        
+        Returns:
+            Dict with 'content' key containing the response
+        """
+        active_provider = self._get_provider(provider, model)
+        
+        logger.info(f"[LLM Service] chat - Provider: {active_provider.get_provider_name()}, Model: {active_provider.get_model_name()}")
+        
+        content = await active_provider.generate(messages, **kwargs)
+        return {"content": content}
 
 
 llm_service = LLMService()

@@ -4,6 +4,7 @@ import logging
 
 from app.services.paper_service import PaperService
 from app.services.llm_service import llm_service
+from app.services.memory.service import memory_service
 from app.models import (
     SemanticSearchRequest,
     SemanticSearchResponse,
@@ -12,6 +13,8 @@ from app.models import (
     GenerateEmbeddingsResponse,
     AskRequest,
     AskResponse,
+    AskWithMemoryRequest,
+    AskWithMemoryResponse,
     PaperReference,
 )
 
@@ -175,6 +178,13 @@ async def ask_question(request: AskRequest = Body(...)):
             top_k=request.top_k,
         )
         
+        if search_result.get("error"):
+            return AskResponse(
+                answer="",
+                references=[],
+                error=search_result["error"],
+            )
+        
         papers = search_result.get("papers", [])
         
         if not papers:
@@ -215,6 +225,104 @@ async def ask_question(request: AskRequest = Body(...)):
             answer="",
             references=[],
             error=str(e),
+        )
+
+
+@router.post("/ask-with-memory", response_model=AskWithMemoryResponse)
+async def ask_question_with_memory(request: AskWithMemoryRequest = Body(...)):
+    """
+    Ask a question with memory-based personalization.
+    
+    This endpoint enhances the basic ask functionality with:
+    - User profile context (research interests, preferences)
+    - Relevant conversation history
+    - Personalized response style (language, summary format)
+    
+    Features:
+    1. Uses semantic search to find relevant papers
+    2. Retrieves user's core memory (profile)
+    3. Searches for relevant conversation memories
+    4. Builds personalized system prompt
+    5. Calls LLM with enhanced context
+    6. Returns answer with memory usage info
+    """
+    try:
+        search_result = await _paper_service.search_papers_semantic(
+            query=request.question,
+            top_k=request.top_k,
+        )
+        
+        if search_result.get("error"):
+            return AskWithMemoryResponse(
+                answer="",
+                references=[],
+                error=search_result["error"],
+            )
+        
+        papers = search_result.get("papers", [])
+        
+        memory_context = None
+        core_memory = None
+        relevant_memories_count = 0
+        
+        if request.use_memory:
+            try:
+                core_memory = await memory_service.get_core_memory(request.user_id)
+                memory_context = await memory_service.build_context_for_query(
+                    query=request.question,
+                    user_id=request.user_id,
+                )
+                relevant_memories_count = memory_context.count('\n- ') if memory_context else 0
+                logger.info(f"Memory context loaded: core_memory={core_memory is not None}, context_length={len(memory_context) if memory_context else 0}")
+            except Exception as mem_error:
+                logger.warning(f"Failed to load memory context: {mem_error}")
+        
+        if not papers:
+            return AskWithMemoryResponse(
+                answer="I couldn't find any relevant papers in the database to answer your question. "
+                       "Try searching for papers first or rephrase your question.",
+                references=[],
+                model=None,
+                memory_used=request.use_memory,
+                relevant_memories_count=relevant_memories_count,
+            )
+        
+        answer = await llm_service.ask_question_with_memory(
+            question=request.question,
+            papers=papers,
+            memory_context=memory_context,
+            core_memory=core_memory,
+            provider=request.provider,
+            model=request.model,
+        )
+        
+        references = []
+        if request.include_references:
+            for paper in papers[:request.top_k]:
+                references.append(PaperReference(
+                    id=paper.get("id", ""),
+                    title=paper.get("title", ""),
+                    authors=paper.get("authors", []),
+                    published=paper.get("published"),
+                    relevance_score=paper.get("similarity_score", 0.0),
+                ))
+        
+        return AskWithMemoryResponse(
+            answer=answer,
+            references=references,
+            model=llm_service.get_model_name(provider=request.provider, model=request.model),
+            memory_used=request.use_memory,
+            relevant_memories_count=relevant_memories_count,
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in ask-with-memory endpoint: {e}")
+        return AskWithMemoryResponse(
+            answer="",
+            references=[],
+            error=str(e),
+            memory_used=False,
+            relevant_memories_count=0,
         )
 
 

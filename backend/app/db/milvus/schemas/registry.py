@@ -6,6 +6,8 @@ from .papers import PaperSchema
 from .date_index import DateIndexSchema
 from .embedding_index import EmbeddingIndexSchema
 from .paper_embeddings import PaperEmbeddingSchema
+from .memorys import RecallMemorySchema, ArchivalMemorySchema, CoreMemorySchema
+from .conversation import ConversationMetaSchema
 
 
 class SchemaRegistry:
@@ -42,3 +44,7 @@ SchemaRegistry.register(PaperSchema())
 SchemaRegistry.register(DateIndexSchema())
 SchemaRegistry.register(EmbeddingIndexSchema())
 SchemaRegistry.register(PaperEmbeddingSchema())
+SchemaRegistry.register(RecallMemorySchema())
+SchemaRegistry.register(ArchivalMemorySchema())
+SchemaRegistry.register(CoreMemorySchema())
+SchemaRegistry.register(ConversationMetaSchema())

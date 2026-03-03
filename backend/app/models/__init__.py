@@ -17,6 +17,8 @@ from .embedding import (
 )
 from .llm import (
     AskRequest,
+    AskWithMemoryRequest,
+    AskWithMemoryResponse,
     PaperReference,
     AskResponse,
     LLMProviderInfo,
@@ -63,6 +65,8 @@ __all__ = [
     "EmbeddingIndexResponse",
     "EmbeddingIndexesResponse",
     "AskRequest",
+    "AskWithMemoryRequest",
+    "AskWithMemoryResponse",
     "PaperReference",
     "AskResponse",
     "LLMProviderInfo",

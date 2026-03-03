@@ -406,7 +406,7 @@ onMounted(loadSubAgents)
 <style scoped>
 .subagent-manager {
   padding: 88px 24px 24px 24px;
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
   min-height: 100vh;
 }
@@ -419,9 +419,10 @@ onMounted(loadSubAgents)
 }
 
 .header-content h1 {
-  margin: 0 0 8px 0;
   font-size: 1.75rem;
+  font-weight: 600;
   color: var(--text-primary);
+  margin: 0 0 8px 0;
 }
 
 .description {

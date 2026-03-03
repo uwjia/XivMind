@@ -70,7 +70,16 @@ export const skillsAPI = {
     })
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      let errorMessage = `HTTP error! status: ${response.status}`
+      try {
+        const errorData = await response.json()
+        if (errorData.detail) {
+          errorMessage = errorData.detail
+        }
+      } catch {
+        // Ignore JSON parse errors, use default message
+      }
+      throw new Error(errorMessage)
     }
     
     return response.json()

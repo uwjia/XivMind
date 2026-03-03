@@ -61,7 +61,7 @@
     <div v-if="showActions" class="skill-actions" @click.stop>
       <button 
         class="action-btn execute" 
-        @click="$emit('execute', skill)"
+        @click.stop="$emit('execute', skill)"
         :disabled="!skill.available"
         title="Execute this skill"
       >
@@ -71,9 +71,21 @@
         Execute
       </button>
       <button 
+        class="action-btn detail" 
+        @click.stop="$emit('detail', skill)"
+        title="View skill details"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+      </button>
+      <button 
         v-if="skill.source === 'dynamic'" 
         class="action-btn edit" 
-        @click="$emit('edit', skill)"
+        @click.stop="$emit('edit', skill)"
         title="Edit skill definition"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -84,7 +96,7 @@
       <button 
         v-if="skill.source === 'dynamic'" 
         class="action-btn reload" 
-        @click="$emit('reload', skill)"
+        @click.stop="$emit('reload', skill)"
         title="Reload skill from file"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -109,6 +121,7 @@ defineProps<{
 defineEmits<{
   (e: 'select', skill: Skill): void
   (e: 'execute', skill: Skill): void
+  (e: 'detail', skill: Skill): void
   (e: 'edit', skill: Skill): void
   (e: 'reload', skill: Skill): void
 }>()
@@ -253,24 +266,32 @@ defineEmits<{
 }
 
 .action-btn.execute {
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
+  background: rgba(34, 197, 94, 0.1);
+  color: #22C55E;
 }
 
 .action-btn.execute:hover:not(:disabled) {
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: rgba(34, 197, 94, 0.2);
+}
+
+.action-btn.detail {
+  background: rgba(0, 188, 212, 0.1);
+  color: #00BCD4;
+  padding: 8px;
+}
+
+.action-btn.detail:hover {
+  background: rgba(0, 188, 212, 0.2);
 }
 
 .action-btn.edit {
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
+  background: rgba(245, 158, 11, 0.1);
+  color: #F59E0B;
   padding: 8px;
 }
 
 .action-btn.edit:hover {
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: rgba(245, 158, 11, 0.2);
 }
 
 .action-btn.reload {

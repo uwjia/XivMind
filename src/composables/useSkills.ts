@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { skillsAPI } from '../services/skills'
 import { useLLMStore } from '../stores/llm-store'
-import type { Skill, SkillExecuteResponse } from '../types/skill'
+import type { Skill, SkillExecuteResponse, RelatedPaper } from '../types/skill'
 
 interface ExecuteSkillParams {
   skillId: string
@@ -9,11 +9,44 @@ interface ExecuteSkillParams {
   params: Record<string, unknown>
 }
 
+export function formatSkillResult(result: Record<string, unknown>): string {
+  if (result.summary) {
+    return `**Summary**\n\n${result.summary}`
+  }
+  
+  if (result.translation) {
+    return `**Translation (${result.target_language})**\n\n${result.translation}`
+  }
+  
+  if (result.citations) {
+    let content = '**Citations**\n\n'
+    for (const [format, citation] of Object.entries(result.citations as Record<string, string>)) {
+      content += `**${format}:**\n\`\`\`\n${citation}\n\`\`\`\n\n`
+    }
+    return content
+  }
+  
+  if (result.related_papers && Array.isArray(result.related_papers)) {
+    let content = `**Related Papers** (${result.total || result.related_papers.length} found)\n\n`
+    result.related_papers.forEach((paper: RelatedPaper, index: number) => {
+      content += `${index + 1}. **${paper.title}**\n   ${paper.authors?.slice(0, 2).join(', ')}\n   Similarity: ${(paper.similarity_score * 100).toFixed(1)}%\n\n`
+    })
+    return content
+  }
+  
+  if (result.result) {
+    return `**${result.skill_name || 'Result'}**\n\n${result.result}`
+  }
+  
+  return JSON.stringify(result, null, 2)
+}
+
 export function useSkills() {
   const skills = ref<Skill[]>([])
   const loading = ref(false)
   const executing = ref(false)
   const error = ref<string | null>(null)
+  const saving = ref(false)
   const llmStore = useLLMStore()
 
   const loadSkills = async (): Promise<Skill[]> => {
@@ -47,9 +80,10 @@ export function useSkills() {
       )
       return result
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to execute skill'
+      const errorMessage = err instanceof Error ? err.message : 'Failed to execute skill'
+      error.value = errorMessage
       console.error('Failed to execute skill:', err)
-      return null
+      return { success: false, error: errorMessage }
     } finally {
       executing.value = false
     }
@@ -93,16 +127,45 @@ export function useSkills() {
     return skills.value.filter(s => s.category === category)
   }
 
+  const getSkillRaw = async (skillId: string): Promise<{ content: string } | null> => {
+    try {
+      const result = await skillsAPI.getSkillRaw(skillId)
+      return result
+    } catch (err) {
+      console.error('Failed to get skill raw content:', err)
+      return null
+    }
+  }
+
+  const saveSkillContent = async (skillId: string, content: string): Promise<{ success: boolean; message?: string }> => {
+    saving.value = true
+    try {
+      const result = await skillsAPI.saveSkill(skillId, content)
+      if (result.success) {
+        await loadSkills()
+      }
+      return result
+    } catch (err) {
+      console.error('Failed to save skill:', err)
+      return { success: false, message: err instanceof Error ? err.message : 'Failed to save' }
+    } finally {
+      saving.value = false
+    }
+  }
+
   return {
     skills,
     loading,
     executing,
+    saving,
     error,
     loadSkills,
     executeSkill,
     reloadSkill,
     reloadAllSkills,
     getSkillById,
-    getSkillsByCategory
+    getSkillsByCategory,
+    getSkillRaw,
+    saveSkillContent
   }
 }
