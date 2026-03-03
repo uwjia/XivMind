@@ -1,23 +1,16 @@
-"""OpenAI LLM provider."""
+"""DeepSeek LLM provider."""
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 from .base import LLMProvider
 
 logger = logging.getLogger(__name__)
 
 
-class OpenAIProvider(LLMProvider):
-    """OpenAI LLM provider."""
+class DeepSeekProvider(LLMProvider):
+    """DeepSeek LLM provider (OpenAI-compatible API)."""
     
-    def __init__(
-        self, 
-        api_key: str, 
-        model: str, 
-        base_url: Optional[str] = None,
-        temperature: float = 0.7, 
-        max_tokens: int = 2048
-    ):
+    def __init__(self, api_key: str, model: str, base_url: str = None, temperature: float = 0.7, max_tokens: int = 2048):
         self.api_key = api_key
         self.model = model
         self.base_url = base_url
@@ -41,7 +34,7 @@ class OpenAIProvider(LLMProvider):
     ) -> str:
         client = self._get_client()
         
-        logger.info(f"[OpenAI] Calling model: {self.model}, base_url: {self.base_url or 'default'}, temperature: {kwargs.get('temperature', self.temperature)}")
+        logger.info(f"[DeepSeek] Calling model: {self.model}, base_url: {self.base_url}, temperature: {kwargs.get('temperature', self.temperature)}")
         
         response = await client.chat.completions.create(
             model=self.model,
@@ -52,8 +45,8 @@ class OpenAIProvider(LLMProvider):
         
         return response.choices[0].message.content
     
+    def get_provider_name(self) -> str:
+        return "deepseek"
+    
     def get_model_name(self) -> str:
         return self.model
-    
-    def get_provider_name(self) -> str:
-        return "openai"

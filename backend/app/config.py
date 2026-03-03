@@ -30,7 +30,11 @@ class Settings(BaseSettings):
     ARXIV_BATCH_SIZE: int = 50
 
     OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = ""
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-ada-002"
+    
+    ANTHROPIC_API_KEY: str = ""
+    ANTHROPIC_BASE_URL: str = ""
     
     LOCAL_EMBEDDING_MODEL: str = "BAAI/bge-m3"
     USE_LOCAL_EMBEDDING: bool = False
@@ -47,6 +51,12 @@ class Settings(BaseSettings):
     
     GLM_API_KEY: str = ""
     GLM_BASE_URL: str = "https://open.bigmodel.cn/api/paas/v4"
+    
+    DEEPSEEK_API_KEY: str = ""
+    DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
+    
+    QWEN_API_KEY: str = ""
+    QWEN_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3"

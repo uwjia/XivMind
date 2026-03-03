@@ -3,7 +3,7 @@ import logging
 from typing import List, Dict, Any, Optional
 
 from app.config import get_settings
-from app.services.llm import LLMProvider, OpenAIProvider, AnthropicProvider, GLMProvider, OllamaProvider
+from app.services.llm import LLMProvider, OpenAIProvider, AnthropicProvider, GLMProvider, OllamaProvider, DeepSeekProvider, QwenProvider
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ Always be helpful, accurate, and scholarly in your responses."""
         "anthropic": {
             "name": "Anthropic",
             "models": ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"],
-            "description": "Anthropic Claude models (requires OPENAI_API_KEY as API key)",
+            "description": "Anthropic Claude models (requires ANTHROPIC_API_KEY)",
         },
         "glm": {
             "name": "BigModel (GLM)",
@@ -43,6 +43,16 @@ Always be helpful, accurate, and scholarly in your responses."""
             "name": "Ollama",
             "models": ["llama3", "gemma3:4b", "mistral", "qwen2", "deepseek-coder"],
             "description": "Local Ollama Service",
+        },
+        "deepseek": {
+            "name": "DeepSeek",
+            "models": ["deepseek-chat", "deepseek-coder"],
+            "description": "DeepSeek models (requires DEEPSEEK_API_KEY)",
+        },
+        "qwen": {
+            "name": "Qwen (Tongyi)",
+            "models": ["qwen-turbo", "qwen-plus", "qwen-max", "qwen-max-longcontext"],
+            "description": "Qwen models (requires QWEN_API_KEY)",
         },
     }
     
@@ -63,17 +73,19 @@ Always be helpful, accurate, and scholarly in your responses."""
             return OpenAIProvider(
                 api_key=self.settings.OPENAI_API_KEY,
                 model=model or self.settings.LLM_MODEL,
+                base_url=self.settings.OPENAI_BASE_URL or None,
                 temperature=self.settings.LLM_TEMPERATURE,
                 max_tokens=self.settings.LLM_MAX_TOKENS,
             )
         
         elif provider == "anthropic":
-            api_key = self.settings.OPENAI_API_KEY
+            api_key = self.settings.ANTHROPIC_API_KEY
             if not api_key:
-                raise ValueError("API key is required for Anthropic provider")
+                raise ValueError("ANTHROPIC_API_KEY is required for Anthropic provider")
             return AnthropicProvider(
                 api_key=api_key,
                 model=model or self.settings.LLM_MODEL,
+                base_url=self.settings.ANTHROPIC_BASE_URL or None,
                 temperature=self.settings.LLM_TEMPERATURE,
                 max_tokens=self.settings.LLM_MAX_TOKENS,
             )
@@ -97,8 +109,30 @@ Always be helpful, accurate, and scholarly in your responses."""
                 max_tokens=self.settings.LLM_MAX_TOKENS,
             )
         
+        elif provider == "deepseek":
+            if not self.settings.DEEPSEEK_API_KEY:
+                raise ValueError("DEEPSEEK_API_KEY is required for DeepSeek provider")
+            return DeepSeekProvider(
+                api_key=self.settings.DEEPSEEK_API_KEY,
+                model=model or "deepseek-chat",
+                base_url=self.settings.DEEPSEEK_BASE_URL,
+                temperature=self.settings.LLM_TEMPERATURE,
+                max_tokens=self.settings.LLM_MAX_TOKENS,
+            )
+        
+        elif provider == "qwen":
+            if not self.settings.QWEN_API_KEY:
+                raise ValueError("QWEN_API_KEY is required for Qwen provider")
+            return QwenProvider(
+                api_key=self.settings.QWEN_API_KEY,
+                model=model or "qwen-plus",
+                base_url=self.settings.QWEN_BASE_URL,
+                temperature=self.settings.LLM_TEMPERATURE,
+                max_tokens=self.settings.LLM_MAX_TOKENS,
+            )
+        
         else:
-            raise ValueError(f"Unsupported LLM provider: {provider}. Supported: openai, anthropic, glm, ollama")
+            raise ValueError(f"Unsupported LLM provider: {provider}. Supported: openai, anthropic, glm, ollama, deepseek, qwen")
     
     def _initialize(self):
         if self._provider is not None:
@@ -130,11 +164,15 @@ Always be helpful, accurate, and scholarly in your responses."""
             if provider == "openai":
                 return bool(self.settings.OPENAI_API_KEY)
             elif provider == "anthropic":
-                return bool(self.settings.OPENAI_API_KEY)
+                return bool(self.settings.ANTHROPIC_API_KEY)
             elif provider == "glm":
                 return bool(self.settings.GLM_API_KEY)
             elif provider == "ollama":
                 return True
+            elif provider == "deepseek":
+                return bool(self.settings.DEEPSEEK_API_KEY)
+            elif provider == "qwen":
+                return bool(self.settings.QWEN_API_KEY)
             return False
         except Exception:
             return False

@@ -7,7 +7,7 @@ from app.config import get_settings
 
 
 class ConversationFileStorage:
-    """本地文件存储服务，用于存储会话的完整消息"""
+    """Local file storage service for storing complete conversation messages"""
     
     def __init__(self):
         self._conversations_dir = None

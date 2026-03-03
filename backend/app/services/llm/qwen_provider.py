@@ -1,4 +1,4 @@
-"""Anthropic Claude LLM provider."""
+"""Qwen (Tongyi) LLM provider."""
 import logging
 from typing import List, Dict, Optional
 
@@ -7,8 +7,11 @@ from .base import LLMProvider
 logger = logging.getLogger(__name__)
 
 
-class AnthropicProvider(LLMProvider):
-    """Anthropic Claude LLM provider."""
+class QwenProvider(LLMProvider):
+    """Qwen (Tongyi Qianwen) LLM provider.
+    
+    Qwen API is compatible with OpenAI API format.
+    """
     
     def __init__(
         self, 
@@ -27,8 +30,8 @@ class AnthropicProvider(LLMProvider):
     
     def _get_client(self):
         if self._client is None:
-            from anthropic import AsyncAnthropic
-            self._client = AsyncAnthropic(
+            from openai import AsyncOpenAI
+            self._client = AsyncOpenAI(
                 api_key=self.api_key,
                 base_url=self.base_url,
             )
@@ -41,28 +44,19 @@ class AnthropicProvider(LLMProvider):
     ) -> str:
         client = self._get_client()
         
-        system_message = ""
-        chat_messages = []
-        for msg in messages:
-            if msg["role"] == "system":
-                system_message = msg["content"]
-            else:
-                chat_messages.append(msg)
+        logger.info(f"[Qwen] Calling model: {self.model}, base_url: {self.base_url}, temperature: {kwargs.get('temperature', self.temperature)}")
         
-        logger.info(f"[Anthropic] Calling model: {self.model}, base_url: {self.base_url or 'default'}, temperature: {kwargs.get('temperature', self.temperature)}")
-        
-        response = await client.messages.create(
+        response = await client.chat.completions.create(
             model=self.model,
-            max_tokens=kwargs.get("max_tokens", self.max_tokens),
+            messages=messages,
             temperature=kwargs.get("temperature", self.temperature),
-            system=system_message if system_message else None,
-            messages=chat_messages,
+            max_tokens=kwargs.get("max_tokens", self.max_tokens),
         )
         
-        return response.content[0].text
+        return response.choices[0].message.content
+    
+    def get_provider_name(self) -> str:
+        return "qwen"
     
     def get_model_name(self) -> str:
         return self.model
-    
-    def get_provider_name(self) -> str:
-        return "anthropic"
