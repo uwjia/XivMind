@@ -389,7 +389,7 @@ const closeMobileSidebar = () => {
 }
 
 .sidebar-section {
-  margin-bottom: 24px;
+  margin-bottom: 8px;
 }
 
 .picker-trigger-btn {

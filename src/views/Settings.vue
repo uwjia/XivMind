@@ -157,7 +157,7 @@
           <div class="settings-item">
             <div class="item-info">
               <h3 class="item-title">Max Results</h3>
-              <p class="item-description">Maximum number of papers to fetch from arXiv API (10-3000)</p>
+              <p class="item-description">Maximum number of papers displayed per page</p>
             </div>
             <div class="max-results-control">
               <div class="input-wrapper" :class="{ 'error': isInvalid }">
@@ -195,17 +195,17 @@
           <div class="settings-item">
             <div class="item-info">
               <h3 class="item-title">XivMind</h3>
-              <p class="item-description">Version 0.2.0</p>
+              <p class="item-description">Version 0.3.0</p>
             </div>
             <div class="about-links">
-              <a href="https://www.xivmind.com/" target="_blank" class="link-btn">
+              <a href="https://github.com/uwjia/XivMind" target="_blank" class="link-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
                   <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
                 </svg>
                 <span>Visit XivMind</span>
               </a>
-              <a href="https://github.com" target="_blank" class="link-btn">
+              <a href="https://github.com/uwjia/XivMind" target="_blank" class="link-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
                 </svg>
@@ -414,7 +414,7 @@ onMounted(() => {
 .provider-select,
 .model-select {
   flex: 1;
-  padding: 12px 16px;
+  padding: 12px 40px 12px 16px;
   border: 2px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-secondary);
@@ -423,6 +423,13 @@ onMounted(() => {
   font-weight: 500;
   cursor: pointer;
   transition: var(--transition);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2390a4ae' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
 }
 
 .provider-select:focus,
