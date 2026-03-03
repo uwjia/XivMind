@@ -1,4 +1,4 @@
-import SubAgentEditor from './SubAgentEditor.vue'
+import SubAgentEditor from '@/components/subagents/SubAgentEditor.vue'
 
 export default {
   title: 'Components/SubAgents/SubAgentEditor',

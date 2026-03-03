@@ -1,5 +1,5 @@
-import SkillDetailModal from './SkillDetailModal.vue'
-import type { Skill } from '../../types/skill'
+import SkillDetailModal from '@/components/skills/SkillDetailModal.vue'
+import type { Skill } from '@/types/skill'
 
 export default {
   title: 'Components/Skills/SkillDetailModal',

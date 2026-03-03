@@ -110,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Skill } from '../../types/skill'
+import type { Skill } from '@/types/skill'
 
 defineProps<{
   skill: Skill

@@ -145,7 +145,7 @@
 </template>
 
 <script setup lang="ts">
-import type { SubAgent } from '../../types/subagent'
+import type { SubAgent } from '@/types/subagent'
 
 defineProps<{
   agent: SubAgent

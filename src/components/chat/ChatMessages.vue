@@ -132,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Message } from '../../composables/useChatMessages'
+import type { Message } from '@/composables/useChatMessages'
 
 defineProps<{
   messages: Message[]

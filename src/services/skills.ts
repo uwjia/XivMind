@@ -5,7 +5,7 @@ import type {
   SkillRawResponse, 
   SkillReloadResponse,
   RelatedPaper 
-} from '../types/skill'
+} from '@/types/skill'
 
 export type { 
   Skill, 

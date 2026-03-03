@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { useConversationStore, type ChatMode } from '../stores/conversation-store'
+import { useConversationStore, type ChatMode } from '@/stores/conversation-store'
 
 export function useConversation() {
   const conversationStore = useConversationStore()

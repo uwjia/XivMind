@@ -1,4 +1,4 @@
-import CategoryTree from './CategoryTree.vue'
+import CategoryTree from '@/components/CategoryTree.vue'
 
 export default {
   title: 'Components/CategoryTree',

@@ -413,8 +413,8 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, onActivated, watch, h } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
-import { useMemoryStore } from '../stores/memory-store'
-import ArchivalMemoryEditor from '../components/ArchivalMemoryEditor.vue'
+import { useMemoryStore } from '@/stores/memory-store'
+import ArchivalMemoryEditor from '@/components/ArchivalMemoryEditor.vue'
 
 const memoryStore = useMemoryStore()
 

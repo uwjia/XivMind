@@ -118,8 +118,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { useConversationStore } from '../stores/conversation-store'
-import { useConversation } from '../composables/useConversation'
+import { useConversationStore } from '@/stores/conversation-store'
+import { useConversation } from '@/composables/useConversation'
 
 const props = defineProps<{
   visible: boolean

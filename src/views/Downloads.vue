@@ -139,10 +139,10 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, computed, ref } from 'vue'
-import { useDownloadStore } from '../stores/download-store'
-import { useToastStore } from '../stores/toast-store'
-import { apiService } from '../services/api'
-import ConfirmDialog from '../components/ConfirmDialog.vue'
+import { useDownloadStore } from '@/stores/download-store'
+import { useToastStore } from '@/stores/toast-store'
+import { apiService } from '@/services/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const downloadStore = useDownloadStore()
 const toastStore = useToastStore()

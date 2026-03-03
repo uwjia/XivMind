@@ -71,7 +71,7 @@
 
 <script setup lang="ts">
 import { ref, watch, h } from 'vue'
-import type { GraphConfig } from '../../types/graph'
+import type { GraphConfig } from '@/types/graph'
 
 const props = defineProps<{
   config: GraphConfig

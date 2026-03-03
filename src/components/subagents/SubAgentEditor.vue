@@ -142,7 +142,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { subagentsAPI } from '../../services/subagents'
+import { subagentsAPI } from '@/services/subagents'
 
 interface ParsedConfig {
   id?: string

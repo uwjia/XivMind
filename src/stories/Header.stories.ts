@@ -1,6 +1,6 @@
-import { fn } from 'storybook/test';
+import { fn } from 'storybook/test'
 
-import MyHeader from './Header.vue';
+import MyHeader from '@/stories/Header.vue'
 
 export default {
   title: 'Example/Header',

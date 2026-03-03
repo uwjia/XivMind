@@ -217,8 +217,8 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useSidebarStore } from '../stores/sidebar-store'
-import { useThemeStore } from '../stores/theme-store'
+import { useSidebarStore } from '@/stores/sidebar-store'
+import { useThemeStore } from '@/stores/theme-store'
 
 const router = useRouter()
 const sidebarStore = useSidebarStore()

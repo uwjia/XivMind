@@ -135,8 +135,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useThemeStore } from '../stores/theme-store'
-import { useDateIndexes } from '../composables/useDateIndexes'
+import { useThemeStore } from '@/stores/theme-store'
+import { useDateIndexes } from '@/composables/useDateIndexes'
 
 const themeStore = useThemeStore()
 const isDark = computed(() => themeStore.isDark)

@@ -1,4 +1,4 @@
-import Sidebar from './Sidebar.vue'
+import Sidebar from '@/components/Sidebar.vue'
 
 const mockSidebarStore = {
   isCollapsed: false,

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { apiService, type DownloadTask, type DownloadTaskData } from '../services/api'
+import { apiService, type DownloadTask, type DownloadTaskData } from '@/services/api'
 
 type ProgressCallback = (taskId: string, progress: number, status: string) => void
 

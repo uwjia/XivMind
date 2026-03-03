@@ -1,4 +1,4 @@
-import MonthView from './MonthView.vue'
+import MonthView from '@/components/MonthView.vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 
 const meta: Meta<typeof MonthView> = {

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import ChatMessages from './ChatMessages.vue'
-import type { Message } from '../../composables/useChatMessages'
+import ChatMessages from '@/components/chat/ChatMessages.vue'
+import type { Message } from '@/composables/useChatMessages'
 
 const meta: Meta<typeof ChatMessages> = {
   title: 'Components/Chat/ChatMessages',

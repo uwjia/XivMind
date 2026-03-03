@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { conversationService } from '../services/conversation'
-import type { ConversationMeta, ConversationUpdate, ConversationMessage } from '../types/conversation'
+import { conversationService } from '@/services/conversation'
+import type { ConversationMeta, ConversationUpdate, ConversationMessage } from '@/types/conversation'
 
 export type ChatMode = 'search' | 'ask'
 

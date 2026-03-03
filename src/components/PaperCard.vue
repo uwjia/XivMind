@@ -128,12 +128,12 @@ import { useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
 import MarkdownItKatex from 'markdown-it-katex'
 import 'katex/dist/katex.min.css'
-import { getCategoryColor, getTagStyle, categories } from '../utils/categoryColors'
-import { useBookmarkStore } from '../stores/bookmark-store'
-import { useDownloadStore } from '../stores/download-store'
-import { useToastStore } from '../stores/toast-store'
-import { apiService } from '../services/api'
-import type { Paper } from '../types'
+import { getCategoryColor, getTagStyle, categories } from '@/utils/categoryColors'
+import { useBookmarkStore } from '@/stores/bookmark-store'
+import { useDownloadStore } from '@/stores/download-store'
+import { useToastStore } from '@/stores/toast-store'
+import { apiService } from '@/services/api'
+import type { Paper } from '@/types'
 
 const props = defineProps<{
   paper: Paper

@@ -1,5 +1,5 @@
-import SkillForm from './SkillForm.vue'
-import type { Skill } from '../../types/skill'
+import SkillForm from '@/components/skills/SkillForm.vue'
+import type { Skill } from '@/types/skill'
 
 export default {
   title: 'Components/Skills/SkillForm',

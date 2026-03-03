@@ -288,14 +288,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useToastStore } from '../stores/toast-store'
+import { useToastStore } from '@/stores/toast-store'
 import { useRouter } from 'vue-router'
-import { arxivBackendAPI } from '../services/arxivBackend'
-import { useDateIndexes, useDayTooltip } from '../composables/useDateIndexes'
-import MonthView from '../components/MonthView.vue'
-import ConfirmDialog from '../components/ConfirmDialog.vue'
-import Tooltip from '../components/Tooltip.vue'
-import DayTooltip from '../components/DayTooltip.vue'
+import { arxivBackendAPI } from '@/services/arxivBackend'
+import { useDateIndexes, useDayTooltip } from '@/composables/useDateIndexes'
+import MonthView from '@/components/MonthView.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import Tooltip from '@/components/Tooltip.vue'
+import DayTooltip from '@/components/DayTooltip.vue'
 
 interface DayInfo {
   date: string | null

@@ -109,8 +109,8 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive, watch } from 'vue'
-import type { SubAgent, SubAgentExecuteRequest } from '../../types/subagent'
-import { useLLMStore } from '../../stores/llm-store'
+import type { SubAgent, SubAgentExecuteRequest } from '@/types/subagent'
+import { useLLMStore } from '@/stores/llm-store'
 
 const props = defineProps<{
   agent: SubAgent

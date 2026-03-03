@@ -205,12 +205,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useSubAgents } from '../composables/useSubAgents'
-import SubAgentCard from '../components/subagents/SubAgentCard.vue'
-import SubAgentForm from '../components/subagents/SubAgentForm.vue'
-import SubAgentEditor from '../components/subagents/SubAgentEditor.vue'
-import ExecutionResult from '../components/subagents/ExecutionResult.vue'
-import type { SubAgent, SubAgentExecuteRequest } from '../types/subagent'
+import { useSubAgents } from '@/composables/useSubAgents'
+import SubAgentCard from '@/components/subagents/SubAgentCard.vue'
+import SubAgentForm from '@/components/subagents/SubAgentForm.vue'
+import SubAgentEditor from '@/components/subagents/SubAgentEditor.vue'
+import ExecutionResult from '@/components/subagents/ExecutionResult.vue'
+import type { SubAgent, SubAgentExecuteRequest } from '@/types/subagent'
 
 const {
   agents,

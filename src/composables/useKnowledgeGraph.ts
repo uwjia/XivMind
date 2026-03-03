@@ -1,9 +1,9 @@
 import { ref, computed, type Ref } from 'vue'
-import { useGraphStore } from '../stores/graph-store'
-import { graphAPI } from '../services/graphAPI'
-import type { GraphNode, GraphConfig } from '../types/graph'
+import { useGraphStore } from '@/stores/graph-store'
+import { graphAPI } from '@/services/graphAPI'
+import type { GraphNode, GraphConfig } from '@/types/graph'
 import { storeToRefs } from 'pinia'
-import { useDateIndexes } from './useDateIndexes'
+import { useDateIndexes } from '@/composables/useDateIndexes'
 
 export function useKnowledgeGraph(
   selectedDate: Ref<Date | string | { startDate: string; endDate: string }>,

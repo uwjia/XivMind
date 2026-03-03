@@ -64,7 +64,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import MemoryToggle from './MemoryToggle.vue'
+import MemoryToggle from '@/components/chat/MemoryToggle.vue'
 
 defineProps<{
   mode: 'search' | 'ask'

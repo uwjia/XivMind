@@ -13,8 +13,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { getCategoryColor } from '../utils/categoryColors'
-import type { Paper } from '../types'
+import { getCategoryColor } from '@/utils/categoryColors'
+import type { Paper } from '@/types'
 
 const props = defineProps<{
   paper: Paper

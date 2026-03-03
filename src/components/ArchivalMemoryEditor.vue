@@ -93,7 +93,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
-import { useMemoryStore } from '../stores/memory-store'
+import { useMemoryStore } from '@/stores/memory-store'
 
 const emit = defineEmits<{
   close: []

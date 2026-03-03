@@ -1,4 +1,4 @@
-import type { ConversationMeta, ConversationCreate, ConversationUpdate, ConversationMessagesResponse, ConversationMessage } from '../types/conversation'
+import type { ConversationMeta, ConversationCreate, ConversationUpdate, ConversationMessagesResponse, ConversationMessage } from '@/types/conversation'
 
 const API_BASE = '/api/conversation'
 

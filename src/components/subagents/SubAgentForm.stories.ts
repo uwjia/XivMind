@@ -1,5 +1,5 @@
-import SubAgentForm from './SubAgentForm.vue'
-import type { SubAgent } from '../../types/subagent'
+import SubAgentForm from '@/components/subagents/SubAgentForm.vue'
+import type { SubAgent } from '@/types/subagent'
 
 export default {
   title: 'Components/SubAgents/SubAgentForm',

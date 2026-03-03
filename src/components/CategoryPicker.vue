@@ -56,8 +56,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { categories, getCategoryColor } from '../utils/categoryColors'
-import type { Category } from '../utils/categoryColors'
+import { categories, getCategoryColor } from '@/utils/categoryColors'
+import type { Category } from '@/utils/categoryColors'
 
 const props = defineProps<{
   isOpen: boolean

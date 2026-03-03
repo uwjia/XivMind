@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import ConversationHistoryPanel from './ConversationHistoryPanel.vue'
-import { useConversationStore } from '../stores/conversation-store'
+import ConversationHistoryPanel from '@/components/ConversationHistoryPanel.vue'
+import { useConversationStore } from '@/stores/conversation-store'
 
 const meta: Meta<typeof ConversationHistoryPanel> = {
   title: 'Components/ConversationHistoryPanel',

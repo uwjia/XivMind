@@ -207,8 +207,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useDateIndexes, useDayTooltip } from '../composables/useDateIndexes'
-import DayTooltip from './DayTooltip.vue'
+import { useDateIndexes, useDayTooltip } from '@/composables/useDateIndexes'
+import DayTooltip from '@/components/DayTooltip.vue'
 
 interface DayInfo {
   date: string | null

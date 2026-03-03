@@ -221,10 +221,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useThemeStore } from '../stores/theme-store'
-import { useSidebarStore } from '../stores/sidebar-store'
-import { useConfigStore } from '../stores/config-store'
-import { useLLMStore } from '../stores/llm-store'
+import { useThemeStore } from '@/stores/theme-store'
+import { useSidebarStore } from '@/stores/sidebar-store'
+import { useConfigStore } from '@/stores/config-store'
+import { useLLMStore } from '@/stores/llm-store'
 
 const themeStore = useThemeStore()
 const sidebarStore = useSidebarStore()

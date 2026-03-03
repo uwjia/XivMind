@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { config as defaultConfig } from '../config/app'
+import { config as defaultConfig } from '@/config/app'
 
 export const useConfigStore = defineStore('config', () => {
   const maxResults = ref<number>(defaultConfig.maxResults)

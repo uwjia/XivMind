@@ -19,14 +19,14 @@
 
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
-import { useThemeStore } from './stores/theme-store'
-import { useSidebarStore } from './stores/sidebar-store'
-import { useToastStore } from './stores/toast-store'
-import { useConfigStore } from './stores/config-store'
-import { useLLMStore } from './stores/llm-store'
-import Header from './components/Header.vue'
-import Sidebar from './components/Sidebar.vue'
-import Toast from './components/Toast.vue'
+import { useThemeStore } from '@/stores/theme-store'
+import { useSidebarStore } from '@/stores/sidebar-store'
+import { useToastStore } from '@/stores/toast-store'
+import { useConfigStore } from '@/stores/config-store'
+import { useLLMStore } from '@/stores/llm-store'
+import Header from '@/components/Header.vue'
+import Sidebar from '@/components/Sidebar.vue'
+import Toast from '@/components/Toast.vue'
 
 const themeStore = useThemeStore()
 const sidebarStore = useSidebarStore()

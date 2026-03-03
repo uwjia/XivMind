@@ -1,4 +1,4 @@
-import Toast from './Toast.vue'
+import Toast from '@/components/Toast.vue'
 
 export default {
   title: 'Components/Toast',

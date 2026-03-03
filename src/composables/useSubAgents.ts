@@ -1,13 +1,13 @@
 import { ref, computed } from 'vue'
-import { subagentsAPI } from '../services/subagents'
-import { useLLMStore } from '../stores/llm-store'
+import { subagentsAPI } from '@/services/subagents'
+import { useLLMStore } from '@/stores/llm-store'
 import type {
   SubAgent,
   SubAgentExecuteRequest,
   SubAgentExecuteResponse,
   SubAgentCreateRequest,
   SubAgentReloadResponse,
-} from '../types/subagent'
+} from '@/types/subagent'
 
 export function useSubAgents() {
   const agents = ref<SubAgent[]>([])

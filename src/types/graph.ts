@@ -1,4 +1,4 @@
-import type { Paper } from './index'
+import type { Paper } from '@/types'
 
 export interface GraphNode {
   id: string

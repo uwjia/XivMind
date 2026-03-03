@@ -39,8 +39,8 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { usePaperStore } from '../stores/paper-store'
-import PaperCard from '../components/PaperCard.vue'
+import { usePaperStore } from '@/stores/paper-store'
+import PaperCard from '@/components/PaperCard.vue'
 
 const route = useRoute()
 const paperStore = usePaperStore()

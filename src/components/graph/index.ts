@@ -1,4 +1,4 @@
-export { default as KnowledgeGraph } from './KnowledgeGraph.vue'
-export { default as GraphControls } from './GraphControls.vue'
-export { default as GraphLegend } from './GraphLegend.vue'
-export { default as GraphStatistics } from './GraphStatistics.vue'
+export { default as KnowledgeGraph } from '@/components/graph/KnowledgeGraph.vue'
+export { default as GraphControls } from '@/components/graph/GraphControls.vue'
+export { default as GraphLegend } from '@/components/graph/GraphLegend.vue'
+export { default as GraphStatistics } from '@/components/graph/GraphStatistics.vue'

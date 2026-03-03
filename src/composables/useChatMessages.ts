@@ -1,11 +1,11 @@
 import { ref, computed, nextTick, type Ref } from 'vue'
-import { arxivBackendAPI } from '../services/arxivBackend'
-import { useLLMStore } from '../stores/llm-store'
-import { useMemoryStore } from '../stores/memory-store'
-import { useConversationStore } from '../stores/conversation-store'
-import { useConfigError } from './useConfigError'
-import { memoryService } from '../services/memory'
-import type { ConversationMessage } from '../types/conversation'
+import { arxivBackendAPI } from '@/services/arxivBackend'
+import { useLLMStore } from '@/stores/llm-store'
+import { useMemoryStore } from '@/stores/memory-store'
+import { useConversationStore } from '@/stores/conversation-store'
+import { useConfigError } from '@/composables/useConfigError'
+import { memoryService } from '@/services/memory'
+import type { ConversationMessage } from '@/types/conversation'
 
 export interface Paper {
   id: string

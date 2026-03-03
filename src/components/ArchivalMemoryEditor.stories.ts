@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import ArchivalMemoryEditor from './ArchivalMemoryEditor.vue'
+import ArchivalMemoryEditor from '@/components/ArchivalMemoryEditor.vue'
 
 const meta: Meta<typeof ArchivalMemoryEditor> = {
   title: 'Components/ArchivalMemoryEditor',

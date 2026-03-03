@@ -241,10 +241,10 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getTagStyle, categories } from '../utils/categoryColors'
-import { useMarkdown } from '../composables/useMarkdown'
-import { useDateFormatter } from '../composables/useDateFormatter'
-import { usePaperDetail } from '../composables/usePaperDetail'
+import { getTagStyle, categories } from '@/utils/categoryColors'
+import { useMarkdown } from '@/composables/useMarkdown'
+import { useDateFormatter } from '@/composables/useDateFormatter'
+import { usePaperDetail } from '@/composables/usePaperDetail'
 
 const route = useRoute()
 const router = useRouter()

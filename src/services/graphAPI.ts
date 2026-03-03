@@ -1,7 +1,7 @@
-import type { KnowledgeGraphData, SimilarityPair, GraphNode, GraphEdge, GraphStatistics, CategoryCount } from '../types/graph'
-import type { Paper } from '../types'
-import { getCategoryColor, truncateLabel } from '../types/graph'
-import { arxivBackendAPI } from './arxivBackend'
+import type { KnowledgeGraphData, SimilarityPair, GraphNode, GraphEdge, GraphStatistics, CategoryCount } from '@/types/graph'
+import type { Paper } from '@/types'
+import { getCategoryColor, truncateLabel } from '@/types/graph'
+import { arxivBackendAPI } from '@/services/arxivBackend'
 
 const GRAPH_API_BASE = '/api/graph'
 const DEFAULT_MAX_PAPERS = 1000

@@ -1,4 +1,4 @@
-import GraphControls from './GraphControls.vue'
+import GraphControls from '@/components/graph/GraphControls.vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 
 const meta: Meta<typeof GraphControls> = {

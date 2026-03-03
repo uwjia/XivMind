@@ -1,5 +1,5 @@
 import { ref, computed, type ComputedRef } from 'vue'
-import { arxivBackendAPI } from '../services/arxivBackend'
+import { arxivBackendAPI } from '@/services/arxivBackend'
 
 export interface DateIndex {
   date: string

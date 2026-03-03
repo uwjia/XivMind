@@ -1,6 +1,6 @@
-import GraphStatistics from './GraphStatistics.vue'
+import GraphStatistics from '@/components/graph/GraphStatistics.vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
-import type { GraphStatistics as GraphStatisticsType } from '../../types/graph'
+import type { GraphStatistics as GraphStatisticsType } from '@/types/graph'
 
 const meta: Meta<typeof GraphStatistics> = {
   title: 'Components/Graph/GraphStatistics',

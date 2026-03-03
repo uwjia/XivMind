@@ -7,9 +7,9 @@ import type {
   GraphStatistics,
   GraphConfig,
   SimilarityPair 
-} from '../types/graph'
-import type { Paper } from '../types'
-import { getCategoryColor, truncateLabel } from '../types/graph'
+} from '@/types/graph'
+import type { Paper } from '@/types'
+import { getCategoryColor, truncateLabel } from '@/types/graph'
 
 export const useGraphStore = defineStore('graph', () => {
   const graphData = ref<KnowledgeGraphData | null>(null)

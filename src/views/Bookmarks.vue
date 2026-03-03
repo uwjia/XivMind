@@ -179,14 +179,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useBookmarkStore } from '../stores/bookmark-store'
-import { useDownloadStore } from '../stores/download-store'
-import { useToastStore } from '../stores/toast-store'
-import { getTagStyle, getCategoryFullName, getCategoryShortName, getCategoryColor, categories } from '../utils/categoryColors'
-import CategoryDrawer from '../components/CategoryDrawer.vue'
-import { useMarkdown } from '../composables/useMarkdown'
-import { useDateFormatter } from '../composables/useDateFormatter'
-import { useDownloadHandler } from '../composables/useDownloadHandler'
+import { useBookmarkStore } from '@/stores/bookmark-store'
+import { useDownloadStore } from '@/stores/download-store'
+import { useToastStore } from '@/stores/toast-store'
+import { getTagStyle, getCategoryFullName, getCategoryShortName, getCategoryColor, categories } from '@/utils/categoryColors'
+import CategoryDrawer from '@/components/CategoryDrawer.vue'
+import { useMarkdown } from '@/composables/useMarkdown'
+import { useDateFormatter } from '@/composables/useDateFormatter'
+import { useDownloadHandler } from '@/composables/useDownloadHandler'
 
 const { render, renderWithDefault } = useMarkdown()
 const { formatShortDate, formatDateTime } = useDateFormatter()

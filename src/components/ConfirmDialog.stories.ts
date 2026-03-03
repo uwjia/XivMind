@@ -1,4 +1,4 @@
-import ConfirmDialog from './ConfirmDialog.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 export default {
   title: 'Components/ConfirmDialog',

@@ -44,7 +44,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useSidebarStore } from '../stores/sidebar-store'
+import { useSidebarStore } from '@/stores/sidebar-store'
 
 const router = useRouter()
 const route = useRoute()

@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import type { Message } from './useChatMessages'
+import type { Message } from '@/composables/useChatMessages'
 
 export function useMessageCopy() {
   const copiedMessageId = ref<string | null>(null)

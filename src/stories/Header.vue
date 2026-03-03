@@ -40,7 +40,7 @@
 </template>
 
 <script>
-import MyButton from './Button.vue';
+import MyButton from '@/stories/Button.vue';
 import './header.css';
 
 export default {

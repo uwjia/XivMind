@@ -65,7 +65,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { categories, getCategoryShortName, getCategoryColor } from '../utils/categoryColors'
+import { categories, getCategoryShortName, getCategoryColor } from '@/utils/categoryColors'
 
 const props = defineProps<{
   selectedCategory: string | null

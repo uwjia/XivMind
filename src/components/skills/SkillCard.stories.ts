@@ -1,5 +1,5 @@
-import SkillCard from './SkillCard.vue'
-import type { Skill } from '../../types/skill'
+import SkillCard from '@/components/skills/SkillCard.vue'
+import type { Skill } from '@/types/skill'
 
 export default {
   title: 'Components/Skills/SkillCard',

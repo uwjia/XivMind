@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import CategoryTree from './CategoryTree.vue'
+import CategoryTree from '@/components/CategoryTree.vue'
 
 defineProps<{
   isOpen: boolean

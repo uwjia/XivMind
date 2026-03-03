@@ -1,11 +1,11 @@
 import { ref, computed } from 'vue'
-import { usePaperStore } from '../stores/paper-store'
-import { useBookmarkStore } from '../stores/bookmark-store'
-import { useDownloadStore } from '../stores/download-store'
-import { useToastStore } from '../stores/toast-store'
-import { arxivBackendAPI } from '../services/arxivBackend'
-import { useDownloadHandler } from './useDownloadHandler'
-import type { Paper } from '../types'
+import { usePaperStore } from '@/stores/paper-store'
+import { useBookmarkStore } from '@/stores/bookmark-store'
+import { useDownloadStore } from '@/stores/download-store'
+import { useToastStore } from '@/stores/toast-store'
+import { arxivBackendAPI } from '@/services/arxivBackend'
+import { useDownloadHandler } from '@/composables/useDownloadHandler'
+import type { Paper } from '@/types'
 
 export interface RelatedPaper {
   id: string

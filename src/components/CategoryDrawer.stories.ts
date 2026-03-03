@@ -1,4 +1,4 @@
-import CategoryDrawer from './CategoryDrawer.vue'
+import CategoryDrawer from '@/components/CategoryDrawer.vue'
 
 export default {
   title: 'Components/CategoryDrawer',

@@ -1,4 +1,4 @@
-import GraphLegend from './GraphLegend.vue'
+import GraphLegend from '@/components/graph/GraphLegend.vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 
 const meta: Meta<typeof GraphLegend> = {

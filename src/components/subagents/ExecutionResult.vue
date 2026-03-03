@@ -95,7 +95,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { SubAgentExecuteResponse } from '../../types/subagent'
+import type { SubAgentExecuteResponse } from '@/types/subagent'
 
 const props = defineProps<{
   result: SubAgentExecuteResponse

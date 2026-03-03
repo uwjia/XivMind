@@ -1,5 +1,5 @@
-import ExecutionResult from './ExecutionResult.vue'
-import type { SubAgentResult } from '../../types/subagent'
+import ExecutionResult from '@/components/subagents/ExecutionResult.vue'
+import type { SubAgentResult } from '@/types/subagent'
 
 export default {
   title: 'Components/SubAgents/ExecutionResult',

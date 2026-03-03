@@ -1,14 +1,14 @@
-export { apiRequest } from './common'
-export type { MessageResponse } from './common'
+export { apiRequest } from '@/services/common'
+export type { MessageResponse } from '@/services/common'
 
-export { bookmarkAPI } from './bookmark'
-export type { BookmarkData, Bookmark, BookmarkListResponse } from './bookmark'
+export { bookmarkAPI } from '@/services/bookmark'
+export type { BookmarkData, Bookmark, BookmarkListResponse } from '@/services/bookmark'
 
-export { downloadAPI } from './download'
-export type { DownloadTaskData, DownloadTask, DownloadTaskListResponse } from './download'
+export { downloadAPI } from '@/services/download'
+export type { DownloadTaskData, DownloadTask, DownloadTaskListResponse } from '@/services/download'
 
-import { bookmarkAPI } from './bookmark'
-import { downloadAPI } from './download'
+import { bookmarkAPI } from '@/services/bookmark'
+import { downloadAPI } from '@/services/download'
 
 export const apiService = {
   addBookmark: bookmarkAPI.add,

@@ -1,5 +1,5 @@
-import SubAgentCard from './SubAgentCard.vue'
-import type { SubAgent } from '../../types/subagent'
+import SubAgentCard from '@/components/subagents/SubAgentCard.vue'
+import type { SubAgent } from '@/types/subagent'
 
 export default {
   title: 'Components/SubAgents/SubAgentCard',

@@ -1,4 +1,4 @@
-import CategoryPicker from './CategoryPicker.vue'
+import CategoryPicker from '@/components/CategoryPicker.vue'
 
 export default {
   title: 'Components/CategoryPicker',

@@ -96,8 +96,8 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { Network } from 'vis-network/standalone'
 import type { Data, Node, Edge, Options } from 'vis-network/standalone'
-import { useGraphStore } from '../../stores/graph-store'
-import type { GraphNode } from '../../types/graph'
+import { useGraphStore } from '@/stores/graph-store'
+import type { GraphNode } from '@/types/graph'
 import { storeToRefs } from 'pinia'
 
 const props = defineProps<{

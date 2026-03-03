@@ -42,8 +42,8 @@
 </template>
 
 <script setup lang="ts">
-import ChatMessages from './ChatMessages.vue'
-import type { Message } from '../../composables/useChatMessages'
+import ChatMessages from '@/components/chat/ChatMessages.vue'
+import type { Message } from '@/composables/useChatMessages'
 
 defineProps<{
   mode: 'search' | 'ask'

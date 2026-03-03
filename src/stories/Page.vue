@@ -54,7 +54,7 @@
 </template>
 
 <script>
-import MyHeader from './Header.vue';
+import MyHeader from '@/stories/Header.vue';
 import './page.css';
 
 export default {

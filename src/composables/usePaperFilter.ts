@@ -1,8 +1,8 @@
 import { ref, computed, toRefs } from 'vue'
-import { usePaperStore } from '../stores/paper-store'
-import { useConfigStore } from '../stores/config-store'
-import { useToastStore } from '../stores/toast-store'
-import { useDateIndexes } from './useDateIndexes'
+import { usePaperStore } from '@/stores/paper-store'
+import { useConfigStore } from '@/stores/config-store'
+import { useToastStore } from '@/stores/toast-store'
+import { useDateIndexes } from '@/composables/useDateIndexes'
 
 const isDatePickerOpen = ref(false)
 const isCategoryPickerOpen = ref(false)

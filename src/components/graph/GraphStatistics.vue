@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { GraphStatistics } from '../../types/graph'
+import type { GraphStatistics } from '@/types/graph'
 
 const props = defineProps<{
   statistics: GraphStatistics | null

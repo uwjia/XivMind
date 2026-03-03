@@ -1,4 +1,4 @@
-import KnowledgeGraph from './KnowledgeGraph.vue'
+import KnowledgeGraph from '@/components/graph/KnowledgeGraph.vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 
 const meta: Meta<typeof KnowledgeGraph> = {

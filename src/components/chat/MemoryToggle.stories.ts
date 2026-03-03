@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import MemoryToggle from './MemoryToggle.vue'
+import MemoryToggle from '@/components/chat/MemoryToggle.vue'
 
 const meta: Meta<typeof MemoryToggle> = {
   title: 'Components/Chat/MemoryToggle',

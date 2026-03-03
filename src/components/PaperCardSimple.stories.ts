@@ -1,4 +1,4 @@
-import PaperCardSimple from './PaperCardSimple.vue'
+import PaperCardSimple from '@/components/PaperCardSimple.vue'
 
 export default {
   title: 'Components/PaperCardSimple',

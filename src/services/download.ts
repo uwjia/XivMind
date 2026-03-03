@@ -1,4 +1,4 @@
-import { apiRequest } from './common'
+import { apiRequest } from '@/services/common'
 
 export interface DownloadTaskData {
   paper_id: string

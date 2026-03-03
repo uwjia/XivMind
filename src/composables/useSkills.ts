@@ -1,7 +1,7 @@
 import { ref } from 'vue'
-import { skillsAPI } from '../services/skills'
-import { useLLMStore } from '../stores/llm-store'
-import type { Skill, SkillExecuteResponse, RelatedPaper } from '../types/skill'
+import { skillsAPI } from '@/services/skills'
+import { useLLMStore } from '@/stores/llm-store'
+import type { Skill, SkillExecuteResponse, RelatedPaper } from '@/types/skill'
 
 interface ExecuteSkillParams {
   skillId: string

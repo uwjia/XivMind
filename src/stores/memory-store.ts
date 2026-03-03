@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { memoryService } from '../services/memory'
+import { memoryService } from '@/services/memory'
 import type {
   CoreMemory,
   CoreMemoryUpdate,
@@ -9,7 +9,7 @@ import type {
   ArchivalMemoryCreate,
   MemoryStats,
   MemorySearchResult,
-} from '../types/memory'
+} from '@/types/memory'
 
 export const useMemoryStore = defineStore('memory', () => {
   const coreMemory = ref<CoreMemory | null>(null)

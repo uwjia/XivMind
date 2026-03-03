@@ -114,12 +114,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import SkillCard from '../components/skills/SkillCard.vue'
-import SkillForm from '../components/skills/SkillForm.vue'
-import SkillDetailModal from '../components/skills/SkillDetailModal.vue'
-import type { Skill } from '../types/skill'
-import { useSkills } from '../composables/useSkills'
-import { useModals } from '../composables/useModal'
+import SkillCard from '@/components/skills/SkillCard.vue'
+import SkillForm from '@/components/skills/SkillForm.vue'
+import SkillDetailModal from '@/components/skills/SkillDetailModal.vue'
+import type { Skill } from '@/types/skill'
+import { useSkills } from '@/composables/useSkills'
+import { useModals } from '@/composables/useModal'
 
 const { 
   loading, 

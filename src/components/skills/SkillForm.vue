@@ -168,8 +168,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
-import type { Skill, FormField, SchemaProperty } from '../../types/skill'
-import { formatSkillResult } from '../../composables/useSkills'
+import type { Skill, FormField, SchemaProperty } from '@/types/skill'
+import { formatSkillResult } from '@/composables/useSkills'
 
 interface SkillResult {
   papers?: Array<{

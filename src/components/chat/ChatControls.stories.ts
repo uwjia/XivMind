@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import ChatControls from './ChatControls.vue'
+import ChatControls from '@/components/chat/ChatControls.vue'
 
 const meta: Meta<typeof ChatControls> = {
   title: 'Components/Chat/ChatControls',

@@ -1,4 +1,4 @@
-import DatePicker from './DatePicker.vue'
+import DatePicker from '@/components/DatePicker.vue'
 
 const mockSetSelectedDate = () => {}
 

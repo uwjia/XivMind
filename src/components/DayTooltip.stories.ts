@@ -1,4 +1,4 @@
-import DayTooltip from './DayTooltip.vue'
+import DayTooltip from '@/components/DayTooltip.vue'
 
 export default {
   title: 'Components/DayTooltip',

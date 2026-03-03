@@ -8,7 +8,7 @@ import type {
   MemorySearchResult,
   ProcessConversationRequest,
   MemoryExtractionResult,
-} from '../types/memory'
+} from '@/types/memory'
 
 const API_BASE = '/api/memory'
 

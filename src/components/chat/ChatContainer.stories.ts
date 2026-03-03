@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import ChatContainer from './ChatContainer.vue'
-import ChatInput from './ChatInput.vue'
-import type { Message } from '../../composables/useChatMessages'
+import ChatContainer from '@/components/chat/ChatContainer.vue'
+import ChatInput from '@/components/chat/ChatInput.vue'
+import type { Message } from '@/composables/useChatMessages'
 
 const meta: Meta<typeof ChatContainer> = {
   title: 'Components/Chat/ChatContainer',

@@ -6,7 +6,7 @@ import type {
   SubAgentCreateRequest,
   SubAgentReloadResponse,
   SubAgentRawResponse,
-} from '../types/subagent'
+} from '@/types/subagent'
 
 export type {
   SubAgent,

@@ -1,6 +1,6 @@
-import { useDownloadStore } from '../stores/download-store'
-import { useToastStore } from '../stores/toast-store'
-import { apiService } from '../services/api'
+import { useDownloadStore } from '@/stores/download-store'
+import { useToastStore } from '@/stores/toast-store'
+import { apiService } from '@/services/api'
 
 interface DownloadParams {
   paperId: string

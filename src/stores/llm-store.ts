@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { llmAPI } from '../services/llm'
-import type { LLMProviderInfo } from '../services/llm'
+import { llmAPI } from '@/services/llm'
+import type { LLMProviderInfo } from '@/services/llm'
 
 interface OllamaStatus {
   loading: boolean

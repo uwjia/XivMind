@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { arxivAPI } from '../services/arxiv'
-import { arxivBackendAPI } from '../services/arxivBackend'
-import { useConfigStore } from './config-store'
-import type { Paper } from '../types'
+import { arxivAPI } from '@/services/arxiv'
+import { arxivBackendAPI } from '@/services/arxivBackend'
+import { useConfigStore } from '@/stores/config-store'
+import type { Paper } from '@/types'
 
 interface FetchOptions {
   category?: string
