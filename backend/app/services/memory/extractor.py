@@ -7,8 +7,10 @@ from app.services.memory.types import (
     CoreMemory,
     RecallMemory,
     MemoryExtractionResult,
+    ShouldSaveResult,
+    MemoryCategory,
 )
-from app.services.memory.prompts import MEMORY_EXTRACTION_PROMPT
+from app.services.memory.prompts import MEMORY_EXTRACTION_PROMPT, SHOULD_SAVE_PROMPT
 from app.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
@@ -19,6 +21,45 @@ class MemoryExtractor:
     
     def __init__(self, llm_service: Optional[LLMService] = None):
         self.llm_service = llm_service or LLMService()
+
+    async def should_save(
+        self,
+        content: str,
+    ) -> ShouldSaveResult:
+        try:
+            prompt = SHOULD_SAVE_PROMPT.format(content=content)
+            
+            response = await self.llm_service.chat(
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
+            )
+            
+            content_str = response.get("content", "")
+            
+            json_start = content_str.find("{")
+            json_end = content_str.rfind("}") + 1
+            if json_start >= 0 and json_end > json_start:
+                json_str = content_str[json_start:json_end]
+                data = json.loads(json_str)
+                
+                category_str = data.get("category", "context")
+                try:
+                    category = MemoryCategory(category_str)
+                except ValueError:
+                    category = MemoryCategory.CONTEXT
+                
+                return ShouldSaveResult(
+                    should_save=data.get("should_save", False),
+                    importance_score=data.get("importance_score", 0.5),
+                    category=category,
+                    reason=data.get("reason", ""),
+                )
+            
+            return ShouldSaveResult(should_save=False)
+            
+        except Exception as e:
+            logger.error(f"Failed to determine if should save: {e}")
+            return ShouldSaveResult(should_save=False)
     
     async def extract_from_conversation(
         self,

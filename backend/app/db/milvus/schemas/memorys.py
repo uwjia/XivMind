@@ -13,7 +13,7 @@ class RecallMemorySchema(BaseCollectionSchema):
     
     @property
     def schema_version(self) -> int:
-        return 1
+        return 2
     
     @property
     def description(self) -> str:
@@ -38,6 +38,10 @@ class RecallMemorySchema(BaseCollectionSchema):
             FieldSchema(name="importance_score", dtype=DataType.FLOAT),
             FieldSchema(name="access_count", dtype=DataType.INT64),
             FieldSchema(name="timestamp", dtype=DataType.VARCHAR, max_length=64),
+            FieldSchema(name="category", dtype=DataType.VARCHAR, max_length=32),
+            FieldSchema(name="auto_created", dtype=DataType.BOOL),
+            FieldSchema(name="ttl_days", dtype=DataType.INT64),
+            FieldSchema(name="metadata", dtype=DataType.VARCHAR, max_length=4096),
         ]
 
 
@@ -114,5 +118,43 @@ class CoreMemorySchema(BaseCollectionSchema):
             FieldSchema(name="custom_instructions", dtype=DataType.VARCHAR, max_length=4096),
             FieldSchema(name="created_at", dtype=DataType.VARCHAR, max_length=64),
             FieldSchema(name="updated_at", dtype=DataType.VARCHAR, max_length=64),
+            FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=self.embedding_dim),
+        ]
+
+
+class MemoryConfigSchema(BaseCollectionSchema):
+    """Schema for memory_config collection."""
+    
+    @property
+    def collection_name(self) -> str:
+        return "memory_config"
+    
+    @property
+    def schema_version(self) -> int:
+        return 1
+    
+    @property
+    def description(self) -> str:
+        return "Memory configuration storage"
+    
+    @property
+    def embedding_dim(self) -> int:
+        return 8
+    
+    @property
+    def index_nlist(self) -> int:
+        return 8
+    
+    def get_fields(self) -> List[FieldSchema]:
+        return [
+            FieldSchema(name="user_id", dtype=DataType.VARCHAR, max_length=128, is_primary=True),
+            FieldSchema(name="auto_capture", dtype=DataType.BOOL),
+            FieldSchema(name="auto_recall", dtype=DataType.BOOL),
+            FieldSchema(name="capture_max_chars", dtype=DataType.INT64),
+            FieldSchema(name="recall_top_k", dtype=DataType.INT64),
+            FieldSchema(name="recall_min_score", dtype=DataType.FLOAT),
+            FieldSchema(name="auto_forget_days", dtype=DataType.INT64),
+            FieldSchema(name="importance_threshold", dtype=DataType.FLOAT),
+            FieldSchema(name="extract", dtype=DataType.BOOL),
             FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=self.embedding_dim),
         ]

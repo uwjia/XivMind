@@ -43,7 +43,11 @@ class SQLiteMemoryRepository(MemoryRepository):
                 embedding BLOB,
                 importance_score REAL,
                 access_count INTEGER,
-                timestamp TEXT
+                timestamp TEXT,
+                category TEXT DEFAULT 'context',
+                auto_created INTEGER DEFAULT 0,
+                ttl_days INTEGER,
+                metadata TEXT
             )
         """)
         await db.execute("""
@@ -119,8 +123,9 @@ class SQLiteMemoryRepository(MemoryRepository):
             
             await db.execute("""
                 INSERT INTO recall_memories 
-                (memory_id, user_id, session_id, content, embedding, importance_score, access_count, timestamp)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (memory_id, user_id, session_id, content, embedding, importance_score, 
+                 access_count, timestamp, category, auto_created, ttl_days, metadata)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 memory.memory_id,
                 memory.user_id,
@@ -130,11 +135,16 @@ class SQLiteMemoryRepository(MemoryRepository):
                 memory.importance_score,
                 memory.access_count,
                 memory.timestamp.isoformat(),
+                memory.category.value if hasattr(memory.category, 'value') else (memory.category or 'context'),
+                1 if memory.auto_created else 0,
+                memory.ttl_days,
+                json.dumps(memory.metadata) if memory.metadata else None,
             ))
             await db.commit()
         return True
     
     async def get_recall_memories(self, user_id: str, limit: int = 50, offset: int = 0) -> List[RecallMemory]:
+        from app.services.memory.types import MemoryCategory
         async with aiosqlite.connect(self.db_path) as db:
             await self._ensure_tables(db)
             db.row_factory = aiosqlite.Row
@@ -154,6 +164,10 @@ class SQLiteMemoryRepository(MemoryRepository):
                     importance_score=row["importance_score"] or 0.5,
                     access_count=row["access_count"] or 0,
                     timestamp=datetime.fromisoformat(row["timestamp"]) if row["timestamp"] else datetime.utcnow(),
+                    category=MemoryCategory(row["category"]) if row.get("category") else MemoryCategory.CONTEXT,
+                    auto_created=bool(row["auto_created"]) if row.get("auto_created") is not None else False,
+                    ttl_days=row.get("ttl_days"),
+                    metadata=json.loads(row["metadata"]) if row.get("metadata") else {},
                 )
                 for row in rows
             ]
@@ -177,6 +191,7 @@ class SQLiteMemoryRepository(MemoryRepository):
         return len(memory_ids)
     
     async def search_recall_memories(self, query_embedding: List[float], user_id: str, top_k: int = 10) -> List[RecallMemory]:
+        from app.services.memory.types import MemoryCategory
         async with aiosqlite.connect(self.db_path) as db:
             await self._ensure_tables(db)
             db.row_factory = aiosqlite.Row
@@ -207,6 +222,10 @@ class SQLiteMemoryRepository(MemoryRepository):
                     importance_score=row["importance_score"] or 0.5,
                     access_count=row["access_count"] or 0,
                     timestamp=datetime.fromisoformat(row["timestamp"]) if row["timestamp"] else datetime.utcnow(),
+                    category=MemoryCategory(row["category"]) if row.get("category") else MemoryCategory.CONTEXT,
+                    auto_created=bool(row["auto_created"]) if row.get("auto_created") is not None else False,
+                    ttl_days=row.get("ttl_days"),
+                    metadata=json.loads(row["metadata"]) if row.get("metadata") else {},
                 )
                 for _, row in results[:top_k]
             ]
@@ -373,3 +392,122 @@ class SQLiteMemoryRepository(MemoryRepository):
             await db.execute("DELETE FROM archival_memories WHERE user_id = ?", (user_id,))
             await db.commit()
         return True
+    
+    async def get_memory_config(self, user_id: str):
+        from app.services.memory.types import MemoryConfig
+        async with aiosqlite.connect(self.db_path) as db:
+            await self._ensure_tables(db)
+            db.row_factory = aiosqlite.Row
+            
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS memory_config (
+                    user_id TEXT PRIMARY KEY,
+                    auto_capture INTEGER DEFAULT 1,
+                    auto_recall INTEGER DEFAULT 1,
+                    capture_max_chars INTEGER DEFAULT 500,
+                    recall_top_k INTEGER DEFAULT 5,
+                    recall_min_score REAL DEFAULT 0.7,
+                    auto_forget_days INTEGER DEFAULT 30,
+                    importance_threshold REAL DEFAULT 0.3,
+                    extract INTEGER DEFAULT 0
+                )
+            """)
+            await db.commit()
+            
+            cursor = await db.execute(
+                "SELECT * FROM memory_config WHERE user_id = ?",
+                (user_id,)
+            )
+            row = await cursor.fetchone()
+            
+            if row:
+                return MemoryConfig(
+                    auto_capture=bool(row["auto_capture"]),
+                    auto_recall=bool(row["auto_recall"]),
+                    capture_max_chars=row["capture_max_chars"],
+                    recall_top_k=row["recall_top_k"],
+                    recall_min_score=round(float(row["recall_min_score"]), 2),
+                    auto_forget_days=row["auto_forget_days"],
+                    importance_threshold=round(float(row["importance_threshold"]), 2),
+                    extract=bool(row["extract"]) if "extract" in row.keys() else False,
+                )
+            
+            return MemoryConfig()
+    
+    async def save_memory_config(self, user_id: str, config) -> bool:
+        async with aiosqlite.connect(self.db_path) as db:
+            await self._ensure_tables(db)
+            
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS memory_config (
+                    user_id TEXT PRIMARY KEY,
+                    auto_capture INTEGER DEFAULT 1,
+                    auto_recall INTEGER DEFAULT 1,
+                    capture_max_chars INTEGER DEFAULT 500,
+                    recall_top_k INTEGER DEFAULT 5,
+                    recall_min_score REAL DEFAULT 0.7,
+                    auto_forget_days INTEGER DEFAULT 30,
+                    importance_threshold REAL DEFAULT 0.3,
+                    extract INTEGER DEFAULT 0
+                )
+            """)
+            
+            await db.execute("""
+                INSERT OR REPLACE INTO memory_config 
+                (user_id, auto_capture, auto_recall, capture_max_chars, recall_top_k, 
+                 recall_min_score, auto_forget_days, importance_threshold, extract)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                user_id,
+                int(config.auto_capture),
+                int(config.auto_recall),
+                config.capture_max_chars,
+                config.recall_top_k,
+                round(config.recall_min_score, 2),
+                config.auto_forget_days,
+                round(config.importance_threshold, 2),
+                int(config.extract),
+            ))
+            await db.commit()
+        return True
+    
+    async def delete_recall_memories_by_criteria(
+        self,
+        user_id: str,
+        before_date=None,
+        max_importance=None,
+        auto_created_only: bool = False,
+    ) -> int:
+        async with aiosqlite.connect(self.db_path) as db:
+            await self._ensure_tables(db)
+            
+            conditions = ["user_id = ?"]
+            params = [user_id]
+            
+            if before_date:
+                conditions.append("timestamp < ?")
+                params.append(before_date.isoformat())
+            
+            if max_importance is not None:
+                conditions.append("importance_score <= ?")
+                params.append(max_importance)
+            
+            if auto_created_only:
+                conditions.append("auto_created = 1")
+            
+            where_clause = " AND ".join(conditions)
+            
+            cursor = await db.execute(
+                f"SELECT COUNT(*) FROM recall_memories WHERE {where_clause}",
+                params
+            )
+            count = (await cursor.fetchone())[0]
+            
+            if count > 0:
+                await db.execute(
+                    f"DELETE FROM recall_memories WHERE {where_clause}",
+                    params
+                )
+                await db.commit()
+            
+            return count

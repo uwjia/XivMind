@@ -4,7 +4,6 @@ import { useLLMStore } from '@/stores/llm-store'
 import { useMemoryStore } from '@/stores/memory-store'
 import { useConversationStore } from '@/stores/conversation-store'
 import { useConfigError } from '@/composables/useConfigError'
-import { memoryService } from '@/services/memory'
 import type { ConversationMessage } from '@/types/conversation'
 
 export interface Paper {
@@ -140,6 +139,10 @@ export function useChatMessages(mode: Ref<ChatMode>) {
       }
     }
     
+    setTimeout(async () => {
+      await memoryStore.fetchStats()
+    }, 5000)
+    
     return {
       role: 'assistant' as const,
       content: result.answer || '',
@@ -179,14 +182,6 @@ export function useChatMessages(mode: Ref<ChatMode>) {
         : await executeAsk(message)
       
       await addAssistantMessage(assistantMsg.content, assistantMsg)
-      
-      if (!assistantMsg.isConfigError) {
-        const assistantContent = assistantMsg.answer || assistantMsg.content || 
-          (assistantMsg.papers ? `Found ${assistantMsg.papers.length} papers` : '')
-        if (assistantContent) {
-          recordConversationToMemory(message, assistantContent)
-        }
-      }
     } catch (error) {
       const errorMsg = handleRequestError(error)
       await addAssistantMessage(errorMsg.content, errorMsg)
@@ -219,31 +214,6 @@ export function useChatMessages(mode: Ref<ChatMode>) {
   const setMessages = (messages: Message[]) => {
     clearMessages()
     currentModeMessages.value = messages
-  }
-
-  const recordConversationToMemory = async (userMessage: string, assistantResponse: string) => {
-    try {
-      const sessionId = conversationStore.currentSessionId || `chat-${Date.now()}`
-      const extractProfile = localStorage.getItem('extract_profile') === 'true'
-      
-      const result = await memoryService.processConversation({
-        session_id: sessionId,
-        user_message: userMessage,
-        assistant_message: assistantResponse,
-        extract: extractProfile,
-      })
-      
-      if (result.status === 'processing') {
-        setTimeout(async () => {
-          await memoryStore.fetchStats()
-          if (extractProfile) {
-            await memoryStore.fetchCoreMemory()
-          }
-        }, 5000)
-      }
-    } catch (error) {
-      console.warn('Failed to record conversation to memory:', error)
-    }
   }
 
   const addUserMessage = async (content: string, options?: Partial<Message>) => {
@@ -332,7 +302,6 @@ export function useChatMessages(mode: Ref<ChatMode>) {
     setMessages,
     addUserMessage,
     addAssistantMessage,
-    recordConversationToMemory,
     saveToKnowledge,
   }
 }

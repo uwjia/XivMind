@@ -19,6 +19,7 @@ class AskWithMemoryRequest(BaseModel):
     model: Optional[str] = Field(None, description="Specific model to use")
     use_memory: bool = Field(True, description="Whether to use memory context for personalization")
     user_id: str = Field("default", description="User ID for memory context")
+    session_id: Optional[str] = Field(None, description="Session ID for conversation tracking")
 
 
 class PaperReference(BaseModel):

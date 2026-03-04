@@ -337,6 +337,24 @@ class MemoryRepository(ABC):
     async def clear_archival_memories(self, user_id: str) -> bool:
         pass
 
+    @abstractmethod
+    async def get_memory_config(self, user_id: str):
+        pass
+
+    @abstractmethod
+    async def save_memory_config(self, user_id: str, config) -> bool:
+        pass
+
+    @abstractmethod
+    async def delete_recall_memories_by_criteria(
+        self,
+        user_id: str,
+        before_date=None,
+        max_importance=None,
+        auto_created_only: bool = False,
+    ) -> int:
+        pass
+
 
 class ConversationRepository(ABC):
     """Abstract repository for conversation metadata."""

@@ -7,6 +7,7 @@ from app.services.memory.types import (
     CoreMemory,
     MemorySearchResult,
     MemoryType,
+    MemoryCategory,
 )
 from app.services.embedding_service import EmbeddingService
 
@@ -27,6 +28,7 @@ class MemoryRetriever:
         query: str,
         user_id: str = "default",
         top_k: int = 5,
+        min_score: float = 0.0,
         include_recall: bool = True,
         include_archival: bool = True,
     ) -> List[MemorySearchResult]:
@@ -43,6 +45,10 @@ class MemoryRetriever:
                 )
                 
                 for r in recall_results:
+                    similarity = r.get("similarity_score", 0.5)
+                    if similarity < min_score:
+                        continue
+                    
                     timestamp_raw = r.get("timestamp")
                     if isinstance(timestamp_raw, datetime):
                         timestamp = timestamp_raw
@@ -51,16 +57,25 @@ class MemoryRetriever:
                     else:
                         timestamp = datetime.utcnow()
                     
+                    category_str = r.get("category", "context")
+                    try:
+                        category = MemoryCategory(category_str)
+                    except ValueError:
+                        category = MemoryCategory.CONTEXT
+                    
                     results.append(MemorySearchResult(
                         memory_id=r.get("memory_id", ""),
                         content=r.get("content", ""),
-                        similarity_score=r.get("similarity_score", 0.5),
+                        similarity_score=similarity,
                         memory_type=MemoryType.RECALL,
                         timestamp=timestamp,
                         metadata={
                             "importance_score": r.get("importance_score", 0.5),
                             "session_id": r.get("session_id", ""),
+                            "auto_created": r.get("auto_created", False),
                         },
+                        category=category,
+                        importance_score=r.get("importance_score", 0.5),
                     ))
             
             if include_archival:
@@ -71,6 +86,10 @@ class MemoryRetriever:
                 )
                 
                 for r in archival_results:
+                    similarity = r.get("similarity_score", 0.5)
+                    if similarity < min_score:
+                        continue
+                    
                     created_at_raw = r.get("created_at")
                     if isinstance(created_at_raw, datetime):
                         timestamp = created_at_raw
@@ -85,7 +104,7 @@ class MemoryRetriever:
                     results.append(MemorySearchResult(
                         memory_id=r.get("memory_id", ""),
                         content=content or title,
-                        similarity_score=r.get("similarity_score", 0.5),
+                        similarity_score=similarity,
                         memory_type=MemoryType.ARCHIVAL,
                         timestamp=timestamp,
                         metadata={
@@ -93,6 +112,8 @@ class MemoryRetriever:
                             "content_type": r.get("content_type", "note"),
                             "tags": r.get("tags", []),
                         },
+                        category=MemoryCategory.INSIGHT,
+                        importance_score=0.7,
                     ))
             
             results.sort(key=lambda x: x.similarity_score, reverse=True)

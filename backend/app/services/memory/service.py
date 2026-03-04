@@ -14,6 +14,7 @@ from app.services.memory.types import (
     CoreMemoryUpdate,
     RecallMemoryCreate,
     ArchivalMemoryCreate,
+    MemoryConfig,
 )
 from app.services.memory.extractor import MemoryExtractor
 from app.services.memory.retriever import MemoryRetriever
@@ -32,6 +33,12 @@ class MemoryService:
     
     async def get_core_memory(self, user_id: str = "default") -> Optional[CoreMemory]:
         return await get_memory_repository().get_core_memory(user_id)
+    
+    async def get_memory_config(self, user_id: str = "default") -> MemoryConfig:
+        return await get_memory_repository().get_memory_config(user_id)
+    
+    async def save_memory_config(self, user_id: str, config: MemoryConfig) -> bool:
+        return await get_memory_repository().save_memory_config(user_id, config)
     
     async def update_core_memory(
         self,

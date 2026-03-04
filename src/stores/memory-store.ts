@@ -9,7 +9,21 @@ import type {
   ArchivalMemoryCreate,
   MemoryStats,
   MemorySearchResult,
+  MemoryConfig,
+  MemoryCategory,
+  MemoryContextResult,
 } from '@/types/memory'
+
+const DEFAULT_CONFIG: MemoryConfig = {
+  auto_capture: true,
+  auto_recall: true,
+  capture_max_chars: 500,
+  recall_top_k: 5,
+  recall_min_score: 0.7,
+  auto_forget_days: 30,
+  importance_threshold: 0.3,
+  extract: false,
+}
 
 export const useMemoryStore = defineStore('memory', () => {
   const coreMemory = ref<CoreMemory | null>(null)
@@ -18,6 +32,7 @@ export const useMemoryStore = defineStore('memory', () => {
   const archivalMemories = ref<ArchivalMemory[]>([])
   const searchResults = ref<MemorySearchResult[]>([])
   const recommendedSkills = ref<string[]>([])
+  const config = ref<MemoryConfig>(DEFAULT_CONFIG)
   
   const isLoading = ref(false)
   const isSaving = ref(false)
@@ -27,6 +42,8 @@ export const useMemoryStore = defineStore('memory', () => {
   const totalMemories = computed(() => stats.value?.total_memories || 0)
   const researchInterests = computed(() => coreMemory.value?.research_interests || [])
   const languagePreference = computed(() => coreMemory.value?.language_preference || 'en-US')
+  const autoCaptureEnabled = computed(() => config.value.auto_capture)
+  const autoRecallEnabled = computed(() => config.value.auto_recall)
 
   async function fetchCoreMemory(): Promise<void> {
     try {
@@ -158,6 +175,8 @@ export const useMemoryStore = defineStore('memory', () => {
           recall_memory_count: 0,
           archival_memory_count: 0,
           total_memories: 0,
+          auto_created_count: 0,
+          by_category: {},
         }
       }
       return success
@@ -229,35 +248,88 @@ export const useMemoryStore = defineStore('memory', () => {
     }
   }
 
-  async function addResearchInterest(interest: string): Promise<boolean> {
-    if (!interest.trim()) return false
-    const currentInterests = coreMemory.value?.research_interests || []
-    if (currentInterests.includes(interest.trim())) return false
-    
-    return updateCoreMemory({
-      research_interests: [...currentInterests, interest.trim()],
-    })
+  async function fetchConfig(): Promise<void> {
+    try {
+      config.value = await memoryService.getMemoryConfig()
+    } catch (e) {
+      console.error('Failed to fetch memory config:', e)
+    }
   }
 
-  async function removeResearchInterest(interest: string): Promise<boolean> {
-    const currentInterests = coreMemory.value?.research_interests || []
-    return updateCoreMemory({
-      research_interests: currentInterests.filter(i => i !== interest),
-    })
+  async function updateConfig(newConfig: Partial<MemoryConfig>): Promise<boolean> {
+    try {
+      config.value = await memoryService.updateMemoryConfig(newConfig)
+      return true
+    } catch (e) {
+      console.error('Failed to update memory config:', e)
+      return false
+    }
   }
 
-  async function setLanguagePreference(preference: string): Promise<boolean> {
-    return updateCoreMemory({ language_preference: preference })
+  async function storeMemory(
+    text: string,
+    category?: MemoryCategory,
+    importance?: number
+  ): Promise<RecallMemory | null> {
+    try {
+      const memory = await memoryService.storeMemory(text, category, importance)
+      recallMemories.value.unshift(memory)
+      await fetchStats()
+      return memory
+    } catch (e) {
+      console.error('Failed to store memory:', e)
+      return null
+    }
   }
 
-  async function setSummaryStyle(style: 'detailed' | 'brief' | 'bullet_points'): Promise<boolean> {
-    return updateCoreMemory({ summary_style: style })
+  async function recallMemoriesByQuery(query: string, limit?: number): Promise<MemorySearchResult[]> {
+    try {
+      return await memoryService.recallMemories(query, limit)
+    } catch (e) {
+      console.error('Failed to recall memories:', e)
+      return []
+    }
+  }
+
+  async function forgetMemory(memoryId?: string): Promise<boolean> {
+    try {
+      const success = await memoryService.forgetMemory(memoryId)
+      if (success && memoryId) {
+        recallMemories.value = recallMemories.value.filter(m => m.memory_id !== memoryId)
+        await fetchStats()
+      }
+      return success
+    } catch (e) {
+      console.error('Failed to forget memory:', e)
+      return false
+    }
+  }
+
+  async function getMemoryContext(query: string): Promise<MemoryContextResult> {
+    try {
+      return await memoryService.getMemoryContextResult(query)
+    } catch (e) {
+      console.error('Failed to get memory context:', e)
+      return { memories: [], context_string: '' }
+    }
+  }
+
+  async function cleanupExpiredMemories(): Promise<number> {
+    try {
+      const result = await memoryService.cleanupExpiredMemories()
+      await fetchStats()
+      return result.deleted
+    } catch (e) {
+      console.error('Failed to cleanup expired memories:', e)
+      return 0
+    }
   }
 
   async function init(): Promise<void> {
     await Promise.all([
       fetchCoreMemory(),
       fetchStats(),
+      fetchConfig(),
     ])
   }
 
@@ -268,6 +340,7 @@ export const useMemoryStore = defineStore('memory', () => {
     archivalMemories.value = []
     searchResults.value = []
     recommendedSkills.value = []
+    config.value = DEFAULT_CONFIG
     isLoading.value = false
     isSaving.value = false
     error.value = null
@@ -280,6 +353,7 @@ export const useMemoryStore = defineStore('memory', () => {
     archivalMemories,
     searchResults,
     recommendedSkills,
+    config,
     isLoading,
     isSaving,
     error,
@@ -287,6 +361,8 @@ export const useMemoryStore = defineStore('memory', () => {
     totalMemories,
     researchInterests,
     languagePreference,
+    autoCaptureEnabled,
+    autoRecallEnabled,
     fetchCoreMemory,
     updateCoreMemory,
     fetchStats,
@@ -301,10 +377,13 @@ export const useMemoryStore = defineStore('memory', () => {
     clearRecallMemories,
     clearArchivalMemories,
     fetchRecommendedSkills,
-    addResearchInterest,
-    removeResearchInterest,
-    setLanguagePreference,
-    setSummaryStyle,
+    fetchConfig,
+    updateConfig,
+    storeMemory,
+    recallMemoriesByQuery,
+    forgetMemory,
+    getMemoryContext,
+    cleanupExpiredMemories,
     init,
     $reset,
   }

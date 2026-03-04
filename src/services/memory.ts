@@ -8,6 +8,9 @@ import type {
   MemorySearchResult,
   ProcessConversationRequest,
   MemoryExtractionResult,
+  MemoryConfig,
+  MemoryCategory,
+  MemoryContextResult,
 } from '@/types/memory'
 
 const API_BASE = '/api/memory'
@@ -140,6 +143,54 @@ export const memoryService = {
     return fetchJson<MemoryExtractionResult>(`${API_BASE}/process-conversation`, {
       method: 'POST',
       body: JSON.stringify(data),
+    })
+  },
+
+  async getMemoryConfig(): Promise<MemoryConfig> {
+    return fetchJson<MemoryConfig>(`${API_BASE}/config`)
+  },
+
+  async updateMemoryConfig(config: Partial<MemoryConfig>): Promise<MemoryConfig> {
+    return fetchJson<MemoryConfig>(`${API_BASE}/config`, {
+      method: 'PUT',
+      body: JSON.stringify(config),
+    })
+  },
+
+  async storeMemory(
+    text: string,
+    category?: MemoryCategory,
+    importance?: number
+  ): Promise<RecallMemory> {
+    return fetchJson<RecallMemory>(`${API_BASE}/store`, {
+      method: 'POST',
+      body: JSON.stringify({ text, category, importance }),
+    })
+  },
+
+  async recallMemories(query: string, limit?: number): Promise<MemorySearchResult[]> {
+    return fetchJson<MemorySearchResult[]>(
+      `${API_BASE}/recall-search?query=${encodeURIComponent(query)}&limit=${limit || 5}`
+    )
+  },
+
+  async forgetMemory(memoryId?: string): Promise<boolean> {
+    const url = memoryId ? `${API_BASE}/forget/${memoryId}` : `${API_BASE}/forget`
+    const response = await fetchJson<{ success: boolean }>(url, {
+      method: 'DELETE',
+    })
+    return response.success
+  },
+
+  async getMemoryContextResult(query: string): Promise<MemoryContextResult> {
+    return fetchJson<MemoryContextResult>(
+      `${API_BASE}/context-result?query=${encodeURIComponent(query)}`
+    )
+  },
+
+  async cleanupExpiredMemories(): Promise<{ deleted: number }> {
+    return fetchJson<{ deleted: number }>(`${API_BASE}/cleanup`, {
+      method: 'POST',
     })
   },
 }

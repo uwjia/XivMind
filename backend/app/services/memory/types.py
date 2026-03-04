@@ -1,14 +1,73 @@
+import uuid
 from enum import Enum
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field
-import uuid
+from pydantic import BaseModel, Field, field_validator
 
 
 class MemoryType(str, Enum):
     CORE = "core"
     RECALL = "recall"
     ARCHIVAL = "archival"
+
+
+class MemoryCategory(str, Enum):
+    FACT = "fact"
+    PREFERENCE = "preference"
+    CONTEXT = "context"
+    INSIGHT = "insight"
+    TASK = "task"
+
+
+class MemoryConfig(BaseModel):
+    auto_capture: bool = Field(default=True, description="Automatically save important conversations")
+    auto_recall: bool = Field(default=True, description="Automatically recall relevant memories")
+    capture_max_chars: int = Field(default=500, description="Maximum characters to capture per conversation")
+    recall_top_k: int = Field(default=5, description="Number of memories to recall")
+    recall_min_score: float = Field(default=0.7, ge=0.0, le=1.0, description="Minimum similarity score for recall")
+    auto_forget_days: int = Field(default=30, description="Days before auto-forgetting low importance memories")
+    importance_threshold: float = Field(default=0.3, ge=0.0, le=1.0, description="Importance threshold for auto-forget")
+    extract: bool = Field(default=False, description="Extract and update core memory from conversations")
+    
+    @field_validator('recall_min_score', 'importance_threshold')
+    @classmethod
+    def round_float_fields(cls, v: float) -> float:
+        return round(v, 2)
+
+
+class SoulMemory(BaseModel):
+    user_id: str = Field(default="default", description="User identifier")
+    core_instructions: str = Field(default="", description="Core system instructions")
+    behavior_rules: List[str] = Field(default_factory=list, description="Behavior rules for the assistant")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    version: str = Field(default="1.0", description="Version of soul memory")
+
+    def to_context_string(self) -> str:
+        parts = []
+        if self.core_instructions:
+            parts.append(f"Core Instructions:\n{self.core_instructions}")
+        if self.behavior_rules:
+            parts.append("Behavior Rules:")
+            for rule in self.behavior_rules:
+                parts.append(f"- {rule}")
+        return "\n".join(parts)
+
+
+class ToolsMemory(BaseModel):
+    user_id: str = Field(default="default", description="User identifier")
+    enabled_tools: List[str] = Field(default_factory=list, description="List of enabled tool IDs")
+    tool_preferences: Dict[str, Any] = Field(default_factory=dict, description="Tool-specific preferences")
+    last_updated: datetime = Field(default_factory=datetime.utcnow)
+
+    def to_context_string(self) -> str:
+        parts = []
+        if self.enabled_tools:
+            parts.append(f"Enabled Tools: {', '.join(self.enabled_tools)}")
+        if self.tool_preferences:
+            parts.append("Tool Preferences:")
+            for tool, prefs in self.tool_preferences.items():
+                parts.append(f"- {tool}: {prefs}")
+        return "\n".join(parts)
 
 
 class CoreMemory(BaseModel):
@@ -47,6 +106,9 @@ class RecallMemory(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
     importance_score: float = Field(default=0.5, ge=0.0, le=1.0, description="Importance score")
     access_count: int = Field(default=0, description="Number of times accessed")
+    category: MemoryCategory = Field(default=MemoryCategory.CONTEXT, description="Memory category")
+    ttl_days: Optional[int] = Field(default=None, description="Time-to-live in days")
+    auto_created: bool = Field(default=False, description="Whether this memory was auto-created")
 
     class Config:
         json_encoders = {
@@ -124,6 +186,13 @@ class MemorySearchResult(BaseModel):
     memory_type: MemoryType
     timestamp: datetime
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    category: MemoryCategory = Field(default=MemoryCategory.CONTEXT)
+    importance_score: float = Field(default=0.5)
+
+
+class MemoryContext(BaseModel):
+    memories: List[MemorySearchResult] = Field(default_factory=list)
+    context_string: str = Field(default="")
 
 
 class MemoryStats(BaseModel):
@@ -133,3 +202,12 @@ class MemoryStats(BaseModel):
     total_memories: int
     oldest_memory: Optional[datetime] = None
     newest_memory: Optional[datetime] = None
+    auto_created_count: int = Field(default=0, description="Number of auto-created memories")
+    by_category: Dict[str, int] = Field(default_factory=dict, description="Count by category")
+
+
+class ShouldSaveResult(BaseModel):
+    should_save: bool = Field(description="Whether the conversation should be saved")
+    importance_score: float = Field(default=0.5, description="Importance score")
+    category: MemoryCategory = Field(default=MemoryCategory.CONTEXT, description="Suggested category")
+    reason: str = Field(default="", description="Reason for the decision")

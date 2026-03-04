@@ -98,3 +98,53 @@ Please give an importance score between 0-1 based on the following criteria:
 
 Output only the score number, no other content.
 """
+
+SHOULD_SAVE_PROMPT = """You are a memory decision assistant. Analyze the following conversation and determine if it should be saved to long-term memory.
+
+## Conversation Content
+{content}
+
+## Decision Criteria
+Save the conversation if it contains:
+1. User preferences (language, style, format preferences)
+2. Research interests or topics the user wants to explore
+3. Important facts, decisions, or conclusions
+4. User explicitly asks to remember something
+5. Contains valuable context for future conversations
+
+Do NOT save if it's:
+1. Simple greetings or small talk
+2. Routine factual questions without personal context
+3. Temporary or one-time information
+4. Already well-known general knowledge
+
+## Output Format
+Output in JSON format:
+```json
+{{
+    "should_save": true/false,
+    "importance_score": 0.0-1.0,
+    "category": "fact/preference/context/insight/task",
+    "reason": "Brief explanation for the decision"
+}}
+```
+
+Category definitions:
+- fact: Important factual information
+- preference: User's preferences or choices
+- context: Useful context for future conversations
+- insight: Research insights or discoveries
+- task: Task-related records or decisions
+
+Output only JSON, no other content.
+"""
+
+MEMORY_CONFIG_DEFAULT = {
+    "auto_capture": True,
+    "auto_recall": True,
+    "capture_max_chars": 500,
+    "recall_top_k": 5,
+    "recall_min_score": 0.7,
+    "auto_forget_days": 30,
+    "importance_threshold": 0.3,
+}

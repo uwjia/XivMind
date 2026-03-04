@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Query, HTTPException, Body
+from fastapi import APIRouter, Query, HTTPException, Body, BackgroundTasks
 from typing import Optional
 import logging
 
 from app.services.paper_service import PaperService
 from app.services.llm_service import llm_service
 from app.services.memory.service import memory_service
+from app.services.memory.auto_capture import AutoCaptureService
+from app.services.memory.auto_recall import AutoRecallService
+from app.services.memory.types import MemoryConfig
 from app.models import (
     SemanticSearchRequest,
     SemanticSearchResponse,
@@ -23,6 +26,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/arxiv", tags=["arxiv"])
 
 _paper_service = PaperService()
+auto_capture_service = AutoCaptureService()
+auto_recall_service = AutoRecallService()
 
 
 @router.get("/query")
@@ -229,7 +234,10 @@ async def ask_question(request: AskRequest = Body(...)):
 
 
 @router.post("/ask-with-memory", response_model=AskWithMemoryResponse)
-async def ask_question_with_memory(request: AskWithMemoryRequest = Body(...)):
+async def ask_question_with_memory(
+    request: AskWithMemoryRequest = Body(...),
+    background_tasks: BackgroundTasks = None,
+):
     """
     Ask a question with memory-based personalization.
     
@@ -237,14 +245,16 @@ async def ask_question_with_memory(request: AskWithMemoryRequest = Body(...)):
     - User profile context (research interests, preferences)
     - Relevant conversation history
     - Personalized response style (language, summary format)
+    - Auto-capture of important conversations
     
     Features:
     1. Uses semantic search to find relevant papers
     2. Retrieves user's core memory (profile)
-    3. Searches for relevant conversation memories
+    3. Searches for relevant conversation memories (auto-recall)
     4. Builds personalized system prompt
     5. Calls LLM with enhanced context
-    6. Returns answer with memory usage info
+    6. Auto-captures conversation if enabled (background task)
+    7. Returns answer with memory usage info
     """
     try:
         search_result = await _paper_service.search_papers_semantic(
@@ -264,15 +274,31 @@ async def ask_question_with_memory(request: AskWithMemoryRequest = Body(...)):
         memory_context = None
         core_memory = None
         relevant_memories_count = 0
+        memory_config = MemoryConfig()
         
         if request.use_memory:
             try:
+                from app.db.factory import get_memory_repository
+                repo = get_memory_repository()
+                memory_config = await repo.get_memory_config(request.user_id)
+                
                 core_memory = await memory_service.get_core_memory(request.user_id)
-                memory_context = await memory_service.build_context_for_query(
-                    query=request.question,
-                    user_id=request.user_id,
-                )
-                relevant_memories_count = memory_context.count('\n- ') if memory_context else 0
+                
+                if memory_config.auto_recall:
+                    recall_result = await auto_recall_service.recall_for_query(
+                        query=request.question,
+                        user_id=request.user_id,
+                        config=memory_config,
+                    )
+                    memory_context = recall_result.context_string
+                    relevant_memories_count = len(recall_result.memories)
+                else:
+                    memory_context = await memory_service.build_context_for_query(
+                        query=request.question,
+                        user_id=request.user_id,
+                    )
+                    relevant_memories_count = memory_context.count('\n- ') if memory_context else 0
+                
                 logger.info(f"Memory context loaded: core_memory={core_memory is not None}, context_length={len(memory_context) if memory_context else 0}")
             except Exception as mem_error:
                 logger.warning(f"Failed to load memory context: {mem_error}")
@@ -295,6 +321,16 @@ async def ask_question_with_memory(request: AskWithMemoryRequest = Body(...)):
             provider=request.provider,
             model=request.model,
         )
+        
+        if request.use_memory and memory_config.auto_capture and background_tasks:
+            background_tasks.add_task(
+                auto_capture_service.capture_conversation,
+                user_id=request.user_id,
+                session_id=request.session_id or "default",
+                user_message=request.question,
+                assistant_message=answer,
+                config=memory_config,
+            )
         
         references = []
         if request.include_references:

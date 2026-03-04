@@ -11,6 +11,7 @@ from app.services.memory.types import (
     RecallMemory,
     ArchivalMemory,
     MemoryStats,
+    MemoryConfig,
 )
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,7 @@ class MilvusMemoryRepository(BaseMemoryRepository):
         self._core_collection: Optional[Collection] = None
         self._recall_collection: Optional[Collection] = None
         self._archival_collection: Optional[Collection] = None
+        self._config_collection: Optional[Collection] = None
         self._core_memory_cache: Dict[str, CoreMemory] = {}
     
     def _get_core_collection(self) -> Collection:
@@ -39,6 +41,11 @@ class MilvusMemoryRepository(BaseMemoryRepository):
         if not self._archival_collection:
             self._archival_collection = milvus_client.get_collection("archival_memories")
         return self._archival_collection
+    
+    def _get_config_collection(self) -> Collection:
+        if not self._config_collection:
+            self._config_collection = milvus_client.get_collection("memory_config")
+        return self._config_collection
     
     async def get_core_memory(self, user_id: str = "default") -> Optional[CoreMemory]:
         if user_id in self._core_memory_cache:
@@ -122,6 +129,10 @@ class MilvusMemoryRepository(BaseMemoryRepository):
                 [memory.importance_score],
                 [memory.access_count],
                 [memory.timestamp.isoformat()],
+                [memory.category.value if hasattr(memory.category, 'value') else (memory.category or 'context')],
+                [memory.auto_created],
+                [memory.ttl_days or 0],
+                [json.dumps(memory.metadata) if memory.metadata else "{}"],
             ]
             
             collection.insert(insert_data)
@@ -132,6 +143,7 @@ class MilvusMemoryRepository(BaseMemoryRepository):
             return False
     
     async def get_recall_memories(self, user_id: str, limit: int = 50, offset: int = 0) -> List[RecallMemory]:
+        from app.services.memory.types import MemoryCategory
         try:
             collection = self._get_recall_collection()
             collection.load()
@@ -139,7 +151,8 @@ class MilvusMemoryRepository(BaseMemoryRepository):
             results = collection.query(
                 expr=f'user_id == "{user_id}"',
                 output_fields=["memory_id", "user_id", "session_id", "content", 
-                              "importance_score", "access_count", "timestamp"],
+                              "importance_score", "access_count", "timestamp",
+                              "category", "auto_created", "ttl_days", "metadata"],
                 limit=1000,
             )
             
@@ -153,6 +166,10 @@ class MilvusMemoryRepository(BaseMemoryRepository):
                     importance_score=r["importance_score"] or 0.5,
                     access_count=r["access_count"] or 0,
                     timestamp=datetime.fromisoformat(r["timestamp"]) if r["timestamp"] else datetime.utcnow(),
+                    category=MemoryCategory(r["category"]) if r.get("category") else MemoryCategory.CONTEXT,
+                    auto_created=bool(r.get("auto_created", False)),
+                    ttl_days=r.get("ttl_days") if r.get("ttl_days") else None,
+                    metadata=json.loads(r["metadata"]) if r.get("metadata") else {},
                 )
                 for r in results
             ]
@@ -203,13 +220,13 @@ class MilvusMemoryRepository(BaseMemoryRepository):
                 limit=top_k,
                 expr=f'user_id == "{user_id}"',
                 output_fields=["memory_id", "user_id", "session_id", "content", 
-                              "importance_score", "access_count", "timestamp"],
+                              "importance_score", "access_count", "timestamp",
+                              "category", "auto_created", "ttl_days", "metadata"],
             )
             
             memories = []
             for hits in results:
                 for hit in hits:
-                    # hit.entity is a dict with 'entity' key containing the actual fields
                     entity_data = hit.entity
                     if isinstance(entity_data, dict) and 'entity' in entity_data:
                         fields = entity_data['entity']
@@ -224,6 +241,10 @@ class MilvusMemoryRepository(BaseMemoryRepository):
                         "importance_score": fields.get("importance_score", 0.5) or 0.5,
                         "access_count": fields.get("access_count", 0) or 0,
                         "timestamp": fields.get("timestamp"),
+                        "category": fields.get("category", "context") or "context",
+                        "auto_created": fields.get("auto_created", False) or False,
+                        "ttl_days": fields.get("ttl_days"),
+                        "metadata": json.loads(fields.get("metadata", "{}") or "{}"),
                         "similarity_score": hit.score,
                     })
             
@@ -459,3 +480,101 @@ class MilvusMemoryRepository(BaseMemoryRepository):
         except Exception as e:
             logger.error(f"Failed to clear archival memories: {e}")
             return False
+    
+    async def get_memory_config(self, user_id: str) -> MemoryConfig:
+        try:
+            collection = self._get_config_collection()
+            collection.load()
+            
+            results = collection.query(
+                expr=f'user_id == "{user_id}"',
+                output_fields=["user_id", "auto_capture", "auto_recall", 
+                              "capture_max_chars", "recall_top_k", 
+                              "recall_min_score", "auto_forget_days", 
+                              "importance_threshold", "extract"],
+            )
+            
+            if results:
+                r = results[0]
+                return MemoryConfig(
+                    auto_capture=bool(r.get("auto_capture", True)),
+                    auto_recall=bool(r.get("auto_recall", True)),
+                    capture_max_chars=r.get("capture_max_chars", 500),
+                    recall_top_k=r.get("recall_top_k", 5),
+                    recall_min_score=round(float(r.get("recall_min_score", 0.7)), 2),
+                    auto_forget_days=r.get("auto_forget_days", 30),
+                    importance_threshold=round(float(r.get("importance_threshold", 0.3)), 2),
+                    extract=bool(r.get("extract", False)),
+                )
+            
+            return MemoryConfig()
+        except Exception as e:
+            logger.error(f"Failed to get memory config: {e}")
+            return MemoryConfig()
+    
+    async def save_memory_config(self, user_id: str, config: MemoryConfig) -> bool:
+        try:
+            collection = self._get_config_collection()
+            
+            existing = await self.get_memory_config(user_id)
+            if existing:
+                collection.delete(f'user_id == "{user_id}"')
+            
+            dummy_embedding = [0.0] * 8
+            insert_data = [
+                [user_id],
+                [config.auto_capture],
+                [config.auto_recall],
+                [config.capture_max_chars],
+                [config.recall_top_k],
+                [config.recall_min_score],
+                [config.auto_forget_days],
+                [config.importance_threshold],
+                [config.extract],
+                [dummy_embedding],
+            ]
+            collection.insert(insert_data)
+            collection.flush()
+            
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save memory config: {e}")
+            return False
+    
+    async def delete_recall_memories_by_criteria(
+        self,
+        user_id: str,
+        before_date=None,
+        max_importance=None,
+        auto_created_only: bool = False,
+    ) -> int:
+        try:
+            collection = self._get_recall_collection()
+            
+            conditions = [f'user_id == "{user_id}"']
+            
+            if auto_created_only:
+                conditions.append('auto_created == true')
+            
+            if max_importance is not None:
+                conditions.append(f'importance_score <= {max_importance}')
+            
+            expr = ' && '.join(conditions)
+            
+            results = collection.query(
+                expr=expr,
+                output_fields=["memory_id"],
+            )
+            
+            count = len(results)
+            
+            if count > 0:
+                memory_ids = [r["memory_id"] for r in results]
+                ids_str = ', '.join([f'"{mid}"' for mid in memory_ids])
+                collection.delete(f'memory_id in [{ids_str}]')
+                collection.flush()
+            
+            return count
+        except Exception as e:
+            logger.error(f"Failed to delete recall memories by criteria: {e}")
+            return 0
