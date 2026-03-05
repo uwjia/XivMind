@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     DATABASE_NAME: str = "xivmind"
     DOWNLOAD_DIR: str = "./downloads"
     SQLITE_DB_PATH: str = "./data/xivmind.db"
+    LANCEDB_PATH: str = "./data/lancedb"
 
     ARXIV_MAX_RETRIES: int = 3
     ARXIV_RETRY_BASE_DELAY: float = 1.0

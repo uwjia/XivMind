@@ -21,6 +21,9 @@ def get_bookmark_repository():
         elif db_type == "milvus":
             from app.db.milvus.bookmark_repo import MilvusBookmarkRepository
             _bookmark_repo = MilvusBookmarkRepository()
+        elif db_type == "lancedb":
+            from app.db.lancedb.bookmark_repo import LanceDBBookmarkRepository
+            _bookmark_repo = LanceDBBookmarkRepository()
         else:
             raise ValueError(f"Unsupported database type: {db_type}")
     
@@ -39,6 +42,9 @@ def get_download_repository():
         elif db_type == "milvus":
             from app.db.milvus.download_repo import MilvusDownloadRepository
             _download_repo = MilvusDownloadRepository()
+        elif db_type == "lancedb":
+            from app.db.lancedb.download_repo import LanceDBDownloadRepository
+            _download_repo = LanceDBDownloadRepository()
         else:
             raise ValueError(f"Unsupported database type: {db_type}")
     
@@ -57,6 +63,9 @@ def get_paper_repository():
         elif db_type == "milvus":
             from app.db.milvus.paper_repo import MilvusPaperRepository
             _paper_repo = MilvusPaperRepository()
+        elif db_type == "lancedb":
+            from app.db.lancedb.paper_repo import LanceDBPaperRepository
+            _paper_repo = LanceDBPaperRepository()
         else:
             raise ValueError(f"Unsupported database type: {db_type}")
     
@@ -75,6 +84,9 @@ def get_paper_embedding_repository():
         elif db_type == "milvus":
             from app.db.milvus.paper_embedding_repo import MilvusPaperEmbeddingRepository
             _paper_embedding_repo = MilvusPaperEmbeddingRepository()
+        elif db_type == "lancedb":
+            from app.db.lancedb.paper_embedding_repo import LanceDBPaperEmbeddingRepository
+            _paper_embedding_repo = LanceDBPaperEmbeddingRepository()
         else:
             raise ValueError(f"Unsupported database type: {db_type}")
     
@@ -93,6 +105,9 @@ def get_conversation_repository():
         elif db_type == "milvus":
             from app.db.milvus.conversation_repo import MilvusConversationRepository
             _conversation_repo = MilvusConversationRepository()
+        elif db_type == "lancedb":
+            from app.db.lancedb.conversation_repo import LanceDBConversationRepository
+            _conversation_repo = LanceDBConversationRepository()
         else:
             raise ValueError(f"Unsupported database type: {db_type}")
     
@@ -111,6 +126,9 @@ def get_memory_repository():
         elif db_type == "milvus":
             from app.db.milvus.memory_repo import MilvusMemoryRepository
             _memory_repo = MilvusMemoryRepository()
+        elif db_type == "lancedb":
+            from app.db.lancedb.memory_repo import LanceDBMemoryRepository
+            _memory_repo = LanceDBMemoryRepository()
         else:
             raise ValueError(f"Unsupported database type: {db_type}")
     

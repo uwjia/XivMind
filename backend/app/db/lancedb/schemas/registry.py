@@ -1,0 +1,51 @@
+from typing import List, Dict, Type
+from .base import BaseTableSchema
+from .bookmarks import BookmarkSchema
+from .downloads import DownloadSchema
+from .papers import PaperSchema
+from .date_index import DateIndexSchema
+from .embedding_index import EmbeddingIndexSchema
+from .paper_embeddings import PaperEmbeddingSchema
+from .memorys import RecallMemorySchema, ArchivalMemorySchema, CoreMemorySchema, MemoryConfigSchema
+from .conversation import ConversationMetaSchema
+
+
+class SchemaRegistry:
+    """Registry for LanceDB table schemas."""
+    
+    _schemas: Dict[str, BaseTableSchema] = {}
+    
+    @classmethod
+    def register(cls, schema: BaseTableSchema) -> None:
+        """Register a schema."""
+        cls._schemas[schema.table_name] = schema
+    
+    @classmethod
+    def get(cls, table_name: str) -> BaseTableSchema:
+        """Get a schema by table name."""
+        if table_name not in cls._schemas:
+            raise ValueError(f"Schema for table '{table_name}' not found")
+        return cls._schemas[table_name]
+    
+    @classmethod
+    def get_all(cls) -> List[BaseTableSchema]:
+        """Get all registered schemas."""
+        return list(cls._schemas.values())
+    
+    @classmethod
+    def get_all_names(cls) -> List[str]:
+        """Get all registered table names."""
+        return list(cls._schemas.keys())
+
+
+SchemaRegistry.register(BookmarkSchema())
+SchemaRegistry.register(DownloadSchema())
+SchemaRegistry.register(PaperSchema())
+SchemaRegistry.register(DateIndexSchema())
+SchemaRegistry.register(EmbeddingIndexSchema())
+SchemaRegistry.register(PaperEmbeddingSchema())
+SchemaRegistry.register(RecallMemorySchema())
+SchemaRegistry.register(ArchivalMemorySchema())
+SchemaRegistry.register(CoreMemorySchema())
+SchemaRegistry.register(MemoryConfigSchema())
+SchemaRegistry.register(ConversationMetaSchema())
