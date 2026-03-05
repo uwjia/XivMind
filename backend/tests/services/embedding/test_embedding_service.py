@@ -2,34 +2,36 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 import numpy as np
 
-from app.services.embedding_service import (
-    EmbeddingProvider,
-    OpenAIEmbeddingProvider,
-    LocalEmbeddingProvider,
-    EmbeddingService,
+from app.services.embedding import (
+    EmbeddingServiceInterface,
+    LocalEmbeddingService,
+    OpenAIEmbeddingService,
+    EmbeddingServiceFactory,
+    get_embedding_service,
+    get_embedding_dimension,
 )
 
 
-class TestOpenAIEmbeddingProvider:
+class TestOpenAIEmbeddingService:
     def test_init(self):
-        provider = OpenAIEmbeddingProvider(
+        service = OpenAIEmbeddingService(
             api_key="test-key",
-            model="text-embedding-ada-002"
+            model_name="text-embedding-ada-002"
         )
-        assert provider.api_key == "test-key"
-        assert provider.model == "text-embedding-ada-002"
-        assert provider._dimension == 1536
+        assert service.api_key == "test-key"
+        assert service.model_name == "text-embedding-ada-002"
+        assert service.dimension == 1536
 
     def test_get_dimension(self):
-        provider = OpenAIEmbeddingProvider(api_key="test-key")
-        assert provider.get_dimension() == 1536
+        service = OpenAIEmbeddingService(api_key="test-key")
+        assert service.get_dimension() == 1536
 
     def test_get_model_name(self):
-        provider = OpenAIEmbeddingProvider(
+        service = OpenAIEmbeddingService(
             api_key="test-key",
-            model="text-embedding-3-small"
+            model_name="text-embedding-3-small"
         )
-        assert provider.get_model_name() == "text-embedding-3-small"
+        assert service.get_model_name() == "text-embedding-3-small"
 
     def test_encode_success(self):
         mock_client = Mock()
@@ -37,16 +39,24 @@ class TestOpenAIEmbeddingProvider:
         mock_response.data = [Mock(embedding=[0.1, 0.2, 0.3])]
         mock_client.embeddings.create.return_value = mock_response
 
-        provider = OpenAIEmbeddingProvider(api_key="test-key")
-        provider._client = mock_client
+        service = OpenAIEmbeddingService(api_key="test-key")
+        service._client = mock_client
         
-        result = provider.encode("test text")
+        embedding, model = service.encode("test text")
 
-        assert result == [0.1, 0.2, 0.3]
+        assert embedding == [0.1, 0.2, 0.3]
+        assert model == "text-embedding-ada-002"
         mock_client.embeddings.create.assert_called_once_with(
             input="test text",
             model="text-embedding-ada-002"
         )
+
+    def test_encode_empty_text(self):
+        service = OpenAIEmbeddingService(api_key="test-key")
+        embedding, model = service.encode("")
+        
+        assert embedding == [0.0] * 1536
+        assert model == "text-embedding-ada-002"
 
     def test_encode_batch_success(self):
         mock_client = Mock()
@@ -57,57 +67,67 @@ class TestOpenAIEmbeddingProvider:
         ]
         mock_client.embeddings.create.return_value = mock_response
 
-        provider = OpenAIEmbeddingProvider(api_key="test-key")
-        provider._client = mock_client
+        service = OpenAIEmbeddingService(api_key="test-key")
+        service._client = mock_client
         
-        result = provider.encode_batch(["text1", "text2"])
+        embeddings, model = service.encode_batch(["text1", "text2"])
 
-        assert len(result) == 2
-        assert result[0] == [0.1, 0.2, 0.3]
-        assert result[1] == [0.4, 0.5, 0.6]
+        assert len(embeddings) == 2
+        assert embeddings[0] == [0.1, 0.2, 0.3]
+        assert embeddings[1] == [0.4, 0.5, 0.6]
 
     def test_encode_batch_empty(self):
-        provider = OpenAIEmbeddingProvider(api_key="test-key")
-        result = provider.encode_batch([])
-        assert result == []
+        service = OpenAIEmbeddingService(api_key="test-key")
+        embeddings, model = service.encode_batch([])
+        assert embeddings == []
+        assert model == "text-embedding-ada-002"
 
-    def test_encode_error(self):
+    def test_encode_error_returns_zeros(self):
         mock_client = Mock()
         mock_client.embeddings.create.side_effect = Exception("API Error")
 
-        provider = OpenAIEmbeddingProvider(api_key="test-key")
-        provider._client = mock_client
+        service = OpenAIEmbeddingService(api_key="test-key")
+        service._client = mock_client
         
-        with pytest.raises(Exception, match="API Error"):
-            provider.encode("test text")
+        embedding, model = service.encode("test text")
+        
+        assert embedding == [0.0] * 1536
+        assert model == "text-embedding-ada-002"
 
 
-class TestLocalEmbeddingProvider:
+class TestLocalEmbeddingService:
     def test_init(self):
-        provider = LocalEmbeddingProvider(model_name="all-MiniLM-L6-v2")
-        assert provider.model_name == "all-MiniLM-L6-v2"
-        assert provider._dimension == 384
+        service = LocalEmbeddingService(model_name="all-MiniLM-L6-v2")
+        assert service.model_name == "all-MiniLM-L6-v2"
+        assert service.dimension == 384
 
     def test_get_dimension(self):
-        provider = LocalEmbeddingProvider()
-        assert provider.get_dimension() == 384
+        service = LocalEmbeddingService()
+        assert service.get_dimension() == 384
 
     def test_get_model_name(self):
-        provider = LocalEmbeddingProvider(model_name="test-model")
-        assert provider.get_model_name() == "local:test-model"
+        service = LocalEmbeddingService(model_name="test-model")
+        assert service.get_model_name() == "test-model"
 
     def test_encode_success(self):
         mock_model = Mock()
         mock_model.encode.return_value = np.array([0.1, 0.2, 0.3])
-        mock_model.get_sentence_embedding_dimension.return_value = 384
 
-        provider = LocalEmbeddingProvider()
-        provider._model = mock_model
+        service = LocalEmbeddingService()
+        service._model = mock_model
         
-        result = provider.encode("test text")
+        embedding, model = service.encode("test text")
 
-        assert result == [0.1, 0.2, 0.3]
+        assert embedding == [0.1, 0.2, 0.3]
+        assert model == "all-MiniLM-L6-v2"
         mock_model.encode.assert_called_once()
+
+    def test_encode_empty_text(self):
+        service = LocalEmbeddingService()
+        embedding, model = service.encode("")
+        
+        assert embedding == [0.0] * 384
+        assert model == "all-MiniLM-L6-v2"
 
     def test_encode_batch_success(self):
         mock_model = Mock()
@@ -116,175 +136,180 @@ class TestLocalEmbeddingProvider:
             [0.4, 0.5, 0.6],
         ])
 
-        provider = LocalEmbeddingProvider()
-        provider._model = mock_model
-        
-        result = provider.encode_batch(["text1", "text2"])
-
-        assert len(result) == 2
-        assert result[0] == [0.1, 0.2, 0.3]
-        assert result[1] == [0.4, 0.5, 0.6]
-
-    def test_encode_batch_empty(self):
-        provider = LocalEmbeddingProvider()
-        result = provider.encode_batch([])
-        assert result == []
-
-    def test_import_error(self):
-        provider = LocalEmbeddingProvider()
-        provider._model = None
-        
-        with patch.dict('sys.modules', {'sentence_transformers': None}):
-            with pytest.raises(ImportError):
-                provider._get_model()
-
-
-class TestEmbeddingService:
-    @patch('app.services.embedding_service.get_settings')
-    def test_init_use_local_embedding(self, mock_get_settings):
-        mock_settings = Mock()
-        mock_settings.USE_LOCAL_EMBEDDING = True
-        mock_settings.LOCAL_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-        mock_get_settings.return_value = mock_settings
-
-        service = EmbeddingService()
-        service._initialize()
-
-        assert isinstance(service._primary_provider, LocalEmbeddingProvider)
-        assert service._fallback_provider is None
-
-    @patch('app.services.embedding_service.get_settings')
-    def test_init_with_openai_key(self, mock_get_settings):
-        mock_settings = Mock()
-        mock_settings.USE_LOCAL_EMBEDDING = False
-        mock_settings.OPENAI_API_KEY = "test-key"
-        mock_settings.OPENAI_EMBEDDING_MODEL = "text-embedding-ada-002"
-        mock_settings.LOCAL_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-        mock_get_settings.return_value = mock_settings
-
-        service = EmbeddingService()
-        service._initialize()
-
-        assert isinstance(service._primary_provider, OpenAIEmbeddingProvider)
-        assert isinstance(service._fallback_provider, LocalEmbeddingProvider)
-
-    @patch('app.services.embedding_service.get_settings')
-    def test_init_no_openai_key(self, mock_get_settings):
-        mock_settings = Mock()
-        mock_settings.USE_LOCAL_EMBEDDING = False
-        mock_settings.OPENAI_API_KEY = ""
-        mock_settings.LOCAL_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-        mock_get_settings.return_value = mock_settings
-
-        service = EmbeddingService()
-        service._initialize()
-
-        assert isinstance(service._primary_provider, LocalEmbeddingProvider)
-        assert service._fallback_provider is None
-
-    @patch('app.services.embedding_service.get_settings')
-    def test_encode_success(self, mock_get_settings):
-        mock_settings = Mock()
-        mock_settings.USE_LOCAL_EMBEDDING = True
-        mock_settings.LOCAL_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-        mock_get_settings.return_value = mock_settings
-
-        service = EmbeddingService()
-        service._initialized = True
-        
-        mock_provider = Mock()
-        mock_provider.encode.return_value = [0.1, 0.2]
-        mock_provider.get_model_name.return_value = "local:all-MiniLM-L6-v2"
-        service._primary_provider = mock_provider
-        
-        embedding, model = service.encode("test text")
-
-        assert embedding == [0.1, 0.2]
-        assert model == "local:all-MiniLM-L6-v2"
-
-    @patch('app.services.embedding_service.get_settings')
-    def test_encode_with_fallback(self, mock_get_settings):
-        mock_settings = Mock()
-        mock_settings.USE_LOCAL_EMBEDDING = False
-        mock_settings.OPENAI_API_KEY = "test-key"
-        mock_settings.OPENAI_EMBEDDING_MODEL = "text-embedding-ada-002"
-        mock_settings.LOCAL_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-        mock_get_settings.return_value = mock_settings
-
-        service = EmbeddingService()
-        service._initialized = True
-        
-        mock_primary = Mock()
-        mock_primary.encode.side_effect = Exception("API Error")
-        mock_primary.get_model_name.return_value = "text-embedding-ada-002"
-        
-        mock_fallback = Mock()
-        mock_fallback.encode.return_value = [0.1, 0.2]
-        mock_fallback.get_model_name.return_value = "local:all-MiniLM-L6-v2"
-        
-        service._primary_provider = mock_primary
-        service._fallback_provider = mock_fallback
-        
-        embedding, model = service.encode("test text")
-
-        assert embedding == [0.1, 0.2]
-        assert model == "local:all-MiniLM-L6-v2"
-
-    @patch('app.services.embedding_service.get_settings')
-    def test_encode_batch_success(self, mock_get_settings):
-        mock_settings = Mock()
-        mock_settings.USE_LOCAL_EMBEDDING = True
-        mock_settings.LOCAL_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-        mock_get_settings.return_value = mock_settings
-
-        service = EmbeddingService()
-        service._initialized = True
-        
-        mock_provider = Mock()
-        mock_provider.encode_batch.return_value = [[0.1], [0.2]]
-        mock_provider.get_model_name.return_value = "local:all-MiniLM-L6-v2"
-        service._primary_provider = mock_provider
+        service = LocalEmbeddingService()
+        service._model = mock_model
         
         embeddings, model = service.encode_batch(["text1", "text2"])
 
         assert len(embeddings) == 2
+        assert embeddings[0] == [0.1, 0.2, 0.3]
+        assert embeddings[1] == [0.4, 0.5, 0.6]
 
-    @patch('app.services.embedding_service.get_settings')
-    def test_encode_batch_empty(self, mock_get_settings):
-        mock_settings = Mock()
-        mock_settings.USE_LOCAL_EMBEDDING = True
-        mock_settings.LOCAL_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-        mock_get_settings.return_value = mock_settings
-
-        service = EmbeddingService()
+    def test_encode_batch_empty(self):
+        service = LocalEmbeddingService()
         embeddings, model = service.encode_batch([])
-
         assert embeddings == []
-        assert model == ""
+        assert model == "all-MiniLM-L6-v2"
 
-    @patch('app.services.embedding_service.get_settings')
-    def test_get_dimension(self, mock_get_settings):
-        mock_settings = Mock()
-        mock_settings.USE_LOCAL_EMBEDDING = True
-        mock_settings.LOCAL_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-        mock_get_settings.return_value = mock_settings
+    def test_encode_error_returns_zeros(self):
+        mock_model = Mock()
+        mock_model.encode.side_effect = Exception("Model error")
 
-        service = EmbeddingService()
+        service = LocalEmbeddingService()
+        service._model = mock_model
         
-        mock_provider = Mock()
-        mock_provider.get_dimension.return_value = 384
-        service._primary_provider = mock_provider
+        embedding, model = service.encode("test text")
         
-        dimension = service.get_dimension()
+        assert embedding == [0.0] * 384
+        assert model == "all-MiniLM-L6-v2"
 
-        assert dimension == 384
+    def test_device_auto_cuda(self):
+        mock_torch = MagicMock()
+        mock_torch.cuda.is_available.return_value = True
+        mock_torch.cuda.get_device_name.return_value = "NVIDIA RTX 3080"
+        mock_torch.backends.mps.is_available.return_value = False
 
-    @patch('app.services.embedding_service.get_settings')
-    def test_is_available(self, mock_get_settings):
-        mock_settings = Mock()
-        mock_settings.USE_LOCAL_EMBEDDING = True
-        mock_settings.LOCAL_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-        mock_get_settings.return_value = mock_settings
+        with patch.dict('sys.modules', {'torch': mock_torch}):
+            service = LocalEmbeddingService(device="auto")
+            device = service._get_device()
+            
+            assert device == "cuda"
+            mock_torch.cuda.is_available.assert_called_once()
 
-        service = EmbeddingService()
-        assert service.is_available() is True
+    def test_device_auto_mps(self):
+        mock_torch = MagicMock()
+        mock_torch.cuda.is_available.return_value = False
+        mock_torch.backends.mps.is_available.return_value = True
+
+        with patch.dict('sys.modules', {'torch': mock_torch}):
+            service = LocalEmbeddingService(device="auto")
+            device = service._get_device()
+            
+            assert device == "mps"
+
+    def test_device_auto_cpu(self):
+        mock_torch = MagicMock()
+        mock_torch.cuda.is_available.return_value = False
+        mock_torch.backends.mps.is_available.return_value = False
+
+        with patch.dict('sys.modules', {'torch': mock_torch}):
+            service = LocalEmbeddingService(device="auto")
+            device = service._get_device()
+            
+            assert device == "cpu"
+
+    def test_device_auto_no_torch(self):
+        with patch.dict('sys.modules', {'torch': None}):
+            service = LocalEmbeddingService(device="auto")
+            device = service._get_device()
+            
+            assert device == "cpu"
+
+    def test_device_explicit(self):
+        service = LocalEmbeddingService(device="cuda")
+        device = service._get_device()
+        
+        assert device == "cuda"
+
+    def test_device_property(self):
+        service = LocalEmbeddingService(device="cpu")
+        assert service.device == "cpu"
+
+    def test_get_device_method(self):
+        service = LocalEmbeddingService(device="cpu")
+        assert service.get_device() == "cpu"
+
+
+class TestEmbeddingServiceFactory:
+    def test_get_local_embedding_service(self):
+        with patch('app.services.embedding.factory.get_settings') as mock_settings:
+            mock_settings.return_value.USE_LOCAL_EMBEDDING = True
+            mock_settings.return_value.LOCAL_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+            mock_settings.return_value.EMBEDDING_DEVICE = "cpu"
+            
+            EmbeddingServiceFactory.reset()
+            service = EmbeddingServiceFactory.get_local_embedding_service()
+            
+            assert isinstance(service, LocalEmbeddingService)
+            assert service.model_name == "all-MiniLM-L6-v2"
+
+    def test_get_openai_embedding_service(self):
+        with patch('app.services.embedding.factory.get_settings') as mock_settings:
+            mock_settings.return_value.OPENAI_API_KEY = "test-key"
+            mock_settings.return_value.OPENAI_EMBEDDING_MODEL = "text-embedding-ada-002"
+            mock_settings.return_value.OPENAI_BASE_URL = ""
+            
+            EmbeddingServiceFactory.reset()
+            service = EmbeddingServiceFactory.get_openai_embedding_service()
+            
+            assert isinstance(service, OpenAIEmbeddingService)
+            assert service.model_name == "text-embedding-ada-002"
+
+    def test_get_embedding_service_local(self):
+        with patch('app.services.embedding.factory.get_settings') as mock_settings:
+            mock_settings.return_value.USE_LOCAL_EMBEDDING = True
+            mock_settings.return_value.LOCAL_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+            mock_settings.return_value.EMBEDDING_DEVICE = "cpu"
+            
+            EmbeddingServiceFactory.reset()
+            service = EmbeddingServiceFactory.get_embedding_service(provider="local")
+            
+            assert isinstance(service, LocalEmbeddingService)
+
+    def test_get_embedding_service_openai(self):
+        with patch('app.services.embedding.factory.get_settings') as mock_settings:
+            mock_settings.return_value.OPENAI_API_KEY = "test-key"
+            mock_settings.return_value.OPENAI_EMBEDDING_MODEL = "text-embedding-ada-002"
+            mock_settings.return_value.OPENAI_BASE_URL = ""
+            
+            EmbeddingServiceFactory.reset()
+            service = EmbeddingServiceFactory.get_embedding_service(provider="openai")
+            
+            assert isinstance(service, OpenAIEmbeddingService)
+
+    def test_get_embedding_service_unknown_provider(self):
+        with pytest.raises(ValueError, match="Unknown embedding provider"):
+            EmbeddingServiceFactory.get_embedding_service(provider="unknown")
+
+    def test_get_current_provider_local(self):
+        with patch('app.services.embedding.factory.get_settings') as mock_settings:
+            mock_settings.return_value.USE_LOCAL_EMBEDDING = True
+            
+            provider = EmbeddingServiceFactory.get_current_provider()
+            assert provider == "local"
+
+    def test_get_current_provider_openai(self):
+        with patch('app.services.embedding.factory.get_settings') as mock_settings:
+            mock_settings.return_value.USE_LOCAL_EMBEDDING = False
+            
+            provider = EmbeddingServiceFactory.get_current_provider()
+            assert provider == "openai"
+
+    def test_reset(self):
+        EmbeddingServiceFactory._local_instance = Mock()
+        EmbeddingServiceFactory._openai_instance = Mock()
+        
+        EmbeddingServiceFactory.reset()
+        
+        assert EmbeddingServiceFactory._local_instance is None
+        assert EmbeddingServiceFactory._openai_instance is None
+
+
+class TestConvenienceFunctions:
+    def test_get_embedding_service(self):
+        with patch('app.services.embedding.factory.get_settings') as mock_settings:
+            mock_settings.return_value.USE_LOCAL_EMBEDDING = True
+            mock_settings.return_value.LOCAL_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+            mock_settings.return_value.EMBEDDING_DEVICE = "cpu"
+            
+            EmbeddingServiceFactory.reset()
+            service = get_embedding_service()
+            
+            assert isinstance(service, LocalEmbeddingService)
+
+    def test_get_embedding_dimension(self):
+        with patch('app.services.embedding.factory.get_settings') as mock_settings:
+            mock_settings.return_value.EMBEDDING_DIM = 1024
+            
+            dim = get_embedding_dimension()
+            assert dim == 1024
