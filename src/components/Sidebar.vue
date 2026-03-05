@@ -8,17 +8,13 @@
           @click="goToHome"
           :title="isCollapsed ? 'Home' : ''"
         >
-          <svg v-if="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="#4CAF50">
-            <path d="M3 9l9-7 9 7v11h-6v-6h-6v6h-6v-11z"/>
-            <polyline points="9 22 9 12 15 12 15 22"/>
-          </svg>
-          <div v-else class="picker-trigger-content">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#4CAF50">
+          <span class="picker-trigger-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#00BCD4">
               <path d="M3 9l9-7 9 7v11h-6v-6h-6v6h-6v-11z"/>
               <polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
-            <span class="picker-label">Home</span>
-          </div>
+          </span>
+          <span class="picker-label">Home</span>
         </button>
       </div>
 
@@ -28,15 +24,12 @@
           @click="goToBookmarks"
           :title="isCollapsed ? 'Bookmarks' : ''"
         >
-          <svg v-if="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="#FFD700">
-            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-          </svg>
-          <div v-else class="picker-trigger-content">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#FFD700">
+          <span class="picker-trigger-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#FF9800">
               <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
             </svg>
-            <span class="picker-label">Bookmarks</span>
-          </div>
+          </span>
+          <span class="picker-label">Bookmarks</span>
         </button>
       </div>
 
@@ -46,19 +39,14 @@
           @click="goToDownloads"
           :title="isCollapsed ? 'Downloads' : ''"
         >
-          <svg v-if="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="#2196F3">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7,10 12,15 17,10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          <div v-else class="picker-trigger-content">
+          <span class="picker-trigger-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="#2196F3">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="7,10 12,15 17,10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            <span class="picker-label">Downloads</span>
-          </div>
+          </span>
+          <span class="picker-label">Downloads</span>
         </button>
       </div>
 
@@ -68,15 +56,12 @@
           @click="goToAssistant"
           :title="isCollapsed ? 'Assistant' : ''"
         >
-          <svg v-if="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="#00BCD4">
-            <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A1.5 1.5 0 0 0 6 14.5 1.5 1.5 0 0 0 7.5 16 1.5 1.5 0 0 0 9 14.5 1.5 1.5 0 0 0 7.5 13m9 0a1.5 1.5 0 0 0-1.5 1.5 1.5 1.5 0 0 0 1.5 1.5 1.5 1.5 0 0 0 1.5-1.5 1.5 1.5 0 0 0-1.5-1.5M12 17c-2 0-3 1-3 1v1h6v-1s-1-1-3-1z"/>
-          </svg>
-          <div v-else class="picker-trigger-content">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#00BCD4">
+          <span class="picker-trigger-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#AB47BC">
               <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A1.5 1.5 0 0 0 6 14.5 1.5 1.5 0 0 0 7.5 16 1.5 1.5 0 0 0 9 14.5 1.5 1.5 0 0 0 7.5 13m9 0a1.5 1.5 0 0 0-1.5 1.5 1.5 1.5 0 0 0 1.5 1.5 1.5 1.5 0 0 0 1.5-1.5 1.5 1.5 0 0 0-1.5-1.5M12 17c-2 0-3 1-3 1v1h6v-1s-1-1-3-1z"/>
             </svg>
-            <span class="picker-label">Assistant</span>
-          </div>
+          </span>
+          <span class="picker-label">Assistant</span>
         </button>
       </div>
 
@@ -86,15 +71,12 @@
           @click="goToSkills"
           :title="isCollapsed ? 'Skills' : ''"
         >
-          <svg v-if="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="#F59E0B">
-            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-          </svg>
-          <div v-else class="picker-trigger-content">
+          <span class="picker-trigger-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="#F59E0B">
               <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
             </svg>
-            <span class="picker-label">Skills</span>
-          </div>
+          </span>
+          <span class="picker-label">Skills</span>
         </button>
       </div>
 
@@ -104,14 +86,7 @@
           @click="goToSubAgents"
           :title="isCollapsed ? 'SubAgents' : ''"
         >
-          <svg v-if="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="#6366F1">
-            <rect x="3" y="11" width="18" height="10" rx="2"/>
-            <circle cx="12" cy="5" r="2"/>
-            <path d="M12 7v4"/>
-            <line x1="8" y1="16" x2="8" y2="16"/>
-            <line x1="16" y1="16" x2="16" y2="16"/>
-          </svg>
-          <div v-else class="picker-trigger-content">
+          <span class="picker-trigger-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="#6366F1">
               <rect x="3" y="11" width="18" height="10" rx="2"/>
               <circle cx="12" cy="5" r="2"/>
@@ -119,8 +94,8 @@
               <line x1="8" y1="16" x2="8" y2="16"/>
               <line x1="16" y1="16" x2="16" y2="16"/>
             </svg>
-            <span class="picker-label">SubAgents</span>
-          </div>
+          </span>
+          <span class="picker-label">SubAgents</span>
         </button>
       </div>
 
@@ -130,19 +105,14 @@
           @click="goToMemory"
           :title="isCollapsed ? 'Memory' : ''"
         >
-          <svg v-if="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="#E91E63">
-            <ellipse cx="12" cy="5" rx="9" ry="3"/>
-            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-          </svg>
-          <div v-else class="picker-trigger-content">
+          <span class="picker-trigger-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="#E91E63">
               <ellipse cx="12" cy="5" rx="9" ry="3"/>
               <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
               <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
             </svg>
-            <span class="picker-label">Memory</span>
-          </div>
+          </span>
+          <span class="picker-label">Memory</span>
         </button>
       </div>
 
@@ -152,21 +122,15 @@
           @click="goToDataManager"
           :title="isCollapsed ? 'Data Manager' : ''"
         >
-          <svg v-if="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="#9C27B0">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/>
-            <line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-          <div v-else class="picker-trigger-content">
+          <span class="picker-trigger-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="#9C27B0">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
               <line x1="16" y1="2" x2="16" y2="6"/>
               <line x1="8" y1="2" x2="8" y2="6"/>
               <line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
-            <span class="picker-label">Data Manager</span>
-          </div>
+          </span>
+          <span class="picker-label">Data Manager</span>
         </button>
       </div>
     </div>
@@ -177,36 +141,27 @@
         @click="goToSettings"
         :title="isCollapsed ? 'Settings' : ''"
       >
-        <svg v-if="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="#2196F3">
+        <span class="picker-trigger-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2196F3">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.83.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.83-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
-          <div v-else class="picker-trigger-content">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#2196F3">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.83.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.83-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-          <span class="picker-label">Settings</span>
-        </div>
+        </span>
+        <span class="picker-label">Settings</span>
       </button>
       <button
         class="picker-trigger-btn"
         @click="toggleTheme"
         :title="isCollapsed ? 'Toggle Theme' : ''"
       >
-        <svg v-if="isCollapsed" viewBox="0 0 24 24" fill="none" stroke="#FFC107">
-          <circle v-if="isDark" cx="12" cy="12" r="5"/>
-          <path v-if="isDark" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-          <path v-else d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-        </svg>
-        <div v-else class="picker-trigger-content">
+        <span class="picker-trigger-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="#FFC107">
             <circle v-if="isDark" cx="12" cy="12" r="5"/>
             <path v-if="isDark" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
             <path v-else d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
           </svg>
-          <span class="picker-label">{{ isDark ? 'Light' : 'Dark' }}</span>
-        </div>
+        </span>
+        <span class="picker-label">{{ isDark ? 'Light' : 'Dark' }}</span>
       </button>
     </div>
 
@@ -403,7 +358,7 @@ const closeMobileSidebar = () => {
   color: var(--text-primary);
   font-size: 0.9rem;
   cursor: pointer;
-  transition: var(--transition);
+  transition: background 0.2s, color 0.2s;
   text-align: left;
   width: 100%;
 }
@@ -413,26 +368,46 @@ const closeMobileSidebar = () => {
   color: var(--accent-color);
 }
 
-.picker-trigger-content {
+.picker-trigger-icon {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex: 1;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .picker-label {
   flex: 1;
   font-size: 0.9rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 0.2s, width 0.3s;
 }
 
 .picker-trigger-btn svg {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.picker-trigger-btn svg circle[fill] {
+  stroke: none;
 }
 
 .sidebar.collapsed .picker-trigger-btn {
   justify-content: center;
+  padding: 10px;
+}
+
+.sidebar.collapsed .picker-label {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
 }
 
 .sidebar-footer {

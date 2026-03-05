@@ -596,7 +596,7 @@ onMounted(() => {
 }
 
 .number-input {
-  flex: 1;
+  width: 100px;
   padding: 12px 16px;
   border: 2px solid var(--border-color);
   border-radius: 8px;
@@ -605,6 +605,7 @@ onMounted(() => {
   font-size: 1rem;
   font-weight: 500;
   transition: var(--transition);
+  text-align: center;
 }
 
 .number-input:focus {

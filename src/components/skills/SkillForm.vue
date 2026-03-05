@@ -664,7 +664,6 @@ watch(() => props.skill, () => {
 }
 
 .form-input,
-.form-select,
 .form-textarea {
   width: 100%;
   padding: 10px 12px;
@@ -674,6 +673,22 @@ watch(() => props.skill, () => {
   color: var(--text-primary);
   font-size: 0.9rem;
   transition: border-color 0.2s;
+}
+
+.form-select {
+  width: 100%;
+  padding: 10px 32px 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
 }
 
 .form-input:focus,
