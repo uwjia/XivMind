@@ -59,6 +59,7 @@
 ### 后端
 - **FastAPI** - 现代 Python Web 框架
 - **SQLite** - 轻量级数据库（默认，无需 Docker）
+- **LanceDB** - 嵌入式向量数据库（推荐用于需要向量搜索的开发场景）
 - **Milvus** - 向量数据库（可选，用于生产环境）
 - **WebSocket** - 实时下载进度更新
 
@@ -66,10 +67,16 @@
 
 ### 环境要求
 
-#### SQLite 模式（推荐用于开发）
+#### SQLite 模式（基础开发）
 - Node.js 18+
 - Python 3.10+
 - 无需 Docker
+
+#### LanceDB 模式（带向量搜索的开发）
+- Node.js 18+
+- Python 3.10+
+- 无需 Docker
+- 无需服务器即可支持向量搜索
 
 #### Milvus 模式（推荐用于生产）
 - Node.js 18+
@@ -116,7 +123,47 @@ npm install
 npm run dev
 ```
 
-### 方式二：Milvus 模式（生产环境）
+### 方式二：LanceDB 模式（无需 Docker，支持向量搜索）
+
+LanceDB 模式提供向量搜索能力，无需单独服务器。非常适合需要 AI 功能的开发场景。
+
+**1. 配置后端**
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+编辑 `.env` 文件：
+
+```env
+DATABASE_TYPE=lancedb
+LANCEDB_PATH=./data/lancedb
+DOWNLOAD_DIR=./downloads
+```
+
+**2. 启动后端服务**
+
+**Windows:**
+```cmd
+start.bat install         # 仅首次运行
+start.bat dev             # 开发模式
+```
+
+**Linux/Mac:**
+```bash
+./start.sh install        # 仅首次运行
+./start.sh dev            # 开发模式
+```
+
+**3. 启动前端**
+
+```bash
+npm install
+npm run dev
+```
+
+### 方式三：Milvus 模式（生产环境）
 
 Milvus 模式提供更好的可扩展性和向量搜索能力。
 
@@ -225,13 +272,14 @@ ollama pull qwen2
 
 ## 数据库对比
 
-| 特性 | SQLite | Milvus |
-|------|--------|--------|
-| 安装 | 无需安装 | 需要 Docker |
-| 内存 | 极少 | ~1-2GB |
-| 向量搜索 | 不支持 | 支持 |
-| 可扩展性 | 单机 | 分布式 |
-| 使用场景 | 开发、独立使用 | 生产环境 |
+| 特性 | SQLite | LanceDB | Milvus |
+|------|--------|---------|--------|
+| 安装 | 无需安装 | 无需安装 | 需要 Docker |
+| 内存 | 极少 | 极少 | ~1-2GB |
+| 向量搜索 | 不支持 | 支持 | 支持 |
+| 可扩展性 | 单机 | 单机 | 分布式 |
+| 需要服务器 | 否 | 否 | 是 |
+| 使用场景 | 基础开发 | 带 AI 功能的开发 | 生产环境 |
 
 ## 服务地址
 

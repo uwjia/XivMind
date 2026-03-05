@@ -59,6 +59,7 @@ A modern arXiv paper management application with bookmark, download, and AI assi
 ### Backend
 - **FastAPI** - Modern Python web framework
 - **SQLite** - Lightweight database (default, no Docker required)
+- **LanceDB** - Embedded vector database (recommended for development with vector search)
 - **Milvus** - Vector database (optional, for production)
 - **WebSocket** - Real-time download progress updates
 
@@ -66,10 +67,16 @@ A modern arXiv paper management application with bookmark, download, and AI assi
 
 ### Prerequisites
 
-#### SQLite Mode (Recommended for Development)
+#### SQLite Mode (Basic Development)
 - Node.js 18+
 - Python 3.10+
 - No Docker required
+
+#### LanceDB Mode (Development with Vector Search)
+- Node.js 18+
+- Python 3.10+
+- No Docker required
+- Supports vector search without server setup
 
 #### Milvus Mode (Recommended for Production)
 - Node.js 18+
@@ -116,7 +123,47 @@ npm install
 npm run dev
 ```
 
-### Option 2: Milvus Mode (Production)
+### Option 2: LanceDB Mode (Vector Search without Docker)
+
+LanceDB mode provides vector search capabilities without requiring a separate server. Perfect for development with AI features.
+
+**1. Configure Backend**
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+Edit `.env` file:
+
+```env
+DATABASE_TYPE=lancedb
+LANCEDB_PATH=./data/lancedb
+DOWNLOAD_DIR=./downloads
+```
+
+**2. Start Backend Service**
+
+**Windows:**
+```cmd
+start.bat install         # First time only
+start.bat dev             # Development mode
+```
+
+**Linux/Mac:**
+```bash
+./start.sh install        # First time only
+./start.sh dev            # Development mode
+```
+
+**3. Start Frontend**
+
+```bash
+npm install
+npm run dev
+```
+
+### Option 3: Milvus Mode (Production)
 
 Milvus mode provides better scalability and vector search capabilities.
 
@@ -225,13 +272,14 @@ ollama pull qwen2
 
 ## Database Comparison
 
-| Feature | SQLite | Milvus |
-|---------|--------|--------|
-| Setup | No setup required | Requires Docker |
-| Memory | Minimal | ~1-2GB |
-| Vector Search | Not supported | Supported |
-| Scalability | Single machine | Distributed |
-| Use Case | Development, standalone | Production |
+| Feature | SQLite | LanceDB | Milvus |
+|---------|--------|---------|--------|
+| Setup | No setup required | No setup required | Requires Docker |
+| Memory | Minimal | Minimal | ~1-2GB |
+| Vector Search | Not supported | Supported | Supported |
+| Scalability | Single machine | Single machine | Distributed |
+| Server Required | No | No | Yes |
+| Use Case | Basic development | Development with AI features | Production |
 
 ## Service URLs
 
