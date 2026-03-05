@@ -11,6 +11,7 @@ class TestMilvusPaperEmbeddingRepository:
         collection = Mock()
         collection.load = Mock()
         collection.insert = Mock()
+        collection.upsert = Mock()
         collection.flush = Mock()
         collection.query = Mock(return_value=[])
         collection.search = Mock(return_value=[])
@@ -51,7 +52,8 @@ class TestMilvusPaperEmbeddingRepository:
         result = repo.insert_embeddings_batch(embeddings_data)
 
         assert result == 2
-        mock_collection.insert.assert_called_once()
+        mock_collection.upsert.assert_called_once()
+        mock_collection.flush.assert_called()
 
     def test_insert_embeddings_batch_skip_existing(self, repo, mock_collection):
         mock_collection.query.return_value = [

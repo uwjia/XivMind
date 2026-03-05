@@ -30,6 +30,7 @@ def mock_settings():
     mock.EMBEDDING_DEVICE = "auto"
     mock.EMBEDDING_BATCH_SIZE = 32
     mock.HF_ENDPOINT = "https://hf-mirror.com"
+    mock.LANCEDB_PATH = "./data/test_lancedb"
     return mock
 
 
