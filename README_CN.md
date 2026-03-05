@@ -1,3 +1,13 @@
+<div align="center">
+<a href="https://github.com/uwjia/XivMind/">
+<img src="docs/src/assets/logo-with-text.svg" width="520" alt="XivMind logo">
+</a>
+</div>
+
+<div align="center" style="margin-top:20px;margin-bottom:20px;">
+<img src="docs/src/assets/home.png" width="1200"/>
+</div>
+
 # XivMind
 
 由 AI 构建，由人类驱动。arXiv 的智慧大脑。
