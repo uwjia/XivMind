@@ -564,3 +564,88 @@ class TestLanceDBDownloadRepositorySafeStr:
     def test_safe_str_with_max_len(self):
         result = LanceDBDownloadRepository._safe_str("test string", max_len=4)
         assert result == "test"
+
+
+class TestLanceDBDownloadRepositoryCountCompleted:
+    @pytest.fixture
+    def repo(self):
+        return LanceDBDownloadRepository()
+
+    def test_count_completed_with_completed_tasks(self, repo):
+        mock_table = Mock()
+        df = pd.DataFrame([
+            {"status": "completed"},
+            {"status": "completed"},
+            {"status": "completed"},
+        ])
+        
+        mock_table_result = Mock()
+        mock_table_result.to_pandas.return_value = df
+        
+        mock_scanner = Mock()
+        mock_scanner.to_table.return_value = mock_table_result
+        
+        mock_lance_ds = Mock()
+        mock_lance_ds.scanner.return_value = mock_scanner
+        mock_table.to_lance.return_value = mock_lance_ds
+        
+        with patch.object(repo, '_get_table', return_value=mock_table):
+            count = repo.count_completed()
+            
+            assert count == 3
+
+    def test_count_completed_with_no_completed_tasks(self, repo):
+        mock_table = Mock()
+        df = pd.DataFrame(columns=["status"])
+        
+        mock_table_result = Mock()
+        mock_table_result.to_pandas.return_value = df
+        
+        mock_scanner = Mock()
+        mock_scanner.to_table.return_value = mock_table_result
+        
+        mock_lance_ds = Mock()
+        mock_lance_ds.scanner.return_value = mock_scanner
+        mock_table.to_lance.return_value = mock_lance_ds
+        
+        with patch.object(repo, '_get_table', return_value=mock_table):
+            count = repo.count_completed()
+            
+            assert count == 0
+
+    def test_count_completed_with_mixed_statuses(self, repo):
+        mock_table = Mock()
+        df = pd.DataFrame([
+            {"status": "completed"},
+            {"status": "completed"},
+            {"status": "completed"},
+        ])
+        
+        mock_table_result = Mock()
+        mock_table_result.to_pandas.return_value = df
+        
+        mock_scanner = Mock()
+        mock_scanner.to_table.return_value = mock_table_result
+        
+        mock_lance_ds = Mock()
+        mock_lance_ds.scanner.return_value = mock_scanner
+        mock_table.to_lance.return_value = mock_lance_ds
+        
+        with patch.object(repo, '_get_table', return_value=mock_table):
+            count = repo.count_completed()
+            
+            assert count == 3
+
+    def test_count_completed_fallback_to_pandas(self, repo):
+        mock_table = Mock()
+        df = pd.DataFrame([
+            {"status": "completed"},
+            {"status": "completed"},
+        ])
+        mock_table.to_pandas = Mock(return_value=df)
+        mock_table.to_lance = Mock(side_effect=Exception("Scanner failed"))
+        
+        with patch.object(repo, '_get_table', return_value=mock_table):
+            count = repo.count_completed()
+            
+            assert count == 2

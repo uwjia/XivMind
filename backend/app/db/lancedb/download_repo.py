@@ -135,6 +135,22 @@ class LanceDBDownloadRepository(DownloadRepository):
             results = [self._entity_to_response(row) for _, row in df_paginated.iterrows()]
             return results, total
     
+    def count_completed(self) -> int:
+        table = self._get_table()
+        
+        try:
+            lance_ds = table.to_lance()
+            scanner = lance_ds.scanner(
+                columns=["status"],
+                filter="status = 'completed'",
+            )
+            df = scanner.to_table().to_pandas()
+            return len(df)
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for count_completed, falling back to pandas: {e}")
+            df = table.to_pandas()
+            return len(df[df["status"] == "completed"])
+    
     def exists(self, id: str) -> bool:
         table = self._get_table()
         results = table.search().where(f"id = '{id}'").limit(1).to_pandas()

@@ -221,3 +221,9 @@ class SQLiteDownloadRepository(DownloadRepository):
             ''', (now,))
             conn.commit()
             return cursor.rowcount
+
+    def count_completed(self) -> int:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM downloads WHERE status = ?', ('completed',))
+            return cursor.fetchone()[0]

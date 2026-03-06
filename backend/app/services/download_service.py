@@ -13,8 +13,10 @@ class DownloadService:
     def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
         return self._repository.get(task_id)
 
-    def get_all_tasks(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
-        return self._repository.get_all(limit, offset)
+    def get_all_tasks(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int, int]:
+        tasks, total = self._repository.get_all(limit, offset)
+        completed_count = self._repository.count_completed()
+        return tasks, total, completed_count
 
     def delete_task(self, task_id: str) -> bool:
         return self._repository.remove(task_id)
@@ -40,6 +42,9 @@ class DownloadService:
 
     def reset_incomplete_tasks(self) -> int:
         return self._repository.reset_incomplete_tasks()
+
+    def get_completed_count(self) -> int:
+        return self._repository.count_completed()
 
 
 download_service = DownloadService()

@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useConfigStore } from '@/stores/config-store'
 import { ref } from 'vue'
 import { apiService, type DownloadTask, type DownloadTaskData } from '@/services/api'
 
@@ -96,10 +97,13 @@ const downloadWs = new DownloadWebSocket()
 
 export const useDownloadStore = defineStore('download', () => {
   const tasks = ref<DownloadTask[]>([])
+  const total = ref(0)
+  const completedCount = ref(0)
   const loading = ref(false)
   const error = ref<string | null>(null)
   const wsConnected = ref(false)
   const initialized = ref(false)
+  const configStore = useConfigStore()
 
   const setLoading = (value: boolean) => {
     loading.value = value
@@ -114,7 +118,7 @@ export const useDownloadStore = defineStore('download', () => {
     
     initialized.value = true
     await connectWebSocket()
-    await fetchTasks()
+    await fetchTasks(configStore.maxResults, 0)
   }
 
   const connectWebSocket = async () => {
@@ -126,8 +130,13 @@ export const useDownloadStore = defineStore('download', () => {
         downloadWs.onProgress(async (taskId, progress, status) => {
           const task = tasks.value.find(t => t.id === taskId)
           if (task) {
+            const previousStatus = task.status
             task.progress = progress
             task.status = status as 'pending' | 'downloading' | 'completed' | 'failed'
+            
+            if (status === 'completed' && previousStatus !== 'completed') {
+              completedCount.value += 1
+            }
             
             if (status === 'completed' || status === 'failed') {
               try {
@@ -184,6 +193,8 @@ export const useDownloadStore = defineStore('download', () => {
       setError(null)
       const result = await apiService.getDownloadTasks(limit, offset)
       tasks.value = result.items
+      total.value = result.total
+      completedCount.value = result.completed_count
       return result
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
@@ -211,8 +222,15 @@ export const useDownloadStore = defineStore('download', () => {
     try {
       setLoading(true)
       setError(null)
+      const task = tasks.value.find(t => t.id === taskId)
       await apiService.deleteDownloadTask(taskId)
-      tasks.value = tasks.value.filter(t => t.id !== taskId)
+      const taskIndex = tasks.value.findIndex(t => t.id === taskId)
+      if (taskIndex >= 0) {
+        tasks.value.splice(taskIndex, 1)
+        if (task && task.status === 'completed') {
+          completedCount.value = Math.max(0, completedCount.value - 1)
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
       throw err
@@ -279,6 +297,8 @@ export const useDownloadStore = defineStore('download', () => {
 
   return {
     tasks,
+    total,
+    completedCount,
     loading,
     error,
     wsConnected,

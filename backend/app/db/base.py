@@ -86,6 +86,11 @@ class DownloadRepository(BaseRepository):
         """Reset all incomplete tasks to failed status."""
         pass
 
+    @abstractmethod
+    def count_completed(self) -> int:
+        """Count completed download tasks."""
+        pass
+
 
 class PaperRepository(BaseRepository):
     """Abstract repository for papers."""

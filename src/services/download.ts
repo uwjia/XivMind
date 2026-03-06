@@ -24,6 +24,7 @@ export interface DownloadTask {
 
 export interface DownloadTaskListResponse {
   total: number
+  completed_count: number
   items: DownloadTask[]
 }
 

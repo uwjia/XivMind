@@ -69,7 +69,7 @@ async def websocket_endpoint(websocket: WebSocket):
 @router.post("", response_model=DownloadTaskResponse)
 async def create_download_task(task: DownloadTaskCreate):
     try:
-        existing_tasks, _ = download_service.get_all_tasks(limit=1000)
+        existing_tasks, _, _ = download_service.get_all_tasks(limit=1000)
         for existing in existing_tasks:
             if existing["paper_id"] == task.paper_id and existing["status"] in [
                 DownloadStatus.PENDING.value,
@@ -97,8 +97,8 @@ async def get_download_tasks(
     offset: int = Query(default=0, ge=0),
 ):
     try:
-        items, total = download_service.get_all_tasks(limit=limit, offset=offset)
-        return DownloadTaskListResponse(total=total, items=items)
+        items, total, completed_count = download_service.get_all_tasks(limit=limit, offset=offset)
+        return DownloadTaskListResponse(total=total, completed_count=completed_count, items=items)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

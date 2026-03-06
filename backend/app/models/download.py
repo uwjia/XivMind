@@ -35,4 +35,5 @@ class DownloadTaskResponse(BaseModel):
 
 class DownloadTaskListResponse(BaseModel):
     total: int
+    completed_count: int
     items: List[DownloadTaskResponse]

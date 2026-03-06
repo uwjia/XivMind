@@ -358,3 +358,53 @@ class TestMilvusDownloadRepositoryEntityToResponse:
         assert result["id"] == "test-id"
         assert result["status"] == "pending"
         assert result["progress"] == 0
+
+
+class TestMilvusDownloadRepositoryCountCompleted:
+    @pytest.fixture
+    def repo(self):
+        return MilvusDownloadRepository()
+
+    def test_count_completed_with_completed_tasks(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=[
+            {"id": "1"},
+            {"id": "2"},
+            {"id": "3"},
+        ])
+        
+        with patch.object(repo, '_get_collection', return_value=mock_collection):
+            with patch('app.db.milvus.download_repo.settings') as mock_settings:
+                mock_settings.MILVUS_QUERY_BATCH_SIZE = 1000
+                count = repo.count_completed()
+                
+                assert count == 3
+
+    def test_count_completed_with_no_completed_tasks(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=[])
+        
+        with patch.object(repo, '_get_collection', return_value=mock_collection):
+            with patch('app.db.milvus.download_repo.settings') as mock_settings:
+                mock_settings.MILVUS_QUERY_BATCH_SIZE = 1000
+                count = repo.count_completed()
+                
+                assert count == 0
+
+    def test_count_completed_query_parameters(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=[{"id": "1"}])
+        
+        with patch.object(repo, '_get_collection', return_value=mock_collection):
+            with patch('app.db.milvus.download_repo.settings') as mock_settings:
+                mock_settings.MILVUS_QUERY_BATCH_SIZE = 1000
+                repo.count_completed()
+                
+                mock_collection.query.assert_called_once_with(
+                    expr='status == "completed"',
+                    output_fields=["id"],
+                    limit=1000
+                )

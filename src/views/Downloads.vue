@@ -1,7 +1,7 @@
 <template>
   <div class="downloads-page">
     <div class="page-header">
-      <h1>Download Manager</h1>
+      <h1>Download Manager <span v-if="completedCount > 0" class="total-count">(total {{ completedCount }} completed)</span></h1>
       <div class="header-actions">
         <span v-if="wsConnected" class="ws-status connected">
           <span class="ws-dot"></span>
@@ -37,92 +37,132 @@
       <span>Click the download button on any paper to start downloading!</span>
     </div>
 
-    <div v-else class="downloads-list">
-      <div v-for="task in tasks" :key="task.id" class="download-card" :class="task.status">
-        <div class="download-header">
-          <h3 class="download-title">{{ task.title }}</h3>
-          <span class="status-badge" :class="task.status">
-            {{ getStatusLabel(task.status) }}
-          </span>
-        </div>
+    <template v-else>
+      <div class="downloads-list">
+        <div v-for="task in tasks" :key="task.id" class="download-card" :class="task.status">
+          <div class="download-header">
+            <h3 class="download-title" @click="goToDetail(task.paper_id)">{{ task.title }}</h3>
+            <span class="status-badge" :class="task.status">
+              {{ getDownloadStatusLabel(task.status) }}
+            </span>
+          </div>
 
-        <div class="download-info">
-          <span class="paper-id">{{ task.paper_id }}</span>
-          <span class="download-time">{{ formatDate(task.created_at) }}</span>
-        </div>
+          <div class="download-info">
+            <span class="paper-id">{{ task.paper_id }}</span>
+            <span class="download-time">{{ formatDateTime(task.created_at) }}</span>
+          </div>
 
-        <div v-if="task.status === 'downloading'" class="progress-bar">
-          <div class="progress-fill" :style="{ width: `${task.progress}%` }"></div>
-          <span class="progress-text">{{ task.progress }}%</span>
-        </div>
+          <div v-if="task.status === 'downloading'" class="progress-bar">
+            <div class="progress-fill" :style="{ width: `${task.progress}%` }"></div>
+            <span class="progress-text">{{ task.progress }}%</span>
+          </div>
 
-        <div v-if="task.status === 'failed' && task.error_message" class="error-message">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#F44336">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="15" y1="9" x2="9" y2="15"/>
-            <line x1="9" y1="9" x2="15" y2="15"/>
-          </svg>
-          {{ task.error_message }}
-        </div>
-
-        <div v-if="task.status === 'completed' && task.file_path" class="file-path">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#00BCD4">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
-          </svg>
-          Saved to: {{ task.file_path }}
-          <span v-if="task.file_size" class="file-size">({{ formatFileSize(task.file_size) }})</span>
-        </div>
-
-        <div class="download-actions">
-          <button
-            v-if="task.status === 'downloading'"
-            @click="cancelTask(task.id)"
-            class="action-btn cancel"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <div v-if="task.status === 'failed' && task.error_message" class="error-message">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#F44336">
               <circle cx="12" cy="12" r="10"/>
               <line x1="15" y1="9" x2="9" y2="15"/>
               <line x1="9" y1="9" x2="15" y2="15"/>
             </svg>
-            Cancel
-          </button>
-          <button
-            v-if="task.status === 'failed'"
-            @click="retryTask(task.id)"
-            class="action-btn retry"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M23 4v6h-6"/>
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            {{ task.error_message }}
+          </div>
+
+          <div v-if="task.status === 'completed' && task.file_path" class="file-path">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#00BCD4">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
             </svg>
-            Retry
-          </button>
-          <button
-            v-if="task.status === 'completed' && task.file_path"
-            @click="openFile(task.id)"
-            class="action-btn open"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-              <polyline points="15 3 21 3 21 9"/>
-              <line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
-            Open File
-          </button>
-          <button
-            @click="deleteTask(task.id)"
-            class="action-btn delete"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            </svg>
-            Delete
-          </button>
+            Saved to: {{ task.file_path }}
+            <span v-if="task.file_size" class="file-size">({{ formatFileSize(task.file_size) }})</span>
+          </div>
+
+          <div class="download-actions">
+            <button
+              v-if="task.status === 'downloading'"
+              @click="cancelTask(task.id)"
+              class="action-btn cancel"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+              Cancel
+            </button>
+            <button
+              v-if="task.status === 'failed'"
+              @click="retryTask(task.id)"
+              class="action-btn retry"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M23 4v6h-6"/>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+              Retry
+            </button>
+            <button
+              v-if="task.status === 'completed' && task.file_path"
+              @click="openFile(task.id)"
+              class="action-btn open"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              Open File
+            </button>
+            <button
+              @click="deleteTask(task.id)"
+              class="action-btn delete"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+              Delete
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      <div v-if="!loading && tasks.length > 0 && totalPages > 1" class="pagination">
+        <button
+          class="pagination-btn"
+          @click="goToFirstPage"
+          :disabled="currentPage === 0"
+        >
+          First
+        </button>
+        <button
+          class="pagination-btn"
+          @click="goToPreviousPage"
+          :disabled="currentPage === 0"
+        >
+          Previous
+        </button>
+        <span class="pagination-info">
+          Page {{ currentPage + 1 }} of {{ totalPages }}
+        </span>
+        <button
+          class="pagination-btn"
+          @click="goToNextPage"
+          :disabled="currentPage >= totalPages - 1"
+        >
+          Next
+        </button>
+        <div class="pagination-jump">
+          <input
+            type="number"
+            v-model="jumpPageInput"
+            :placeholder="`1-${totalPages}`"
+            min="1"
+            :max="totalPages"
+            @keyup.enter="handleGoToPage"
+          />
+          <button class="pagination-btn" @click="handleGoToPage">Go</button>
+        </div>
+      </div>
+    </template>
 
     <ConfirmDialog
       :visible="showDeleteConfirm"
@@ -138,136 +178,42 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useDownloadStore } from '@/stores/download-store'
-import { useToastStore } from '@/stores/toast-store'
-import { apiService } from '@/services/api'
+import { onMounted } from 'vue'
+import { useDownloadActions } from '@/composables/useDownloadActions'
+import { useDateFormatter } from '@/composables/useDateFormatter'
+import { formatFileSize, getDownloadStatusLabel } from '@/utils/format'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
-const downloadStore = useDownloadStore()
-const toastStore = useToastStore()
+const {
+  tasks,
+  completedCount,
+  loading,
+  wsConnected,
+  currentPage,
+  totalPages,
+  jumpPageInput,
+  showDeleteConfirm,
+  deleteConfirmMessage,
+  fetchTasks,
+  refreshTasks,
+  retryTask,
+  cancelTask,
+  deleteTask,
+  confirmDelete,
+  cancelDelete,
+  openFile,
+  goToDetail,
+  goToFirstPage,
+  goToPreviousPage,
+  goToNextPage,
+  handleGoToPage
+} = useDownloadActions()
 
-const tasks = computed(() => downloadStore.tasks)
-const loading = computed(() => downloadStore.loading)
-const wsConnected = computed(() => downloadStore.wsConnected)
+const { formatDateTime } = useDateFormatter()
 
-const showDeleteConfirm = ref(false)
-const taskToDelete = ref<string | null>(null)
-const taskToDeleteTitle = ref<string>('')
-
-const deleteConfirmMessage = computed(() => {
-  if (taskToDeleteTitle.value) {
-    return `Are you sure you want to delete the download task for "${taskToDeleteTitle.value}"? This action cannot be undone.`
-  }
-  return 'Are you sure you want to delete this download task? This action cannot be undone.'
-})
-
-const fetchTasks = async () => {
-  try {
-    await downloadStore.fetchTasks()
-  } catch (error) {
-    console.error('Failed to fetch download tasks:', error)
-    toastStore.showError('Failed to load download tasks')
-  }
-}
-
-const refreshTasks = () => {
+onMounted(() => {
   fetchTasks()
-}
-
-const retryTask = async (taskId: string) => {
-  try {
-    await downloadStore.retryTask(taskId)
-    toastStore.showSuccess('Download retry started')
-  } catch (error) {
-    console.error('Failed to retry download:', error)
-    toastStore.showError('Failed to retry download')
-  }
-}
-
-const cancelTask = async (taskId: string) => {
-  try {
-    await downloadStore.cancelTask(taskId)
-    toastStore.showSuccess('Download cancelled')
-  } catch (error) {
-    console.error('Failed to cancel download:', error)
-    toastStore.showError('Failed to cancel download')
-  }
-}
-
-const deleteTask = (taskId: string) => {
-  const task = tasks.value.find(t => t.id === taskId)
-  if (task) {
-    taskToDelete.value = taskId
-    taskToDeleteTitle.value = task.title
-    showDeleteConfirm.value = true
-  }
-}
-
-const confirmDelete = async () => {
-  if (!taskToDelete.value) return
-  
-  try {
-    await downloadStore.deleteTask(taskToDelete.value)
-    toastStore.showSuccess('Download task deleted')
-  } catch (error) {
-    console.error('Failed to delete task:', error)
-    toastStore.showError('Failed to delete task')
-  } finally {
-    showDeleteConfirm.value = false
-    taskToDelete.value = null
-    taskToDeleteTitle.value = ''
-  }
-}
-
-const cancelDelete = () => {
-  showDeleteConfirm.value = false
-  taskToDelete.value = null
-  taskToDeleteTitle.value = ''
-}
-
-const openFile = async (taskId: string) => {
-  try {
-    await apiService.openDownloadFile(taskId)
-  } catch (error) {
-    console.error('Failed to open file:', error)
-    toastStore.showError('Failed to open file')
-  }
-}
-
-const getStatusLabel = (status: string) => {
-  const labels: Record<string, string> = {
-    pending: 'Pending',
-    downloading: 'Downloading',
-    completed: 'Completed',
-    failed: 'Failed'
-  }
-  return labels[status] || status
-}
-
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return 'Unknown'
-  try {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  } catch {
-    return dateStr
-  }
-}
-
-const formatFileSize = (bytes: number) => {
-  if (!bytes || bytes === 0) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`
-}
-
+})
 </script>
 
 <style scoped>
@@ -289,6 +235,13 @@ const formatFileSize = (bytes: number) => {
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
+}
+
+.total-count {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 8px;
 }
 
 .header-actions {
@@ -444,6 +397,12 @@ const formatFileSize = (bytes: number) => {
   color: var(--text-primary);
   margin: 0;
   flex: 1;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.download-title:hover {
+  color: var(--accent-color);
 }
 
 .status-badge {
@@ -623,5 +582,72 @@ const formatFileSize = (bytes: number) => {
   .action-btn {
     justify-content: center;
   }
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.pagination-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  min-width: 120px;
+  text-align: center;
+}
+
+.pagination-jump {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-jump input {
+  width: 60px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.pagination-jump input::-webkit-outer-spin-button,
+.pagination-jump input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.pagination-jump input[type=number] {
+  -moz-appearance: textfield;
 }
 </style>

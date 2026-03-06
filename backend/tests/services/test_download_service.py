@@ -64,7 +64,7 @@ def sample_task_response():
 
 class TestCreateDownloadTask:
     def test_create_task_success(self, client, mock_download_service, mock_download_manager, sample_task_data, sample_task_response):
-        mock_download_service.get_all_tasks.return_value = ([], 0)
+        mock_download_service.get_all_tasks.return_value = ([], 0, 0)
         mock_download_service.create_task.return_value = sample_task_response
         mock_download_manager.start_download = AsyncMock()
         mock_download_manager.add_progress_callback = Mock()
@@ -88,7 +88,7 @@ class TestCreateDownloadTask:
     def test_create_task_returns_existing_pending_task(self, client, mock_download_service, mock_download_manager, sample_task_data, sample_task_response):
         existing_task = sample_task_response.copy()
         existing_task["status"] = DownloadStatus.PENDING.value
-        mock_download_service.get_all_tasks.return_value = ([existing_task], 1)
+        mock_download_service.get_all_tasks.return_value = ([existing_task], 1, 0)
         
         response = client.post("/downloads", json=sample_task_data)
         
@@ -99,7 +99,7 @@ class TestCreateDownloadTask:
     def test_create_task_returns_existing_downloading_task(self, client, mock_download_service, mock_download_manager, sample_task_data, sample_task_response):
         existing_task = sample_task_response.copy()
         existing_task["status"] = DownloadStatus.DOWNLOADING.value
-        mock_download_service.get_all_tasks.return_value = ([existing_task], 1)
+        mock_download_service.get_all_tasks.return_value = ([existing_task], 1, 0)
         
         response = client.post("/downloads", json=sample_task_data)
         
@@ -108,7 +108,7 @@ class TestCreateDownloadTask:
         mock_download_service.create_task.assert_not_called()
 
     def test_create_task_service_error(self, client, mock_download_service, mock_download_manager, sample_task_data):
-        mock_download_service.get_all_tasks.return_value = ([], 0)
+        mock_download_service.get_all_tasks.return_value = ([], 0, 0)
         mock_download_service.create_task.side_effect = Exception("Database error")
         
         response = client.post("/downloads", json=sample_task_data)
@@ -119,17 +119,18 @@ class TestCreateDownloadTask:
 
 class TestGetDownloadTasks:
     def test_get_tasks_default_params(self, client, mock_download_service, sample_task_response):
-        mock_download_service.get_all_tasks.return_value = ([sample_task_response], 1)
+        mock_download_service.get_all_tasks.return_value = ([sample_task_response], 1, 1)
         
         response = client.get("/downloads")
         
         assert response.status_code == 200
         assert response.json()["total"] == 1
+        assert response.json()["completed_count"] == 1
         assert len(response.json()["items"]) == 1
         mock_download_service.get_all_tasks.assert_called_once_with(limit=100, offset=0)
 
     def test_get_tasks_with_pagination(self, client, mock_download_service, sample_task_response):
-        mock_download_service.get_all_tasks.return_value = ([sample_task_response], 10)
+        mock_download_service.get_all_tasks.return_value = ([sample_task_response], 10, 5)
         
         response = client.get("/downloads?limit=10&offset=5")
         
@@ -137,12 +138,13 @@ class TestGetDownloadTasks:
         mock_download_service.get_all_tasks.assert_called_once_with(limit=10, offset=5)
 
     def test_get_tasks_empty_list(self, client, mock_download_service):
-        mock_download_service.get_all_tasks.return_value = ([], 0)
+        mock_download_service.get_all_tasks.return_value = ([], 0, 0)
         
         response = client.get("/downloads")
         
         assert response.status_code == 200
         assert response.json()["total"] == 0
+        assert response.json()["completed_count"] == 0
         assert response.json()["items"] == []
 
     def test_get_tasks_invalid_limit(self, client, mock_download_service):
@@ -409,6 +411,7 @@ class TestDownloadSorting:
         
         mock_download_service.get_all_tasks.return_value = (
             [task2, task3, task1],
+            3,
             3
         )
         

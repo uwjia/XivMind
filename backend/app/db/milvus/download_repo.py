@@ -225,3 +225,13 @@ class MilvusDownloadRepository(DownloadRepository):
             count += 1
         
         return count
+
+    def count_completed(self) -> int:
+        collection = self._get_collection()
+        collection.load()
+        results = collection.query(
+            expr='status == "completed"',
+            output_fields=["id"],
+            limit=settings.MILVUS_QUERY_BATCH_SIZE,
+        )
+        return len(results)

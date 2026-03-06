@@ -232,7 +232,7 @@ class DownloadManager:
         return len(self._running_tasks)
     
     async def load_pending_tasks(self):
-        tasks, _ = download_service.get_all_tasks(limit=1000)
+        tasks, _, _ = download_service.get_all_tasks(limit=1000)
         for task_data in tasks:
             if task_data["status"] in [DownloadStatus.PENDING.value, DownloadStatus.DOWNLOADING.value]:
                 task = DownloadTask(
