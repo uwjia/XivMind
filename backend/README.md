@@ -147,6 +147,87 @@ uvicorn app.main:app --reload --port 8000
 
 ## Service Components
 
+### Script Commands
+
+#### start.bat / start.sh
+
+| Command | Description |
+|---------|-------------|
+| `start` | Start backend service (background) |
+| `stop` | Stop backend service |
+| `install` | Create virtual environment and install dependencies (prompts before removing existing venv) |
+| `update` | Update dependencies without recreating virtual environment |
+| `dev` | Start in development mode (foreground with auto-reload) |
+
+**Windows:**
+```cmd
+start.bat install    # First time setup
+start.bat update     # Update dependencies
+start.bat dev        # Development mode
+start.bat start      # Background service
+start.bat stop       # Stop service
+```
+
+**Linux/Mac:**
+```bash
+./start.sh install   # First time setup
+./start.sh update    # Update dependencies
+./start.sh dev       # Development mode
+./start.sh start     # Background service
+./start.sh stop      # Stop service
+./start.sh logs      # View logs
+./start.sh status    # Check service status
+```
+
+#### GPU Support (Local PyTorch Installation)
+
+If you have downloaded PyTorch wheel files for GPU support, use the local installation script:
+
+**Prerequisites:**
+1. Download PyTorch wheels from: https://download.pytorch.org/whl/cu128/
+   - `torch-2.8.0+cu128-cp312-cp312-win_amd64.whl`
+   - `torchvision-0.23.0+cu128-cp312-cp312-win_amd64.whl`
+2. Run `start.bat install` first to create the virtual environment
+
+**Windows:**
+```cmd
+install_local_pytorch.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x install_local_pytorch.sh
+./install_local_pytorch.sh
+```
+
+**Verify GPU support:**
+```bash
+python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
+```
+
+#### GPU Support (Online Installation)
+
+Alternatively, you can install GPU dependencies online using `requirements-gpu.txt`:
+
+**Windows:**
+```cmd
+start.bat install
+venv\Scripts\activate
+pip install -r requirements-gpu.txt
+```
+
+**Linux/Mac:**
+```bash
+./start.sh install
+source venv/bin/activate
+pip install -r requirements-gpu.txt
+```
+
+**Verify GPU support:**
+```bash
+python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
+```
+
 ### SQLite Mode
 
 | Service     | Port  | Description           |

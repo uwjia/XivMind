@@ -14,6 +14,7 @@ if "%1"=="" goto start
 if "%1"=="start" goto start
 if "%1"=="stop" goto stop
 if "%1"=="install" goto install
+if "%1"=="update" goto update
 if "%1"=="dev" goto dev
 goto usage
 
@@ -34,6 +35,13 @@ echo Installing dependencies...
 
 REM Remove old venv if exists
 if exist "venv" (
+    echo.
+    echo WARNING: This will remove the existing virtual environment!
+    set /p CONFIRM="Are you sure you want to continue? (y/N): "
+    if /i "!CONFIRM!" neq "y" (
+        echo Installation cancelled.
+        goto end
+    )
     echo Removing old virtual environment...
     rd /s /q venv
 )
@@ -60,6 +68,46 @@ if errorlevel 1 (
 
 echo.
 echo Dependencies installed successfully!
+goto end
+
+:update
+call :check_python
+if errorlevel 1 exit /b 1
+
+echo Updating dependencies...
+
+if not exist "venv" (
+    echo Virtual environment not found. Please run 'install' first.
+    exit /b 1
+)
+
+call venv\Scripts\activate.bat
+
+REM Check if pip is available, if not, install it
+python -c "import pip" >nul 2>&1
+if errorlevel 1 (
+    echo pip not found in virtual environment. Repairing...
+    curl -sS https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+    python get-pip.py
+    del get-pip.py
+    if errorlevel 1 (
+        echo ERROR: Failed to install pip. Please run 'install' to recreate the virtual environment.
+        exit /b 1
+    )
+)
+
+echo Upgrading pip...
+python -m pip install --upgrade pip
+
+echo Installing/updating packages from requirements.txt...
+python -m pip install -r requirements.txt
+if errorlevel 1 (
+    echo ERROR: Failed to update dependencies.
+    exit /b 1
+)
+
+echo.
+echo Dependencies updated successfully!
 goto end
 
 :start
@@ -114,12 +162,13 @@ if errorlevel 1 (
 goto end
 
 :usage
-echo Usage: %~nx0 {start^|stop^|install^|dev}
+echo Usage: %~nx0 {start^|stop^|install^|update^|dev}
 echo.
 echo Commands:
 echo   start   - Start backend service (background)
 echo   stop    - Stop backend service
-echo   install - Install dependencies
+echo   install - Install dependencies (recreates venv)
+echo   update  - Update dependencies (keeps existing venv)
 echo   dev     - Start in development mode (foreground with reload)
 echo.
 echo Requirements:

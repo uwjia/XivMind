@@ -147,6 +147,87 @@ uvicorn app.main:app --reload --port 8000
 
 ## 服务组件
 
+### 脚本命令
+
+#### start.bat / start.sh
+
+| 命令 | 描述 |
+|------|------|
+| `start` | 启动后端服务（后台运行） |
+| `stop` | 停止后端服务 |
+| `install` | 创建虚拟环境并安装依赖（删除现有虚拟环境前会提示确认） |
+| `update` | 更新依赖（不重新创建虚拟环境） |
+| `dev` | 开发模式启动（前台运行，自动重载） |
+
+**Windows:**
+```cmd
+start.bat install    # 首次安装
+start.bat update     # 更新依赖
+start.bat dev        # 开发模式
+start.bat start      # 后台服务
+start.bat stop       # 停止服务
+```
+
+**Linux/Mac:**
+```bash
+./start.sh install   # 首次安装
+./start.sh update    # 更新依赖
+./start.sh dev       # 开发模式
+./start.sh start     # 后台服务
+./start.sh stop      # 停止服务
+./start.sh logs      # 查看日志
+./start.sh status    # 查看服务状态
+```
+
+#### GPU 支持（本地 PyTorch 安装）
+
+如果您已下载 PyTorch wheel 文件用于 GPU 支持，可使用本地安装脚本：
+
+**前置条件：**
+1. 从 https://download.pytorch.org/whl/cu128/ 下载 PyTorch wheels
+   - `torch-2.8.0+cu128-cp312-cp312-win_amd64.whl`
+   - `torchvision-0.23.0+cu128-cp312-cp312-win_amd64.whl`
+2. 先运行 `start.bat install` 创建虚拟环境
+
+**Windows:**
+```cmd
+install_local_pytorch.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x install_local_pytorch.sh
+./install_local_pytorch.sh
+```
+
+**验证 GPU 支持：**
+```bash
+python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
+```
+
+#### GPU 支持（在线安装）
+
+或者，您可以使用 `requirements-gpu.txt` 在线安装 GPU 依赖：
+
+**Windows:**
+```cmd
+start.bat install
+venv\Scripts\activate
+pip install -r requirements-gpu.txt
+```
+
+**Linux/Mac:**
+```bash
+./start.sh install
+source venv/bin/activate
+pip install -r requirements-gpu.txt
+```
+
+**验证 GPU 支持：**
+```bash
+python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
+```
+
 ### SQLite 模式
 
 | 服务 | 端口 | 说明 |
