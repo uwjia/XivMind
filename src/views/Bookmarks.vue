@@ -1,7 +1,10 @@
 <template>
   <div class="bookmarks-page" :class="{ 'drawer-open': isDrawerOpen }">
     <div class="page-header">
-      <h1>My Bookmarks</h1>
+      <div class="header-title">
+        <h1>My Bookmarks</h1>
+        <span class="total-count" v-if="total > 0">(total {{ total }} bookmarks)</span>
+      </div>
       <div class="header-actions">
         <div class="search-box">
           <input
@@ -166,6 +169,40 @@
       </div>
     </div>
 
+    <div v-if="!loading && filteredBookmarks.length > 0 && totalPages > 1" class="pagination">
+      <button class="pagination-btn" @click="goToFirstPage" :disabled="currentPage === 0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+        </svg>
+        First
+      </button>
+      <button class="pagination-btn" @click="goToPreviousPage" :disabled="currentPage === 0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Previous
+      </button>
+      <div class="pagination-jump">
+        <span class="pagination-info">Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+        <input 
+          type="number" 
+          v-model.number="jumpPageInput" 
+          class="pagination-input" 
+          placeholder="num"
+          min="1"
+          :max="totalPages"
+          @keyup.enter="handleGoToPage"
+        />
+        <button class="pagination-btn" @click="handleGoToPage">Go</button>
+      </div>
+      <button class="pagination-btn" @click="goToNextPage" :disabled="currentPage >= totalPages - 1">
+        Next
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+
     <CategoryDrawer
       :is-open="isDrawerOpen"
       :selected-category="selectedCategory"
@@ -177,144 +214,48 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useBookmarkStore } from '@/stores/bookmark-store'
-import { useToastStore } from '@/stores/toast-store'
-import { getTagStyle, getCategoryFullName, getCategoryShortName, getCategoryColor, categories } from '@/utils/categoryColors'
-import CategoryDrawer from '@/components/CategoryDrawer.vue'
-import { useMarkdown } from '@/composables/useMarkdown'
+import { onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useBookmarkActions } from '@/composables/useBookmarkActions'
+import { getTagStyle, getCategoryFullName, getCategoryShortName } from '@/utils/categoryColors'
 import { useDateFormatter } from '@/composables/useDateFormatter'
-import { useDownloadHandler } from '@/composables/useDownloadHandler'
+import CategoryDrawer from '@/components/CategoryDrawer.vue'
 
-const { render, renderWithDefault } = useMarkdown()
-const { formatShortDate, formatDateTime } = useDateFormatter()
-    const { getStatus: getDownloadStatus, getProgress: getDownloadProgress, getStatusTitle: getDownloadTitle, handleDownload } = useDownloadHandler()
-
-const router = useRouter()
 const route = useRoute()
-const bookmarkStore = useBookmarkStore()
-const toastStore = useToastStore()
-
-const bookmarks = computed(() => bookmarkStore.bookmarks)
-const loading = ref(true)
-const searchQuery = ref('')
-const isDrawerOpen = ref(false)
-const selectedCategory = ref<string | null>(null)
-
-const categoryCounts = computed(() => {
-  const counts: Record<string, number> = {}
-  for (const bookmark of bookmarks.value) {
-    const category = bookmark.primary_category
-    if (category) {
-      counts[category] = (counts[category] || 0) + 1
-    }
-  }
-  return counts
-})
-
-const filteredBookmarks = computed(() => {
-  if (!selectedCategory.value || selectedCategory.value === 'cs*') {
-    return bookmarks.value
-  }
-  if (selectedCategory.value === 'other') {
-    const csCategoryIds = categories.map(cat => cat.id)
-    return bookmarks.value.filter(bookmark => !csCategoryIds.includes(bookmark.primary_category))
-  }
-  return bookmarks.value.filter(bookmark => bookmark.primary_category === selectedCategory.value)
-})
-
-const toggleDrawer = () => {
-  isDrawerOpen.value = !isDrawerOpen.value
-}
-
-const closeDrawer = () => {
-  isDrawerOpen.value = false
-}
-
-const handleCategorySelect = (categoryId: string | null) => {
-  selectedCategory.value = categoryId
-}
-
-const getRenderedAbstract = (abstract?: string) => {
-  return renderWithDefault(abstract, 'No abstract available')
-}
-
-const getRenderedComment = (comment?: string) => {
-  return render(comment)
-}
-
-const getCategoryStyle = (category?: string) => {
-  const color = getCategoryColor(category || 'cs.AI')
-  return {
-    backgroundColor: color + '20',
-    color: color,
-    border: `1px solid ${color}40`
-  }
-}
-
-const handleDownloadClick = async (bookmark: any) => {
-  await handleDownload({
-    paperId: bookmark.paper_id,
-    arxivId: bookmark.arxiv_id,
-    title: bookmark.title,
-    pdfUrl: bookmark.pdf_url
-  })
-}
-
-const openAbsUrl = (url: string) => {
-  if (url) window.open(url, '_blank')
-}
-
-const openPdfUrl = (url: string) => {
-  if (url) window.open(url, '_blank')
-}
-
-const openDoiUrl = (doi: string) => {
-  if (doi) window.open(`https://doi.org/${doi}`, '_blank')
-}
-
-const fetchBookmarks = async () => {
-  try {
-    loading.value = true
-    await bookmarkStore.fetchBookmarks()
-  } catch (error) {
-    console.error('Failed to fetch bookmarks:', error)
-    toastStore.showError('Failed to load bookmarks')
-  } finally {
-    loading.value = false
-  }
-}
-
-const handleSearch = async () => {
-  if (!searchQuery.value.trim()) {
-    await fetchBookmarks()
-    return
-  }
-  try {
-    loading.value = true
-    await bookmarkStore.searchBookmarks(searchQuery.value)
-  } catch (error) {
-    console.error('Failed to search bookmarks:', error)
-    toastStore.showError('Search failed')
-  } finally {
-    loading.value = false
-  }
-}
-
-const removeBookmark = async (paperId: string) => {
-  try {
-    await bookmarkStore.removeBookmark(paperId)
-    toastStore.showSuccess('Bookmark removed')
-  } catch (error) {
-    console.error('Failed to remove bookmark:', error)
-    toastStore.showError('Failed to remove bookmark')
-  }
-}
-
-const goToDetail = (paperId: string) => {
-  router.push({ name: 'PaperDetail', params: { id: paperId } })
-}
+const { formatShortDate, formatDateTime } = useDateFormatter()
+const {
+  loading,
+  searchQuery,
+  isDrawerOpen,
+  selectedCategory,
+  categoryCounts,
+  filteredBookmarks,
+  total,
+  currentPage,
+  totalPages,
+  jumpPageInput,
+  fetchBookmarks,
+  handleSearch,
+  removeBookmark,
+  goToDetail,
+  toggleDrawer,
+  closeDrawer,
+  handleCategorySelect,
+  openAbsUrl,
+  openPdfUrl,
+  openDoiUrl,
+  getRenderedAbstract,
+  getRenderedComment,
+  getCategoryStyle,
+  handleDownloadClick,
+  goToFirstPage,
+  goToPreviousPage,
+  goToNextPage,
+  handleGoToPage,
+  getDownloadStatus,
+  getDownloadProgress,
+  getDownloadTitle
+} = useBookmarkActions()
 
 onMounted(() => {
   fetchBookmarks()
@@ -916,5 +857,104 @@ watch(
   width: 20px;
   height: 20px;
   color: #9C27B0;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-title h1 {
+  margin: 0;
+}
+
+.total-count {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 32px;
+  padding: 16px;
+  background: var(--bg-primary);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: 'Courier New', monospace;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 1px solid #667eea;
+  cursor: pointer;
+  background: #667eea;
+  color: white;
+}
+
+.pagination-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #764ba2;
+  color: white;
+  border-color: #764ba2;
+  transform: translateY(-2px);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.pagination-jump {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-info {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: 'Courier New', monospace;
+  min-width: 80px;
+  text-align: center;
+  padding: 6px 14px;
+}
+
+.pagination-input {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: 'Courier New', monospace;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  width: 60px;
+  text-align: center;
+}
+
+.pagination-input:focus {
+  outline: none;
+  border-color: #667eea;
 }
 </style>

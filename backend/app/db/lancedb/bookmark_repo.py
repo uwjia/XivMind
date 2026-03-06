@@ -4,6 +4,8 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+from lance.dataset import ColumnOrdering
+
 from app.db.base import BookmarkRepository
 from app.db.lancedb.client import lancedb_client
 
@@ -116,17 +118,38 @@ class LanceDBBookmarkRepository(BookmarkRepository):
     
     def get_all(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
         table = self._get_table()
-        df = table.to_pandas()
-        total = len(df)
+        
+        total = table.count_rows()
         
         if total == 0:
             return [], 0
         
-        df_sorted = df.sort_values(by="created_at", ascending=False)
-        df_paginated = df_sorted.iloc[offset:offset + limit]
-        
-        results = [self._entity_to_response(row) for _, row in df_paginated.iterrows()]
-        return results, total
+        try:
+            lance_ds = table.to_lance()
+            scanner = lance_ds.scanner(
+                columns=[
+                    "id", "paper_id", "arxiv_id", "title", "authors", "abstract",
+                    "comment", "journal_ref", "doi", "primary_category", "categories",
+                    "pdf_url", "abs_url", "published", "updated", "created_at"
+                ],
+                filter=None,
+                limit=limit,
+                offset=offset,
+                order_by=[ColumnOrdering("created_at", ascending=False)],
+            )
+            df = scanner.to_table().to_pandas()
+            
+            results = [self._entity_to_response(row) for _, row in df.iterrows()]
+            return results, total
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner, falling back to pandas: {e}")
+            df = table.to_pandas()
+            if df.empty or "created_at" not in df.columns:
+                return [], total
+            df_sorted = df.sort_values(by="created_at", ascending=False)
+            df_paginated = df_sorted.iloc[offset:offset + limit]
+            results = [self._entity_to_response(row) for _, row in df_paginated.iterrows()]
+            return results, total
     
     def exists(self, id: str) -> bool:
         return self.is_bookmarked(id)
@@ -142,17 +165,44 @@ class LanceDBBookmarkRepository(BookmarkRepository):
     
     def search(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
         table = self._get_table()
-        df = table.to_pandas()
         
-        query_lower = query.lower()
-        mask = (
-            df["paper_id"].str.lower().str.contains(query_lower, na=False) |
-            df["title"].str.lower().str.contains(query_lower, na=False) |
-            df["abstract"].str.lower().str.contains(query_lower, na=False)
-        )
-        filtered = df[mask].head(limit)
+        if table.count_rows() == 0:
+            return []
         
-        return [self._entity_to_response(row) for _, row in filtered.iterrows()]
+        try:
+            lance_ds = table.to_lance()
+            escaped_query = query.replace("'", "''")
+            filter_str = (
+                f"paper_id LIKE '%{escaped_query}%' OR "
+                f"title LIKE '%{escaped_query}%' OR "
+                f"abstract LIKE '%{escaped_query}%'"
+            )
+            scanner = lance_ds.scanner(
+                columns=[
+                    "id", "paper_id", "arxiv_id", "title", "authors", "abstract",
+                    "comment", "journal_ref", "doi", "primary_category", "categories",
+                    "pdf_url", "abs_url", "published", "updated", "created_at"
+                ],
+                filter=filter_str,
+                limit=limit,
+                order_by=[ColumnOrdering("created_at", ascending=False)],
+            )
+            df = scanner.to_table().to_pandas()
+            
+            return [self._entity_to_response(row) for _, row in df.iterrows()]
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for search, falling back to pandas: {e}")
+            df = table.to_pandas()
+            
+            query_lower = query.lower()
+            mask = (
+                df["paper_id"].str.lower().str.contains(query_lower, na=False) |
+                df["title"].str.lower().str.contains(query_lower, na=False) |
+                df["abstract"].str.lower().str.contains(query_lower, na=False)
+            )
+            filtered = df[mask].head(limit)
+            
+            return [self._entity_to_response(row) for _, row in filtered.iterrows()]
     
     def is_bookmarked(self, paper_id: str) -> bool:
         table = self._get_table()
@@ -166,15 +216,40 @@ class LanceDBBookmarkRepository(BookmarkRepository):
         result = {pid: False for pid in paper_ids}
         
         table = self._get_table()
-        df = table.to_pandas()
         
-        if df.empty or "paper_id" not in df.columns:
+        if table.count_rows() == 0:
             return result
         
-        bookmarked_ids = set(df[df["paper_id"].isin(paper_ids)]["paper_id"].tolist())
-        
-        for pid in bookmarked_ids:
-            if pid in result:
-                result[pid] = True
-        
-        return result
+        try:
+            lance_ds = table.to_lance()
+            escaped_ids = [pid.replace("'", "''") for pid in paper_ids]
+            ids_str = ", ".join(f"'{pid}'" for pid in escaped_ids)
+            filter_str = f"paper_id IN ({ids_str})"
+            
+            scanner = lance_ds.scanner(
+                columns=["paper_id"],
+                filter=filter_str,
+            )
+            df = scanner.to_table().to_pandas()
+            
+            bookmarked_ids = set(df["paper_id"].tolist())
+            
+            for pid in bookmarked_ids:
+                if pid in result:
+                    result[pid] = True
+            
+            return result
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for check_batch, falling back to pandas: {e}")
+            df = table.to_pandas()
+            
+            if df.empty or "paper_id" not in df.columns:
+                return result
+            
+            bookmarked_ids = set(df[df["paper_id"].isin(paper_ids)]["paper_id"].tolist())
+            
+            for pid in bookmarked_ids:
+                if pid in result:
+                    result[pid] = True
+            
+            return result

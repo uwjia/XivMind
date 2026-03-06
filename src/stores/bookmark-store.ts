@@ -7,6 +7,7 @@ export const useBookmarkStore = defineStore('bookmark', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const bookmarkedIds = ref<Set<string>>(new Set())
+  const total = ref(0)
 
   const setLoading = (value: boolean) => {
     loading.value = value
@@ -23,6 +24,7 @@ export const useBookmarkStore = defineStore('bookmark', () => {
       const result = await apiService.addBookmark(data)
       bookmarks.value.unshift(result)
       bookmarkedIds.value.add(data.paper_id)
+      total.value += 1
       return result
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
@@ -39,6 +41,7 @@ export const useBookmarkStore = defineStore('bookmark', () => {
       await apiService.removeBookmark(paperId)
       bookmarks.value = bookmarks.value.filter(b => b.paper_id !== paperId)
       bookmarkedIds.value.delete(paperId)
+      total.value = Math.max(0, total.value - 1)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
       throw err
@@ -99,6 +102,7 @@ export const useBookmarkStore = defineStore('bookmark', () => {
       setError(null)
       const result = await apiService.getBookmarks(limit, offset)
       bookmarks.value = result.items
+      total.value = result.total
       result.items.forEach(item => bookmarkedIds.value.add(item.paper_id))
       return result
     } catch (err) {
@@ -129,6 +133,7 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     loading,
     error,
     bookmarkedIds,
+    total,
     addBookmark,
     removeBookmark,
     toggleBookmark,

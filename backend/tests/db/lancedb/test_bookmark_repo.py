@@ -211,6 +211,7 @@ class TestLanceDBBookmarkRepositoryGetAll:
             },
         ])
         mock_table.to_pandas = Mock(return_value=df)
+        mock_table.count_rows = Mock(return_value=2)
         
         with patch.object(repo, '_get_table', return_value=mock_table):
             results, total = repo.get_all(limit=10, offset=0)
@@ -222,6 +223,7 @@ class TestLanceDBBookmarkRepositoryGetAll:
         mock_table = Mock()
         df = pd.DataFrame()
         mock_table.to_pandas = Mock(return_value=df)
+        mock_table.count_rows = Mock(return_value=0)
         
         with patch.object(repo, '_get_table', return_value=mock_table):
             results, total = repo.get_all()
@@ -252,6 +254,7 @@ class TestLanceDBBookmarkRepositoryGetAll:
             for i in range(1, 6)
         ])
         mock_table.to_pandas = Mock(return_value=df)
+        mock_table.count_rows = Mock(return_value=5)
         
         with patch.object(repo, '_get_table', return_value=mock_table):
             results, total = repo.get_all(limit=2, offset=1)
