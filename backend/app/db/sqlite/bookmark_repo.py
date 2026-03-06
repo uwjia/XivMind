@@ -204,3 +204,21 @@ class SQLiteBookmarkRepository(BookmarkRepository):
             cursor = conn.cursor()
             cursor.execute('SELECT 1 FROM bookmarks WHERE paper_id = ?', (paper_id,))
             return cursor.fetchone() is not None
+
+    def check_batch(self, paper_ids: List[str]) -> Dict[str, bool]:
+        if not paper_ids:
+            return {}
+        
+        result = {pid: False for pid in paper_ids}
+        
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            placeholders = ','.join('?' * len(paper_ids))
+            cursor.execute(
+                f'SELECT paper_id FROM bookmarks WHERE paper_id IN ({placeholders})',
+                paper_ids
+            )
+            for row in cursor.fetchall():
+                result[row[0]] = True
+        
+        return result

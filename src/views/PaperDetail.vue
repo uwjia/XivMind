@@ -267,7 +267,6 @@ const {
   checkBookmark,
   toggleBookmark,
   downloadPdf,
-  initDownloadStore,
 } = usePaperDetail()
 
 const renderedAbstract = computed(() => {
@@ -283,7 +282,6 @@ onMounted(async () => {
   await fetchPaperById(paperId)
   if (paper.value?.id) {
     await checkBookmark()
-    await initDownloadStore()
     await fetchRelatedPapers()
   }
 })

@@ -14,6 +14,7 @@ export const apiService = {
   addBookmark: bookmarkAPI.add,
   removeBookmark: bookmarkAPI.remove,
   checkBookmark: bookmarkAPI.check,
+  checkBookmarkBatch: bookmarkAPI.checkBatch,
   getBookmarks: bookmarkAPI.list,
   searchBookmarks: bookmarkAPI.search,
   

@@ -180,7 +180,7 @@ import { computed, onMounted, onActivated, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePaperStore } from '@/stores/paper-store'
 import { useConfigStore } from '@/stores/config-store'
-import { useDownloadStore } from '@/stores/download-store'
+import { useBookmarkStore } from '@/stores/bookmark-store'
 import { categories } from '@/utils/categoryColors'
 import PaperCard from '@/components/PaperCard.vue'
 import PaperCardSimple from '@/components/PaperCardSimple.vue'
@@ -195,7 +195,7 @@ import type { Paper } from '@/types'
 
 const paperStore = usePaperStore()
 const configStore = useConfigStore()
-const downloadStore = useDownloadStore()
+const bookmarkStore = useBookmarkStore()
 const jumpPageInput = ref<string>('')
 const route = useRoute()
 const router = useRouter()
@@ -382,11 +382,17 @@ watch(selectedDate, () => {
   localFilterCategory.value = null
 })
 
+watch(filteredPapers, async (papers) => {
+  if (papers.length > 0) {
+    const paperIds = papers.map(p => p.id).filter(Boolean)
+    if (paperIds.length > 0) {
+      await bookmarkStore.checkBookmarksBatch(paperIds)
+    }
+  }
+}, { immediate: true })
+
 onMounted(async () => {
   console.log('Home mounted')
-  if (downloadStore.tasks.length === 0) {
-    await downloadStore.fetchTasks()
-  }
   const handled = await handleRouteQuery()
   if (!handled) {
     checkAndLoadPapers()

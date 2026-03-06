@@ -138,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, computed, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useDownloadStore } from '@/stores/download-store'
 import { useToastStore } from '@/stores/toast-store'
 import { apiService } from '@/services/api'
@@ -150,7 +150,6 @@ const toastStore = useToastStore()
 const tasks = computed(() => downloadStore.tasks)
 const loading = computed(() => downloadStore.loading)
 const wsConnected = computed(() => downloadStore.wsConnected)
-let refreshInterval: number | null = null
 
 const showDeleteConfirm = ref(false)
 const taskToDelete = ref<string | null>(null)
@@ -269,26 +268,6 @@ const formatFileSize = (bytes: number) => {
   return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`
 }
 
-onMounted(async () => {
-  await downloadStore.connectWebSocket()
-  await fetchTasks()
-  
-  refreshInterval = window.setInterval(() => {
-    if (!wsConnected.value) {
-      const hasActiveTasks = tasks.value.some(t => t.status === 'pending' || t.status === 'downloading')
-      if (hasActiveTasks) {
-        fetchTasks()
-      }
-    }
-  }, 3000)
-})
-
-onUnmounted(() => {
-  if (refreshInterval) {
-    clearInterval(refreshInterval)
-  }
-  downloadStore.disconnectWebSocket()
-})
 </script>
 
 <style scoped>

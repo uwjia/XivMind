@@ -24,6 +24,7 @@ import { useSidebarStore } from '@/stores/sidebar-store'
 import { useToastStore } from '@/stores/toast-store'
 import { useConfigStore } from '@/stores/config-store'
 import { useLLMStore } from '@/stores/llm-store'
+import { useDownloadStore } from '@/stores/download-store'
 import Header from '@/components/Header.vue'
 import Sidebar from '@/components/Sidebar.vue'
 import Toast from '@/components/Toast.vue'
@@ -33,6 +34,7 @@ const sidebarStore = useSidebarStore()
 const toastStore = useToastStore()
 const configStore = useConfigStore()
 const llmStore = useLLMStore()
+const downloadStore = useDownloadStore()
 
 const isDark = computed(() => themeStore.isDark)
 const isCollapsed = computed(() => sidebarStore.isCollapsed)
@@ -44,6 +46,7 @@ onMounted(() => {
   themeStore.initTheme()
   configStore.initConfig()
   llmStore.init()
+  downloadStore.init()
 })
 </script>
 

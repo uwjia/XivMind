@@ -72,6 +72,23 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     }
   }
 
+  const checkBookmarksBatch = async (paperIds: string[]) => {
+    try {
+      const result = await apiService.checkBookmarkBatch(paperIds)
+      Object.entries(result.bookmarks).forEach(([paperId, isBookmarked]) => {
+        if (isBookmarked) {
+          bookmarkedIds.value.add(paperId)
+        } else {
+          bookmarkedIds.value.delete(paperId)
+        }
+      })
+      return result.bookmarks
+    } catch (err) {
+      console.error('Error checking bookmarks batch:', err)
+      return {}
+    }
+  }
+
   const isBookmarked = (paperId: string) => {
     return bookmarkedIds.value.has(paperId)
   }
@@ -116,6 +133,7 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     removeBookmark,
     toggleBookmark,
     checkBookmark,
+    checkBookmarksBatch,
     isBookmarked,
     fetchBookmarks,
     searchBookmarks,

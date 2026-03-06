@@ -345,3 +345,152 @@ class TestMilvusBookmarkRepositoryEntityToResponse:
         assert result["id"] == "test-id"
         assert result["title"] == ""
         assert result["authors"] == []
+
+
+class TestMilvusBookmarkRepositoryCheckBatch:
+    @pytest.fixture
+    def repo(self):
+        return MilvusBookmarkRepository()
+
+    def test_check_batch_empty_list(self, repo):
+        result = repo.check_batch([])
+        assert result == {}
+
+    def test_check_batch_no_bookmarks(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=[])
+        
+        with patch.object(repo, '_get_collection', return_value=mock_collection):
+            paper_ids = ["2301.00001", "2301.00002", "2301.00003"]
+            result = repo.check_batch(paper_ids)
+            
+            assert result == {
+                "2301.00001": False,
+                "2301.00002": False,
+                "2301.00003": False,
+            }
+
+    def test_check_batch_all_bookmarked(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=[
+            {"paper_id": "2301.00001"},
+            {"paper_id": "2301.00002"},
+            {"paper_id": "2301.00003"},
+        ])
+        
+        with patch.object(repo, '_get_collection', return_value=mock_collection):
+            paper_ids = ["2301.00001", "2301.00002", "2301.00003"]
+            result = repo.check_batch(paper_ids)
+            
+            assert result == {
+                "2301.00001": True,
+                "2301.00002": True,
+                "2301.00003": True,
+            }
+
+    def test_check_batch_partial_bookmarked(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=[
+            {"paper_id": "2301.00001"},
+            {"paper_id": "2301.00003"},
+        ])
+        
+        with patch.object(repo, '_get_collection', return_value=mock_collection):
+            paper_ids = ["2301.00001", "2301.00002", "2301.00003", "2301.00004"]
+            result = repo.check_batch(paper_ids)
+            
+            assert result == {
+                "2301.00001": True,
+                "2301.00002": False,
+                "2301.00003": True,
+                "2301.00004": False,
+            }
+
+    def test_check_batch_single_paper_bookmarked(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=[
+            {"paper_id": "2301.12345"},
+        ])
+        
+        with patch.object(repo, '_get_collection', return_value=mock_collection):
+            result = repo.check_batch(["2301.12345"])
+            assert result == {"2301.12345": True}
+
+    def test_check_batch_single_paper_not_bookmarked(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=[])
+        
+        with patch.object(repo, '_get_collection', return_value=mock_collection):
+            result = repo.check_batch(["2301.99999"])
+            assert result == {"2301.99999": False}
+
+    def test_check_batch_with_versioned_ids(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        
+        def mock_query(expr=None, output_fields=None):
+            if '2301.12345v2' in expr:
+                return [{"paper_id": "2301.12345v2"}]
+            return []
+        
+        mock_collection.query = Mock(side_effect=mock_query)
+        
+        with patch.object(repo, '_get_collection', return_value=mock_collection):
+            result = repo.check_batch(["2301.12345v2"])
+            assert result == {"2301.12345v2": True}
+            
+            result = repo.check_batch(["2301.12345v1", "2301.12345v3"])
+            assert result == {"2301.12345v1": False, "2301.12345v3": False}
+
+    def test_check_batch_handles_exception(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(side_effect=Exception("Query failed"))
+        
+        with patch.object(repo, '_get_collection', return_value=mock_collection):
+            paper_ids = ["2301.00001", "2301.00002"]
+            result = repo.check_batch(paper_ids)
+            
+            assert result == {
+                "2301.00001": False,
+                "2301.00002": False,
+            }
+
+    def test_check_batch_large_list(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        
+        bookmarked_results = [
+            {"paper_id": f"2301.{i:05d}"}
+            for i in range(0, 100, 2)
+        ]
+        mock_collection.query = Mock(return_value=bookmarked_results)
+        
+        with patch.object(repo, '_get_collection', return_value=mock_collection):
+            paper_ids = [f"2301.{i:05d}" for i in range(100)]
+            result = repo.check_batch(paper_ids)
+            
+            for i, pid in enumerate(paper_ids):
+                expected = i % 2 == 0
+                assert result[pid] == expected, f"Failed for {pid}"
+
+    def test_check_batch_query_expression_format(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=[])
+        
+        with patch.object(repo, '_get_collection', return_value=mock_collection):
+            paper_ids = ["2301.00001", "2301.00002"]
+            repo.check_batch(paper_ids)
+            
+            call_args = mock_collection.query.call_args
+            expr = call_args[1]['expr']
+            
+            assert 'paper_id in [' in expr
+            assert '"2301.00001"' in expr
+            assert '"2301.00002"' in expr

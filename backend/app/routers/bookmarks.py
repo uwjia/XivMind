@@ -3,6 +3,8 @@ from app.models import (
     BookmarkCreate,
     BookmarkResponse,
     BookmarkListResponse,
+    BookmarkCheckBatchRequest,
+    BookmarkCheckBatchResponse,
     MessageResponse,
 )
 from app.services import bookmark_service
@@ -33,6 +35,15 @@ async def check_bookmark(paper_id: str):
     try:
         is_bookmarked = bookmark_service.is_bookmarked(paper_id)
         return {"paper_id": paper_id, "is_bookmarked": is_bookmarked}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/check-batch", response_model=BookmarkCheckBatchResponse)
+async def check_bookmarks_batch(request: BookmarkCheckBatchRequest):
+    try:
+        result = bookmark_service.check_batch(request.paper_ids)
+        return BookmarkCheckBatchResponse(bookmarks=result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

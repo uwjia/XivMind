@@ -16,6 +16,9 @@ class BookmarkService:
     def is_bookmarked(self, paper_id: str) -> bool:
         return self._repository.is_bookmarked(paper_id)
 
+    def check_batch(self, paper_ids: List[str]) -> Dict[str, bool]:
+        return self._repository.check_batch(paper_ids)
+
     def get_all_bookmarks(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
         return self._repository.get_all(limit, offset)
 

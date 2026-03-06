@@ -1,7 +1,6 @@
 import { ref, computed } from 'vue'
 import { usePaperStore } from '@/stores/paper-store'
 import { useBookmarkStore } from '@/stores/bookmark-store'
-import { useDownloadStore } from '@/stores/download-store'
 import { useToastStore } from '@/stores/toast-store'
 import { arxivBackendAPI } from '@/services/arxivBackend'
 import { useDownloadHandler } from '@/composables/useDownloadHandler'
@@ -16,7 +15,6 @@ export interface RelatedPaper {
 export function usePaperDetail() {
   const paperStore = usePaperStore()
   const bookmarkStore = useBookmarkStore()
-  const downloadStore = useDownloadStore()
   const toastStore = useToastStore()
   const { getStatus: getDownloadStatus, getProgress: getDownloadProgress, handleDownload } = useDownloadHandler()
 
@@ -126,12 +124,6 @@ export function usePaperDetail() {
     })
   }
 
-  const initDownloadStore = async () => {
-    if (downloadStore.tasks.length === 0) {
-      await downloadStore.fetchTasks()
-    }
-  }
-
   return {
     loading,
     error,
@@ -147,6 +139,5 @@ export function usePaperDetail() {
     checkBookmark,
     toggleBookmark,
     downloadPdf,
-    initDownloadStore,
   }
 }

@@ -180,7 +180,6 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useBookmarkStore } from '@/stores/bookmark-store'
-import { useDownloadStore } from '@/stores/download-store'
 import { useToastStore } from '@/stores/toast-store'
 import { getTagStyle, getCategoryFullName, getCategoryShortName, getCategoryColor, categories } from '@/utils/categoryColors'
 import CategoryDrawer from '@/components/CategoryDrawer.vue'
@@ -195,7 +194,6 @@ const { formatShortDate, formatDateTime } = useDateFormatter()
 const router = useRouter()
 const route = useRoute()
 const bookmarkStore = useBookmarkStore()
-const downloadStore = useDownloadStore()
 const toastStore = useToastStore()
 
 const bookmarks = computed(() => bookmarkStore.bookmarks)
@@ -280,9 +278,6 @@ const fetchBookmarks = async () => {
   try {
     loading.value = true
     await bookmarkStore.fetchBookmarks()
-    if (downloadStore.tasks.length === 0) {
-      await downloadStore.fetchTasks()
-    }
   } catch (error) {
     console.error('Failed to fetch bookmarks:', error)
     toastStore.showError('Failed to load bookmarks')

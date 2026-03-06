@@ -602,3 +602,130 @@ class TestLanceDBBookmarkRepositorySafeStr:
     def test_safe_str_with_int(self):
         result = LanceDBBookmarkRepository._safe_str(123)
         assert result == "123"
+
+
+class TestLanceDBBookmarkRepositoryCheckBatch:
+    @pytest.fixture
+    def repo(self):
+        return LanceDBBookmarkRepository()
+
+    def test_check_batch_empty_list(self, repo):
+        result = repo.check_batch([])
+        assert result == {}
+
+    def test_check_batch_no_bookmarks(self, repo):
+        mock_table = Mock()
+        df = pd.DataFrame([
+            {"paper_id": "other.paper"},
+        ])
+        mock_table.to_pandas = Mock(return_value=df)
+        
+        with patch.object(repo, '_get_table', return_value=mock_table):
+            paper_ids = ["2301.00001", "2301.00002", "2301.00003"]
+            result = repo.check_batch(paper_ids)
+            
+            assert result == {
+                "2301.00001": False,
+                "2301.00002": False,
+                "2301.00003": False,
+            }
+
+    def test_check_batch_all_bookmarked(self, repo):
+        mock_table = Mock()
+        df = pd.DataFrame([
+            {"paper_id": "2301.00001"},
+            {"paper_id": "2301.00002"},
+            {"paper_id": "2301.00003"},
+        ])
+        mock_table.to_pandas = Mock(return_value=df)
+        
+        with patch.object(repo, '_get_table', return_value=mock_table):
+            paper_ids = ["2301.00001", "2301.00002", "2301.00003"]
+            result = repo.check_batch(paper_ids)
+            
+            assert result == {
+                "2301.00001": True,
+                "2301.00002": True,
+                "2301.00003": True,
+            }
+
+    def test_check_batch_partial_bookmarked(self, repo):
+        mock_table = Mock()
+        df = pd.DataFrame([
+            {"paper_id": "2301.00001"},
+            {"paper_id": "2301.00003"},
+        ])
+        mock_table.to_pandas = Mock(return_value=df)
+        
+        with patch.object(repo, '_get_table', return_value=mock_table):
+            paper_ids = ["2301.00001", "2301.00002", "2301.00003", "2301.00004"]
+            result = repo.check_batch(paper_ids)
+            
+            assert result == {
+                "2301.00001": True,
+                "2301.00002": False,
+                "2301.00003": True,
+                "2301.00004": False,
+            }
+
+    def test_check_batch_single_paper_bookmarked(self, repo):
+        mock_table = Mock()
+        df = pd.DataFrame([
+            {"paper_id": "2301.12345"},
+        ])
+        mock_table.to_pandas = Mock(return_value=df)
+        
+        with patch.object(repo, '_get_table', return_value=mock_table):
+            result = repo.check_batch(["2301.12345"])
+            assert result == {"2301.12345": True}
+
+    def test_check_batch_single_paper_not_bookmarked(self, repo):
+        mock_table = Mock()
+        df = pd.DataFrame()
+        mock_table.to_pandas = Mock(return_value=df)
+        
+        with patch.object(repo, '_get_table', return_value=mock_table):
+            result = repo.check_batch(["2301.99999"])
+            assert result == {"2301.99999": False}
+
+    def test_check_batch_with_versioned_ids(self, repo):
+        mock_table = Mock()
+        df = pd.DataFrame([
+            {"paper_id": "2301.12345v2"},
+        ])
+        mock_table.to_pandas = Mock(return_value=df)
+        
+        with patch.object(repo, '_get_table', return_value=mock_table):
+            result = repo.check_batch(["2301.12345v2"])
+            assert result == {"2301.12345v2": True}
+            
+            result = repo.check_batch(["2301.12345v1", "2301.12345v3"])
+            assert result == {"2301.12345v1": False, "2301.12345v3": False}
+
+    def test_check_batch_empty_table(self, repo):
+        mock_table = Mock()
+        df = pd.DataFrame()
+        mock_table.to_pandas = Mock(return_value=df)
+        
+        with patch.object(repo, '_get_table', return_value=mock_table):
+            paper_ids = ["2301.00001", "2301.00002"]
+            result = repo.check_batch(paper_ids)
+            
+            assert result == {
+                "2301.00001": False,
+                "2301.00002": False,
+            }
+
+    def test_check_batch_large_list(self, repo):
+        mock_table = Mock()
+        bookmarked_ids = [f"2301.{i:05d}" for i in range(0, 100, 2)]
+        df = pd.DataFrame([{"paper_id": pid} for pid in bookmarked_ids])
+        mock_table.to_pandas = Mock(return_value=df)
+        
+        with patch.object(repo, '_get_table', return_value=mock_table):
+            paper_ids = [f"2301.{i:05d}" for i in range(100)]
+            result = repo.check_batch(paper_ids)
+            
+            for i, pid in enumerate(paper_ids):
+                expected = i % 2 == 0
+                assert result[pid] == expected, f"Failed for {pid}"

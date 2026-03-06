@@ -59,6 +59,13 @@ export const bookmarkAPI = {
     return apiRequest(`/bookmarks/check/${encodeURIComponent(paperId)}`)
   },
 
+  async checkBatch(paperIds: string[]): Promise<{ bookmarks: Record<string, boolean> }> {
+    return apiRequest<{ bookmarks: Record<string, boolean> }>('/bookmarks/check-batch', {
+      method: 'POST',
+      body: JSON.stringify({ paper_ids: paperIds }),
+    })
+  },
+
   async list(limit: number = 100, offset: number = 0): Promise<BookmarkListResponse> {
     return apiRequest<BookmarkListResponse>(`/bookmarks?limit=${limit}&offset=${offset}`)
   },

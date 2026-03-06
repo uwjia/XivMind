@@ -123,16 +123,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
 import MarkdownItKatex from 'markdown-it-katex'
 import 'katex/dist/katex.min.css'
 import { getCategoryColor, getTagStyle, categories } from '@/utils/categoryColors'
 import { useBookmarkStore } from '@/stores/bookmark-store'
-import { useDownloadStore } from '@/stores/download-store'
 import { useToastStore } from '@/stores/toast-store'
-import { apiService } from '@/services/api'
+import { useDownloadHandler } from '@/composables/useDownloadHandler'
 import type { Paper } from '@/types'
 
 const props = defineProps<{
@@ -142,39 +141,17 @@ const props = defineProps<{
 
 const router = useRouter()
 const bookmarkStore = useBookmarkStore()
-const downloadStore = useDownloadStore()
 const toastStore = useToastStore()
+const { getStatus, getProgress, handleDownload, getStatusTitle } = useDownloadHandler()
 
 const isBookmarked = computed(() => bookmarkStore.isBookmarked(props.paper?.id || ''))
 
-const downloadStatus = computed(() => {
-  if (!props.paper?.id) return 'none'
-  const task = downloadStore.tasks.find(t => t.paper_id === props.paper.id)
-  return task?.status || 'none'
-})
+const downloadStatus = computed(() => getStatus(props.paper?.id || ''))
 
-const downloadProgress = computed(() => {
-  if (!props.paper?.id) return 0
-  const task = downloadStore.tasks.find(t => t.paper_id === props.paper.id)
-  return task?.progress || 0
-})
+const downloadProgress = computed(() => getProgress(props.paper?.id || ''))
 
-const downloadTitle = computed(() => {
-  switch (downloadStatus.value) {
-    case 'downloading':
-      return `Downloading... ${downloadProgress.value}%`
-    case 'completed':
-      return 'Download completed'
-    case 'failed':
-      return 'Download failed - click to retry'
-    case 'pending':
-      return 'Download pending...'
-    default:
-      return 'Download PDF'
-  }
-})
+const downloadTitle = computed(() => getStatusTitle(props.paper?.id || ''))
 
-// 初始化markdown-it实例
 const md = new MarkdownIt({
   html: true,
   linkify: true,
@@ -262,49 +239,16 @@ const openPdfUrl = () => {
 }
 
 const downloadPdf = async () => {
-  if (!props.paper?.pdfUrl || !props.paper?.id) {
+  if (!props.paper?.id || !props.paper?.pdfUrl) {
     console.warn('Paper has no pdfUrl or id')
     return
   }
-  
-  const existingTask = downloadStore.tasks.find(t => t.paper_id === props.paper.id)
-  
-  if (existingTask) {
-    if (existingTask.status === 'failed') {
-      try {
-        await downloadStore.retryTask(existingTask.id)
-        toastStore.showSuccess('Download retry started')
-      } catch (error) {
-        console.error('Failed to retry download:', error)
-        toastStore.showError('Failed to retry download')
-      }
-    } else if (existingTask.status === 'downloading') {
-      toastStore.showInfo('Download already in progress')
-    } else if (existingTask.status === 'completed') {
-      try {
-        await apiService.openDownloadFile(existingTask.id)
-      } catch (error) {
-        console.error('Failed to open file:', error)
-        toastStore.showError('Failed to open file')
-      }
-    } else {
-      toastStore.showInfo('Download already queued')
-    }
-    return
-  }
-  
-  try {
-    await downloadStore.createTask({
-      paper_id: props.paper.id,
-      arxiv_id: props.paper.arxivId,
-      title: props.paper.title,
-      pdf_url: props.paper.pdfUrl,
-    })
-    toastStore.showSuccess('Download task added to queue')
-  } catch (error) {
-    console.error('Failed to create download task:', error)
-    toastStore.showError('Failed to create download task')
-  }
+  await handleDownload({
+    paperId: props.paper.id,
+    arxivId: props.paper.arxivId,
+    title: props.paper.title || '',
+    pdfUrl: props.paper.pdfUrl,
+  })
 }
 
 const toggleBookmark = async () => {
@@ -335,15 +279,6 @@ const toggleBookmark = async () => {
     toastStore.showError('Failed to update bookmark')
   }
 }
-
-onMounted(async () => {
-  if (props.paper?.id) {
-    await bookmarkStore.checkBookmark(props.paper.id)
-  }
-  if (downloadStore.tasks.length === 0) {
-    await downloadStore.fetchTasks()
-  }
-})
 
 const formatDate = (dateStr: string | Date) => {
   if (!dateStr) return 'Unknown date'

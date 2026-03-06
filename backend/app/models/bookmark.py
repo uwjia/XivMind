@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime
 
 
@@ -43,3 +43,11 @@ class BookmarkResponse(BaseModel):
 class BookmarkListResponse(BaseModel):
     total: int
     items: List[BookmarkResponse]
+
+
+class BookmarkCheckBatchRequest(BaseModel):
+    paper_ids: List[str]
+
+
+class BookmarkCheckBatchResponse(BaseModel):
+    bookmarks: Dict[str, bool]

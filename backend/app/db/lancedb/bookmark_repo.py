@@ -158,3 +158,23 @@ class LanceDBBookmarkRepository(BookmarkRepository):
         table = self._get_table()
         results = table.search().where(f"paper_id = '{paper_id}'").limit(1).to_pandas()
         return len(results) > 0
+
+    def check_batch(self, paper_ids: List[str]) -> Dict[str, bool]:
+        if not paper_ids:
+            return {}
+        
+        result = {pid: False for pid in paper_ids}
+        
+        table = self._get_table()
+        df = table.to_pandas()
+        
+        if df.empty or "paper_id" not in df.columns:
+            return result
+        
+        bookmarked_ids = set(df[df["paper_id"].isin(paper_ids)]["paper_id"].tolist())
+        
+        for pid in bookmarked_ids:
+            if pid in result:
+                result[pid] = True
+        
+        return result

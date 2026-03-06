@@ -1,6 +1,6 @@
 from .common import MessageResponse
 from .paper import PaperBase, Paper
-from .bookmark import BookmarkCreate, BookmarkResponse, BookmarkListResponse
+from .bookmark import BookmarkCreate, BookmarkResponse, BookmarkListResponse, BookmarkCheckBatchRequest, BookmarkCheckBatchResponse
 from .download import DownloadStatus, DownloadTaskCreate, DownloadTaskResponse, DownloadTaskListResponse
 from .search import (
     SearchResult,
@@ -52,6 +52,8 @@ __all__ = [
     "BookmarkCreate",
     "BookmarkResponse",
     "BookmarkListResponse",
+    "BookmarkCheckBatchRequest",
+    "BookmarkCheckBatchResponse",
     "DownloadTaskCreate",
     "DownloadTaskResponse",
     "DownloadTaskListResponse",

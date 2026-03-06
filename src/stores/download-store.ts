@@ -99,6 +99,7 @@ export const useDownloadStore = defineStore('download', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const wsConnected = ref(false)
+  const initialized = ref(false)
 
   const setLoading = (value: boolean) => {
     loading.value = value
@@ -106,6 +107,14 @@ export const useDownloadStore = defineStore('download', () => {
 
   const setError = (value: string | null) => {
     error.value = value
+  }
+
+  const init = async () => {
+    if (initialized.value) return
+    
+    initialized.value = true
+    await connectWebSocket()
+    await fetchTasks()
   }
 
   const connectWebSocket = async () => {
@@ -273,6 +282,8 @@ export const useDownloadStore = defineStore('download', () => {
     loading,
     error,
     wsConnected,
+    initialized,
+    init,
     connectWebSocket,
     disconnectWebSocket,
     createTask,

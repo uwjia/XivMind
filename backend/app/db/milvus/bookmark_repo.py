@@ -166,3 +166,26 @@ class MilvusBookmarkRepository(BookmarkRepository):
         collection.load()
         results = collection.query(expr=f'paper_id == "{paper_id}"', output_fields=["id"])
         return len(results) > 0
+
+    def check_batch(self, paper_ids: List[str]) -> Dict[str, bool]:
+        if not paper_ids:
+            return {}
+        
+        result = {pid: False for pid in paper_ids}
+        
+        collection = self._get_collection()
+        collection.load()
+        
+        quoted_ids = [f'"{pid}"' for pid in paper_ids]
+        expr = f'paper_id in [{", ".join(quoted_ids)}]'
+        
+        try:
+            results = collection.query(expr=expr, output_fields=["paper_id"])
+            for r in results:
+                pid = r.get("paper_id")
+                if pid in result:
+                    result[pid] = True
+        except Exception:
+            pass
+        
+        return result

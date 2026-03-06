@@ -49,6 +49,11 @@ class BookmarkRepository(BaseRepository):
         """Check if paper is bookmarked."""
         pass
 
+    @abstractmethod
+    def check_batch(self, paper_ids: List[str]) -> Dict[str, bool]:
+        """Check if multiple papers are bookmarked."""
+        pass
+
 
 class DownloadRepository(BaseRepository):
     """Abstract repository for download tasks."""
