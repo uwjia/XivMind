@@ -509,22 +509,17 @@ class TestLanceDBDownloadRepositoryResetIncompleteTasks:
                 "created_at": "2024-01-01T00:00:00",
                 "updated_at": "2024-01-01T00:00:00",
             },
-            {
-                "id": "3",
-                "paper_id": "2301.00003",
-                "arxiv_id": "2301.00003",
-                "title": "Completed Task",
-                "pdf_url": "url3",
-                "status": "completed",
-                "progress": 100,
-                "file_path": "/path.pdf",
-                "file_size": 1000,
-                "error_message": "",
-                "created_at": "2024-01-01T00:00:00",
-                "updated_at": "2024-01-01T00:00:00",
-            },
         ])
-        mock_table.to_pandas = Mock(return_value=df)
+        
+        mock_table_result = Mock()
+        mock_table_result.to_pandas.return_value = df
+        
+        mock_scanner = Mock()
+        mock_scanner.to_table.return_value = mock_table_result
+        
+        mock_lance_ds = Mock()
+        mock_lance_ds.scanner.return_value = mock_scanner
+        mock_table.to_lance.return_value = mock_lance_ds
         mock_table.delete = Mock()
         mock_table.add = Mock()
         
@@ -535,23 +530,21 @@ class TestLanceDBDownloadRepositoryResetIncompleteTasks:
 
     def test_reset_incomplete_tasks_none(self, repo):
         mock_table = Mock()
-        df = pd.DataFrame([
-            {
-                "id": "1",
-                "paper_id": "2301.00001",
-                "arxiv_id": "2301.00001",
-                "title": "Completed Task",
-                "pdf_url": "url",
-                "status": "completed",
-                "progress": 100,
-                "file_path": "/path.pdf",
-                "file_size": 1000,
-                "error_message": "",
-                "created_at": "2024-01-01T00:00:00",
-                "updated_at": "2024-01-01T00:00:00",
-            },
+        df = pd.DataFrame(columns=[
+            "id", "paper_id", "arxiv_id", "title", "pdf_url",
+            "status", "progress", "file_path", "file_size",
+            "error_message", "created_at", "updated_at"
         ])
-        mock_table.to_pandas = Mock(return_value=df)
+        
+        mock_table_result = Mock()
+        mock_table_result.to_pandas.return_value = df
+        
+        mock_scanner = Mock()
+        mock_scanner.to_table.return_value = mock_table_result
+        
+        mock_lance_ds = Mock()
+        mock_lance_ds.scanner.return_value = mock_scanner
+        mock_table.to_lance.return_value = mock_lance_ds
         
         with patch.object(repo, '_get_table', return_value=mock_table):
             count = repo.reset_incomplete_tasks()

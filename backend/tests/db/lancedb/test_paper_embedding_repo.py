@@ -190,7 +190,12 @@ class TestLanceDBPaperEmbeddingRepositoryGetEmbeddingsBatch:
                 "created_at": "2024-01-01T00:00:00",
             },
         ])
-        mock_table.to_pandas = Mock(return_value=df)
+        
+        mock_scanner = Mock()
+        mock_scanner.to_table.return_value.to_pandas.return_value = df
+        mock_lance_ds = Mock()
+        mock_lance_ds.scanner.return_value = mock_scanner
+        mock_table.to_lance.return_value = mock_lance_ds
         
         with patch.object(repo, '_get_table', return_value=mock_table):
             result = repo.get_embeddings_batch(["2301.12345", "2301.12346"])
@@ -210,7 +215,12 @@ class TestLanceDBPaperEmbeddingRepositoryGetEmbeddingsBatch:
     def test_get_embeddings_batch_empty_table(self, repo):
         mock_table = Mock()
         df = pd.DataFrame()
-        mock_table.to_pandas = Mock(return_value=df)
+        
+        mock_scanner = Mock()
+        mock_scanner.to_table.return_value.to_pandas.return_value = df
+        mock_lance_ds = Mock()
+        mock_lance_ds.scanner.return_value = mock_scanner
+        mock_table.to_lance.return_value = mock_lance_ds
         
         with patch.object(repo, '_get_table', return_value=mock_table):
             result = repo.get_embeddings_batch(["2301.12345"])
@@ -359,12 +369,7 @@ class TestLanceDBPaperEmbeddingRepositoryCountEmbeddings:
 
     def test_count_embeddings(self, repo):
         mock_table = Mock()
-        df = pd.DataFrame([
-            {"paper_id": "2301.12345"},
-            {"paper_id": "2301.12346"},
-            {"paper_id": "2301.12347"},
-        ])
-        mock_table.to_pandas = Mock(return_value=df)
+        mock_table.count_rows.return_value = 3
         
         with patch.object(repo, '_get_table', return_value=mock_table):
             result = repo.count_embeddings()
@@ -373,8 +378,7 @@ class TestLanceDBPaperEmbeddingRepositoryCountEmbeddings:
 
     def test_count_embeddings_empty(self, repo):
         mock_table = Mock()
-        df = pd.DataFrame()
-        mock_table.to_pandas = Mock(return_value=df)
+        mock_table.count_rows.return_value = 0
         
         with patch.object(repo, '_get_table', return_value=mock_table):
             result = repo.count_embeddings()

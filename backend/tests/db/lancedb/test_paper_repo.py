@@ -250,8 +250,7 @@ class TestLanceDBPaperRepositoryPaperOperations:
 
     def test_get_total_paper_count(self, repo):
         mock_table = Mock()
-        df = pd.DataFrame([{"id": str(i)} for i in range(5)])
-        mock_table.to_pandas = Mock(return_value=df)
+        mock_table.count_rows.return_value = 5
         
         with patch.object(repo, '_get_papers_table', return_value=mock_table):
             result = repo.get_total_paper_count()
