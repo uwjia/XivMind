@@ -2,6 +2,8 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+import lance
+
 from app.db.base import PaperEmbeddingRepository
 from app.db.lancedb.client import lancedb_client
 
@@ -51,8 +53,24 @@ class LanceDBPaperEmbeddingRepository(PaperEmbeddingRepository):
             return 0
         
         table = self._get_table()
-        df = table.to_pandas()
-        existing_ids = set(df["paper_id"].tolist()) if len(df) > 0 else set()
+        
+        try:
+            lance_ds = table.to_lance()
+            paper_ids = [data.get("paper_id") for data in embeddings_data]
+            escaped_ids = [pid.replace("'", "''") for pid in paper_ids if pid]
+            ids_str = ", ".join(f"'{pid}'" for pid in escaped_ids)
+            filter_str = f"paper_id IN ({ids_str})"
+            
+            scanner = lance_ds.scanner(
+                columns=["paper_id"],
+                filter=filter_str,
+            )
+            df = scanner.to_table().to_pandas()
+            existing_ids = set(df["paper_id"].tolist())
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for insert_embeddings_batch, falling back to pandas: {e}")
+            df = table.to_pandas()
+            existing_ids = set(df["paper_id"].tolist()) if len(df) > 0 else set()
         
         now = datetime.utcnow().isoformat()
         records = []
@@ -130,15 +148,30 @@ class LanceDBPaperEmbeddingRepository(PaperEmbeddingRepository):
             return {}
         
         table = self._get_table()
-        df = table.to_pandas()
+        
+        try:
+            lance_ds = table.to_lance()
+            escaped_ids = [pid.replace("'", "''") for pid in paper_ids]
+            ids_str = ", ".join(f"'{pid}'" for pid in escaped_ids)
+            filter_str = f"paper_id IN ({ids_str})"
+            
+            scanner = lance_ds.scanner(
+                columns=["paper_id", "embedding", "embedding_model", "created_at"],
+                filter=filter_str,
+            )
+            df = scanner.to_table().to_pandas()
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for get_embeddings_batch, falling back to pandas: {e}")
+            df = table.to_pandas()
+            if len(df) == 0:
+                return {}
+            df = df[df["paper_id"].isin(paper_ids)]
         
         if len(df) == 0:
             return {}
         
-        filtered = df[df["paper_id"].isin(paper_ids)]
-        
         result = {}
-        for _, row in filtered.iterrows():
+        for _, row in df.iterrows():
             pid = row.get("paper_id")
             result[pid] = {
                 "paper_id": pid,
@@ -212,8 +245,7 @@ class LanceDBPaperEmbeddingRepository(PaperEmbeddingRepository):
     
     def count_embeddings(self) -> int:
         table = self._get_table()
-        df = table.to_pandas()
-        return len(df)
+        return table.count_rows()
     
     def get_paper_ids_without_embeddings(
         self,
@@ -223,7 +255,22 @@ class LanceDBPaperEmbeddingRepository(PaperEmbeddingRepository):
             return []
         
         table = self._get_table()
-        df = table.to_pandas()
-        existing_ids = set(df["paper_id"].tolist()) if len(df) > 0 else set()
+        
+        try:
+            lance_ds = table.to_lance()
+            escaped_ids = [pid.replace("'", "''") for pid in all_paper_ids]
+            ids_str = ", ".join(f"'{pid}'" for pid in escaped_ids)
+            filter_str = f"paper_id IN ({ids_str})"
+            
+            scanner = lance_ds.scanner(
+                columns=["paper_id"],
+                filter=filter_str,
+            )
+            df = scanner.to_table().to_pandas()
+            existing_ids = set(df["paper_id"].tolist())
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for get_paper_ids_without_embeddings, falling back to pandas: {e}")
+            df = table.to_pandas()
+            existing_ids = set(df["paper_id"].tolist()) if len(df) > 0 else set()
         
         return [pid for pid in all_paper_ids if pid not in existing_ids]

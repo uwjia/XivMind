@@ -3,6 +3,9 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+import lance
+from lance.dataset import ColumnOrdering
+
 from app.db.base import DownloadRepository
 from app.db.lancedb.client import lancedb_client
 
@@ -99,17 +102,38 @@ class LanceDBDownloadRepository(DownloadRepository):
     
     def get_all(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
         table = self._get_table()
-        df = table.to_pandas()
-        total = len(df)
+        
+        total = table.count_rows()
         
         if total == 0:
             return [], 0
         
-        df_sorted = df.sort_values(by="created_at", ascending=False)
-        df_paginated = df_sorted.iloc[offset:offset + limit]
-        
-        results = [self._entity_to_response(row) for _, row in df_paginated.iterrows()]
-        return results, total
+        try:
+            lance_ds = table.to_lance()
+            scanner = lance_ds.scanner(
+                columns=[
+                    "id", "paper_id", "arxiv_id", "title", "pdf_url",
+                    "status", "progress", "file_path", "file_size",
+                    "error_message", "created_at", "updated_at"
+                ],
+                limit=limit,
+                offset=offset,
+                order_by=[ColumnOrdering("created_at", ascending=False)],
+            )
+            df = scanner.to_table().to_pandas()
+            
+            results = [self._entity_to_response(row) for _, row in df.iterrows()]
+            return results, total
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner, falling back to pandas: {e}")
+            df = table.to_pandas()
+            total = len(df)
+            if total == 0:
+                return [], 0
+            df_sorted = df.sort_values(by="created_at", ascending=False)
+            df_paginated = df_sorted.iloc[offset:offset + limit]
+            results = [self._entity_to_response(row) for _, row in df_paginated.iterrows()]
+            return results, total
     
     def exists(self, id: str) -> bool:
         table = self._get_table()
@@ -172,10 +196,25 @@ class LanceDBDownloadRepository(DownloadRepository):
     
     def reset_incomplete_tasks(self) -> int:
         table = self._get_table()
-        df = table.to_pandas()
         
-        mask = df["status"].isin(["downloading", "pending"])
-        incomplete = df[mask]
+        try:
+            lance_ds = table.to_lance()
+            filter_str = "status IN ('downloading', 'pending')"
+            
+            scanner = lance_ds.scanner(
+                columns=[
+                    "id", "paper_id", "arxiv_id", "title", "pdf_url",
+                    "status", "progress", "file_path", "file_size",
+                    "error_message", "created_at", "updated_at"
+                ],
+                filter=filter_str,
+            )
+            incomplete = scanner.to_table().to_pandas()
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for reset_incomplete_tasks, falling back to pandas: {e}")
+            df = table.to_pandas()
+            mask = df["status"].isin(["downloading", "pending"])
+            incomplete = df[mask]
         
         if len(incomplete) == 0:
             return 0

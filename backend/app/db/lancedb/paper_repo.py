@@ -3,7 +3,9 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
+import lance
 import pandas as pd
+from lance.dataset import ColumnOrdering
 
 from app.db.base import PaperRepository
 from app.db.lancedb.client import lancedb_client
@@ -88,17 +90,38 @@ class LanceDBPaperRepository(PaperRepository):
     
     def get_all(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
         table = self._get_papers_table()
-        df = table.to_pandas()
-        total = len(df)
+        
+        total = table.count_rows()
         
         if total == 0:
             return [], 0
         
-        df_sorted = df.sort_values(by="published", ascending=False)
-        df_paginated = df_sorted.iloc[offset:offset + limit]
-        
-        results = [self._entity_to_response(row) for _, row in df_paginated.iterrows()]
-        return results, total
+        try:
+            lance_ds = table.to_lance()
+            scanner = lance_ds.scanner(
+                columns=[
+                    "id", "title", "abstract", "authors", "primary_category",
+                    "categories", "published", "updated", "pdf_url", "abs_url",
+                    "comment", "journal_ref", "doi", "fetched_at"
+                ],
+                limit=limit,
+                offset=offset,
+                order_by=[ColumnOrdering("published", ascending=False)],
+            )
+            df = scanner.to_table().to_pandas()
+            
+            results = [self._entity_to_response(row) for _, row in df.iterrows()]
+            return results, total
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner, falling back to pandas: {e}")
+            df = table.to_pandas()
+            total = len(df)
+            if total == 0:
+                return [], 0
+            df_sorted = df.sort_values(by="published", ascending=False)
+            df_paginated = df_sorted.iloc[offset:offset + limit]
+            results = [self._entity_to_response(row) for _, row in df_paginated.iterrows()]
+            return results, total
     
     def exists(self, id: str) -> bool:
         table = self._get_papers_table()
@@ -134,8 +157,24 @@ class LanceDBPaperRepository(PaperRepository):
             return 0
         
         table = self._get_papers_table()
-        df = table.to_pandas()
-        existing_ids = set(df["id"].tolist()) if len(df) > 0 else set()
+        
+        try:
+            lance_ds = table.to_lance()
+            paper_ids = [self._safe_str(data.get("id"), 128) for data in papers]
+            escaped_ids = [pid.replace("'", "''") for pid in paper_ids if pid]
+            ids_str = ", ".join(f"'{pid}'" for pid in escaped_ids)
+            filter_str = f"id IN ({ids_str})"
+            
+            scanner = lance_ds.scanner(
+                columns=["id"],
+                filter=filter_str,
+            )
+            df = scanner.to_table().to_pandas()
+            existing_ids = set(df["id"].tolist())
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for insert_papers_batch, falling back to pandas: {e}")
+            df = table.to_pandas()
+            existing_ids = set(df["id"].tolist()) if len(df) > 0 else set()
         
         now = datetime.utcnow().isoformat()
         records = []
@@ -210,25 +249,56 @@ class LanceDBPaperRepository(PaperRepository):
         max_results: int = 50,
     ) -> Tuple[List[Dict[str, Any]], int]:
         table = self._get_papers_table()
-        df = table.to_pandas()
         
         next_date = self._get_next_date(date)
-        mask = (df["published"] >= date) & (df["published"] < next_date)
         
-        if category:
-            mask &= df["categories"].str.contains(f'"{category}"', na=False)
-        
-        filtered = df[mask]
-        total = len(filtered)
-        
-        if total == 0:
-            return [], 0
-        
-        sorted_df = filtered.sort_values(by="published", ascending=False)
-        paginated = sorted_df.iloc[start:start + max_results]
-        
-        results = [self._entity_to_response(row) for _, row in paginated.iterrows()]
-        return results, total
+        try:
+            lance_ds = table.to_lance()
+            filter_str = f"published >= '{date}' AND published < '{next_date}'"
+            
+            if category:
+                filter_str += f" AND categories LIKE '%\"{category}\"%'"
+            
+            total = lance_ds.scanner(columns=["id"], filter=filter_str).to_table().num_rows
+            
+            if total == 0:
+                return [], 0
+            
+            scanner = lance_ds.scanner(
+                columns=[
+                    "id", "title", "abstract", "authors", "primary_category",
+                    "categories", "published", "updated", "pdf_url", "abs_url",
+                    "comment", "journal_ref", "doi", "fetched_at"
+                ],
+                filter=filter_str,
+                limit=max_results,
+                offset=start,
+                order_by=[ColumnOrdering("published", ascending=False)],
+            )
+            df = scanner.to_table().to_pandas()
+            
+            results = [self._entity_to_response(row) for _, row in df.iterrows()]
+            return results, total
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for query_papers_by_date, falling back to pandas: {e}")
+            df = table.to_pandas()
+            
+            mask = (df["published"] >= date) & (df["published"] < next_date)
+            
+            if category:
+                mask &= df["categories"].str.contains(f'"{category}"', na=False)
+            
+            filtered = df[mask]
+            total = len(filtered)
+            
+            if total == 0:
+                return [], 0
+            
+            sorted_df = filtered.sort_values(by="published", ascending=False)
+            paginated = sorted_df.iloc[start:start + max_results]
+            
+            results = [self._entity_to_response(row) for _, row in paginated.iterrows()]
+            return results, total
     
     def get_paper_by_id(self, paper_id: str) -> Optional[Dict[str, Any]]:
         table = self._get_papers_table()
@@ -245,42 +315,93 @@ class LanceDBPaperRepository(PaperRepository):
     
     def delete_all_date_index(self) -> None:
         table = self._get_date_index_table()
-        df = table.to_pandas()
-        for _, row in df.iterrows():
-            table.delete(f"date = '{row['date']}'")
+        
+        try:
+            lance_ds = table.to_lance()
+            scanner = lance_ds.scanner(columns=["date"])
+            df = scanner.to_table().to_pandas()
+            for _, row in df.iterrows():
+                table.delete(f"date = '{row['date']}'")
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for delete_all_date_index, falling back to pandas: {e}")
+            df = table.to_pandas()
+            for _, row in df.iterrows():
+                table.delete(f"date = '{row['date']}'")
     
     def get_all_date_indexes(self) -> List[Dict[str, Any]]:
         table = self._get_date_index_table()
-        df = table.to_pandas()
         
-        if len(df) == 0:
+        if table.count_rows() == 0:
             return []
         
-        sorted_df = df.sort_values(by="date", ascending=False)
-        return [self._date_index_to_response(row) for _, row in sorted_df.iterrows()]
+        try:
+            lance_ds = table.to_lance()
+            scanner = lance_ds.scanner(
+                columns=["date", "total_count", "fetched_at"],
+                order_by=[ColumnOrdering("date", ascending=False)],
+            )
+            df = scanner.to_table().to_pandas()
+            return [self._date_index_to_response(row) for _, row in df.iterrows()]
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for get_all_date_indexes, falling back to pandas: {e}")
+            df = table.to_pandas()
+            if len(df) == 0:
+                return []
+            sorted_df = df.sort_values(by="date", ascending=False)
+            return [self._date_index_to_response(row) for _, row in sorted_df.iterrows()]
     
     def get_total_paper_count(self) -> int:
         table = self._get_papers_table()
-        df = table.to_pandas()
-        return len(df)
+        return table.count_rows()
     
     def get_all_paper_ids(self) -> List[str]:
         table = self._get_papers_table()
-        df = table.to_pandas()
-        return df["id"].tolist() if len(df) > 0 else []
+        
+        if table.count_rows() == 0:
+            return []
+        
+        try:
+            lance_ds = table.to_lance()
+            scanner = lance_ds.scanner(columns=["id"])
+            df = scanner.to_table().to_pandas()
+            return df["id"].tolist()
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for get_all_paper_ids, falling back to pandas: {e}")
+            df = table.to_pandas()
+            return df["id"].tolist() if len(df) > 0 else []
     
     def get_papers_by_ids(self, paper_ids: List[str]) -> List[Dict[str, Any]]:
         if not paper_ids:
             return []
         
         table = self._get_papers_table()
-        df = table.to_pandas()
         
-        if len(df) == 0:
+        if table.count_rows() == 0:
             return []
         
-        filtered = df[df["id"].isin(paper_ids)]
-        return [self._entity_to_response(row) for _, row in filtered.iterrows()]
+        try:
+            lance_ds = table.to_lance()
+            escaped_ids = [pid.replace("'", "''") for pid in paper_ids]
+            ids_str = ", ".join(f"'{pid}'" for pid in escaped_ids)
+            filter_str = f"id IN ({ids_str})"
+            
+            scanner = lance_ds.scanner(
+                columns=[
+                    "id", "title", "abstract", "authors", "primary_category",
+                    "categories", "published", "updated", "pdf_url", "abs_url",
+                    "comment", "journal_ref", "doi", "fetched_at"
+                ],
+                filter=filter_str,
+            )
+            df = scanner.to_table().to_pandas()
+            return [self._entity_to_response(row) for _, row in df.iterrows()]
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for get_papers_by_ids, falling back to pandas: {e}")
+            df = table.to_pandas()
+            if len(df) == 0:
+                return []
+            filtered = df[df["id"].isin(paper_ids)]
+            return [self._entity_to_response(row) for _, row in filtered.iterrows()]
     
     def get_paper_ids_by_date_range(
         self,
@@ -289,25 +410,52 @@ class LanceDBPaperRepository(PaperRepository):
         date_to: Optional[str] = None,
     ) -> List[str]:
         table = self._get_papers_table()
-        df = table.to_pandas()
         
-        if len(df) == 0:
+        if table.count_rows() == 0:
             return []
         
-        if date:
-            next_date = self._get_next_date(date)
-            mask = (df["published"] >= date) & (df["published"] < next_date)
-        elif date_from and date_to:
-            mask = (df["published"] >= date_from) & (df["published"] <= date_to)
-        elif date_from:
-            mask = df["published"] >= date_from
-        elif date_to:
-            mask = df["published"] <= date_to
-        else:
-            mask = pd.Series([True] * len(df))
-        
-        filtered = df[mask]
-        return filtered["id"].tolist()
+        try:
+            lance_ds = table.to_lance()
+            filter_parts = []
+            
+            if date:
+                next_date = self._get_next_date(date)
+                filter_parts.append(f"published >= '{date}'")
+                filter_parts.append(f"published < '{next_date}'")
+            elif date_from and date_to:
+                filter_parts.append(f"published >= '{date_from}'")
+                filter_parts.append(f"published <= '{date_to}'")
+            elif date_from:
+                filter_parts.append(f"published >= '{date_from}'")
+            elif date_to:
+                filter_parts.append(f"published <= '{date_to}'")
+            
+            filter_str = " AND ".join(filter_parts) if filter_parts else None
+            
+            scanner = lance_ds.scanner(columns=["id"], filter=filter_str)
+            df = scanner.to_table().to_pandas()
+            return df["id"].tolist()
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for get_paper_ids_by_date_range, falling back to pandas: {e}")
+            df = table.to_pandas()
+            
+            if len(df) == 0:
+                return []
+            
+            if date:
+                next_date = self._get_next_date(date)
+                mask = (df["published"] >= date) & (df["published"] < next_date)
+            elif date_from and date_to:
+                mask = (df["published"] >= date_from) & (df["published"] <= date_to)
+            elif date_from:
+                mask = df["published"] >= date_from
+            elif date_to:
+                mask = df["published"] <= date_to
+            else:
+                mask = pd.Series([True] * len(df))
+            
+            filtered = df[mask]
+            return filtered["id"].tolist()
     
     def get_paper_ids_by_filters(
         self,
@@ -317,25 +465,51 @@ class LanceDBPaperRepository(PaperRepository):
         limit: int = 1000,
     ) -> List[str]:
         table = self._get_papers_table()
-        df = table.to_pandas()
         
-        if len(df) == 0:
+        if table.count_rows() == 0:
             return []
         
-        mask = pd.Series([True] * len(df))
-        
-        if category:
-            mask &= df["categories"].str.contains(f'"{category}"', na=False)
-        
-        if date_from and date_to:
-            mask &= (df["published"] >= date_from) & (df["published"] <= date_to)
-        elif date_from:
-            mask &= df["published"] >= date_from
-        elif date_to:
-            mask &= df["published"] <= date_to
-        
-        filtered = df[mask].head(limit)
-        return filtered["id"].tolist()
+        try:
+            lance_ds = table.to_lance()
+            filter_parts = []
+            
+            if category:
+                filter_parts.append(f"categories LIKE '%\"{category}\"%'")
+            
+            if date_from and date_to:
+                filter_parts.append(f"published >= '{date_from}'")
+                filter_parts.append(f"published <= '{date_to}'")
+            elif date_from:
+                filter_parts.append(f"published >= '{date_from}'")
+            elif date_to:
+                filter_parts.append(f"published <= '{date_to}'")
+            
+            filter_str = " AND ".join(filter_parts) if filter_parts else None
+            
+            scanner = lance_ds.scanner(columns=["id"], filter=filter_str, limit=limit)
+            df = scanner.to_table().to_pandas()
+            return df["id"].tolist()
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for get_paper_ids_by_filters, falling back to pandas: {e}")
+            df = table.to_pandas()
+            
+            if len(df) == 0:
+                return []
+            
+            mask = pd.Series([True] * len(df))
+            
+            if category:
+                mask &= df["categories"].str.contains(f'"{category}"', na=False)
+            
+            if date_from and date_to:
+                mask &= (df["published"] >= date_from) & (df["published"] <= date_to)
+            elif date_from:
+                mask &= df["published"] >= date_from
+            elif date_to:
+                mask &= df["published"] <= date_to
+            
+            filtered = df[mask].head(limit)
+            return filtered["id"].tolist()
     
     def get_embedding_index(self, date: str) -> Optional[Dict[str, Any]]:
         table = self._get_embedding_index_table()

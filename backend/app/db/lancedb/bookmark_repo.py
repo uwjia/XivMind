@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+import lance
 from lance.dataset import ColumnOrdering
 
 from app.db.base import BookmarkRepository
