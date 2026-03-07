@@ -59,8 +59,8 @@ class PaperService:
             papers = await self.arxiv_client.fetch_all_papers_for_date(date, category)
             
             if papers:
-                inserted = self.paper_repo.insert_papers_batch(papers)
-                logger.info(f"Inserted {inserted} papers for {date}")
+                inserted = self.paper_repo.upsert_papers_batch(papers)
+                logger.info(f"Upserted {inserted} papers for {date}")
                 self.paper_repo.insert_date_index(date, len(papers))
                 return {"count": len(papers), "inserted": inserted}
             else:
