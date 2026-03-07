@@ -13,9 +13,9 @@
         <router-link to="/" class="logo">
           <svg viewBox="0 0 24 24" class="logo-icon">
             <path d="M12 2C12 2 4 8 4 14C4 20 8 22 12 22C16 22 20 20 20 14C20 8 12 2 12 2Z" fill="none" stroke="#00BCD4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M12 4V20" stroke="#00BCD4" stroke-width="1" stroke-linecap="round"/>
-            <path d="M12 14L9 12" stroke="#00BCD4" stroke-width="0.8" stroke-linecap="round"/>
-            <path d="M12 14L15 12" stroke="#00BCD4" stroke-width="0.8" stroke-linecap="round"/>
+            <path d="M12 2V22" stroke="#00BCD4" stroke-width="1" stroke-linecap="round"/>
+            <path d="M12 14Q6 10 4.5 13" stroke="#00BCD4" stroke-width="0.8" stroke-linecap="round" fill="none"/>
+            <path d="M12 14Q18 10 19.5 13" stroke="#00BCD4" stroke-width="0.8" stroke-linecap="round" fill="none"/>
           </svg>
           <span class="logo-text">XivMind</span>
         </router-link>
