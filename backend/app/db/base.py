@@ -107,7 +107,7 @@ class PaperRepository(BaseRepository):
 
     @abstractmethod
     def upsert_papers_batch(self, papers: List[Dict[str, Any]]) -> int:
-        """Upsert multiple papers, return count of inserted papers."""
+        """Upsert multiple papers, return count of upserted papers."""
         pass
 
     @abstractmethod
