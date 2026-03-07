@@ -106,6 +106,11 @@ class PaperRepository(BaseRepository):
         pass
 
     @abstractmethod
+    def upsert_papers_batch(self, papers: List[Dict[str, Any]]) -> int:
+        """Upsert multiple papers, return count of inserted papers."""
+        pass
+
+    @abstractmethod
     def get_date_index(self, date: str) -> Optional[Dict[str, Any]]:
         """Get date index by date string."""
         pass

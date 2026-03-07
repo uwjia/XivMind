@@ -131,6 +131,11 @@ class LanceDBClient:
                             table_name, 
                             schema=schema.get_pyarrow_schema()
                         )
+                        
+                        if schema.primary_key:
+                            table.create_scalar_index(schema.primary_key)
+                            logger.info(f"Created scalar index on '{schema.primary_key}' for {table_name}")
+                        
                         self._tables[table_name] = table
                         logger.info(f"{table_name} table created")
                     except Exception as e:

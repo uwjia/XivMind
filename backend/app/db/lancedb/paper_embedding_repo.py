@@ -106,27 +106,24 @@ class LanceDBPaperEmbeddingRepository(PaperEmbeddingRepository):
         now = datetime.utcnow().isoformat()
         
         records = []
-        paper_ids_to_delete = []
-        
         for data in embeddings_data:
-            paper_id = data.get("paper_id")
-            paper_ids_to_delete.append(paper_id)
-            
             record = {
-                "paper_id": paper_id,
+                "paper_id": data.get("paper_id"),
                 "embedding": data.get("embedding", []),
                 "embedding_model": data.get("model_name", ""),
                 "created_at": now,
             }
             records.append(record)
         
-        for paper_id in paper_ids_to_delete:
-            table.delete(f"paper_id = '{paper_id}'")
-        
-        if records:
-            table.add(records)
-        
-        return len(records)
+        try:
+            table.merge_insert("paper_id") \
+                .when_matched_update_all() \
+                .when_not_matched_insert_all() \
+                .execute(records)
+            return len(records)
+        except Exception as e:
+            logger.error(f"Failed to upsert embeddings batch with merge_insert: {e}")
+            raise
     
     def get_embedding(self, paper_id: str) -> Optional[Dict[str, Any]]:
         table = self._get_table()

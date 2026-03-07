@@ -102,8 +102,13 @@ class TestLanceDBPaperEmbeddingRepositoryUpsertEmbeddingsBatch:
 
     def test_upsert_embeddings_batch_success(self, repo, sample_embedding):
         mock_table = Mock()
-        mock_table.delete = Mock()
-        mock_table.add = Mock()
+        mock_merge_insert = Mock()
+        mock_merge_insert.when_matched_update_all = Mock(return_value=mock_merge_insert)
+        mock_merge_insert.when_not_matched_insert_all = Mock(return_value=mock_merge_insert)
+        mock_merge_insert.execute = Mock()
+        mock_table.merge_insert = Mock(return_value=mock_merge_insert)
+        mock_table.list_indices = Mock(return_value=[])
+        mock_table.create_scalar_index = Mock()
         
         embeddings_data = [
             {"paper_id": "2301.12345", "embedding": sample_embedding, "model_name": "test-model"},
@@ -114,8 +119,10 @@ class TestLanceDBPaperEmbeddingRepositoryUpsertEmbeddingsBatch:
             result = repo.upsert_embeddings_batch(embeddings_data)
             
             assert result == 2
-            assert mock_table.delete.call_count == 2
-            mock_table.add.assert_called_once()
+            mock_table.merge_insert.assert_called_once_with("paper_id")
+            mock_merge_insert.when_matched_update_all.assert_called_once()
+            mock_merge_insert.when_not_matched_insert_all.assert_called_once()
+            mock_merge_insert.execute.assert_called_once()
 
     def test_upsert_embeddings_batch_empty(self, repo):
         mock_table = Mock()

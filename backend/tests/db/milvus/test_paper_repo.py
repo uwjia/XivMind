@@ -482,6 +482,52 @@ class TestMilvusPaperRepositoryGetNextDate:
         result = repo._get_next_date("2024-12-31")
         assert result == "2025-01-01"
 
+    
     def test_get_next_date_invalid_format(self, repo):
         result = repo._get_next_date("invalid-date")
         assert result == "invalid-date"
+
+
+class TestMilvusPaperRepositoryUpsertPapersBatch:
+    @pytest.fixture
+    def repo(self):
+        return MilvusPaperRepository()
+
+    def test_upsert_papers_batch_insert_new(self, repo, sample_paper_data):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.insert = Mock()
+        mock_collection.flush = Mock()
+        
+        papers = [
+            {**sample_paper_data, "id": "2301.00001"},
+            {**sample_paper_data, "id": "2301.00002"},
+        ]
+        
+        with patch.object(repo, '_get_papers_collection', return_value=mock_collection):
+            result = repo.upsert_papers_batch(papers)
+            
+            assert result == 2
+            mock_collection.insert.assert_called_once()
+            mock_collection.flush.assert_called_once()
+
+    def test_upsert_papers_batch_empty_list(self, repo):
+        mock_collection = Mock()
+        
+        with patch.object(repo, '_get_papers_collection', return_value=mock_collection):
+            result = repo.upsert_papers_batch([])
+            
+            assert result == 0
+
+    def test_upsert_papers_batch_single_paper(self, repo, sample_paper_data):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.insert = Mock()
+        mock_collection.flush = Mock()
+        
+        papers = [{**sample_paper_data, "id": "2301.00001"}]
+        
+        with patch.object(repo, '_get_papers_collection', return_value=mock_collection):
+            result = repo.upsert_papers_batch(papers)
+            
+            assert result == 1

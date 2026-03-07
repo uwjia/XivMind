@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 """
-SQLite to Milvus Migration Script
+SQLite to LanceDB Migration Script
 
-Migrate paper data from SQLite database to Milvus database by date.
+Migrate paper data from SQLite database to LanceDB database by date.
 
 Usage:
-    python scripts/migrate_sqlite_to_milvus.py --date 2024-01-15
-    python scripts/migrate_sqlite_to_milvus.py --date-from 2024-01-01 --date-to 2024-01-31
-    python scripts/migrate_sqlite_to_milvus.py --all
+    python scripts/migrate_sqlite_to_lancedb.py --date 2024-01-15
+    python scripts/migrate_sqlite_to_lancedb.py --date-from 2024-01-01 --date-to 2024-01-31
+    python scripts/migrate_sqlite_to_lancedb.py --all
+    python scripts/migrate_sqlite_to_lancedb.py --date 2024-01-15 --force
 """
 
 import argparse
@@ -19,8 +20,8 @@ from typing import List, Dict, Any, Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.db.sqlite.paper_repo import SQLitePaperRepository
-from app.db.milvus.paper_repo import MilvusPaperRepository
-from app.db.milvus.client import milvus_client
+from app.db.lancedb.paper_repo import LanceDBPaperRepository
+from app.db.lancedb.client import lancedb_client
 from app.config import get_settings
 
 
@@ -44,15 +45,15 @@ def get_all_dates_from_sqlite(sqlite_repo: SQLitePaperRepository) -> List[str]:
     return [di["date"] for di in date_indexes if di.get("total_count", 0) > 0]
 
 
-def check_milvus_date_exists(milvus_repo: MilvusPaperRepository, date: str) -> bool:
-    """Check if a date already has data in Milvus."""
-    date_info = milvus_repo.get_date_index(date)
+def check_lancedb_date_exists(lancedb_repo: LanceDBPaperRepository, date: str) -> bool:
+    """Check if a date already has data in LanceDB."""
+    date_info = lancedb_repo.get_date_index(date)
     return date_info is not None and date_info.get("total_count", 0) > 0
 
 
 def migrate_single_date(
     sqlite_repo: SQLitePaperRepository,
-    milvus_repo: MilvusPaperRepository,
+    lancedb_repo: LanceDBPaperRepository,
     date: str,
     force: bool = False,
     dry_run: bool = False,
@@ -60,11 +61,11 @@ def migrate_single_date(
     show_batch_progress: bool = False,
 ) -> Dict[str, Any]:
     """
-    Migrate papers for a single date from SQLite to Milvus.
+    Migrate papers for a single date from SQLite to LanceDB.
     
     Args:
         sqlite_repo: SQLite paper repository
-        milvus_repo: Milvus paper repository
+        lancedb_repo: LanceDB paper repository
         date: Date to migrate (YYYY-MM-DD)
         force: Force overwrite existing data
         dry_run: Only show what would be done, don't actually migrate
@@ -99,13 +100,13 @@ def migrate_single_date(
             result["inserted"] = total
             return result
         
-        if not force and check_milvus_date_exists(milvus_repo, date):
+        if not force and check_lancedb_date_exists(lancedb_repo, date):
             result["skipped"] = total
             result["error"] = "Already exists (use --force to overwrite)"
             return result
         
         if force:
-            milvus_repo.delete_date_index(date)
+            lancedb_repo.delete_date_index(date)
         
         inserted = 0
         total_batches = (len(papers) + batch_size - 1) // batch_size
@@ -125,9 +126,9 @@ def migrate_single_date(
         
         for i in batch_iterator:
             batch = papers[i:i + batch_size]
-            inserted += milvus_repo.upsert_papers_batch(batch)
+            inserted += lancedb_repo.upsert_papers_batch(batch)
         
-        milvus_repo.insert_date_index(date, total)
+        lancedb_repo.insert_date_index(date, total)
         
         result["inserted"] = inserted
         
@@ -139,7 +140,7 @@ def migrate_single_date(
 
 def migrate_date_range(
     sqlite_repo: SQLitePaperRepository,
-    milvus_repo: MilvusPaperRepository,
+    lancedb_repo: LanceDBPaperRepository,
     dates: List[str],
     force: bool = False,
     dry_run: bool = False,
@@ -151,7 +152,7 @@ def migrate_date_range(
     
     Args:
         sqlite_repo: SQLite paper repository
-        milvus_repo: Milvus paper repository
+        lancedb_repo: LanceDB paper repository
         dates: List of dates to migrate
         force: Force overwrite existing data
         dry_run: Only show what would be done
@@ -183,7 +184,7 @@ def migrate_date_range(
     for date in iterator:
         result = migrate_single_date(
             sqlite_repo=sqlite_repo,
-            milvus_repo=milvus_repo,
+            lancedb_repo=lancedb_repo,
             date=date,
             force=force,
             dry_run=dry_run,
@@ -206,24 +207,24 @@ def migrate_date_range(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Migrate paper data from SQLite to Milvus by date",
+        description="Migrate paper data from SQLite to LanceDB by date",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Migrate a single date
-  python scripts/migrate_sqlite_to_milvus.py --date 2024-01-15
+  python scripts/migrate_sqlite_to_lancedb.py --date 2024-01-15
   
   # Migrate a date range
-  python scripts/migrate_sqlite_to_milvus.py --date-from 2024-01-01 --date-to 2024-01-31
+  python scripts/migrate_sqlite_to_lancedb.py --date-from 2024-01-01 --date-to 2024-01-31
   
   # Migrate all data from SQLite
-  python scripts/migrate_sqlite_to_milvus.py --all
+  python scripts/migrate_sqlite_to_lancedb.py --all
   
   # Dry run to see what would be migrated
-  python scripts/migrate_sqlite_to_milvus.py --all --dry-run
+  python scripts/migrate_sqlite_to_lancedb.py --all --dry-run
   
   # Force overwrite existing data
-  python scripts/migrate_sqlite_to_milvus.py --date 2024-01-15 --force
+  python scripts/migrate_sqlite_to_lancedb.py --date 2024-01-15 --force
         """,
     )
     
@@ -261,13 +262,19 @@ Examples:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Force overwrite existing data in Milvus",
+        help="Force overwrite existing data in LanceDB",
     )
     parser.add_argument(
         "--sqlite-db",
         type=str,
         default=None,
         help="Path to SQLite database (default: from config)",
+    )
+    parser.add_argument(
+        "--lancedb-path",
+        type=str,
+        default=None,
+        help="Path to LanceDB database (default: from config)",
     )
     
     args = parser.parse_args()
@@ -294,7 +301,7 @@ Examples:
         sys.exit(1)
     
     print("=" * 60)
-    print("SQLite to Milvus Migration")
+    print("SQLite to LanceDB Migration")
     print("=" * 60)
     print(f"SQLite database: {sqlite_db_path}")
     print(f"Dry run: {args.dry_run}")
@@ -304,15 +311,16 @@ Examples:
     
     sqlite_repo = SQLitePaperRepository(sqlite_db_path)
     
-    print("Connecting to Milvus...")
+    print("Connecting to LanceDB...")
     try:
-        milvus_client.connect()
-        print("Connected to Milvus successfully")
+        lancedb_client.connect(args.lancedb_path)
+        lancedb_client.init_tables()
+        print("Connected to LanceDB successfully")
     except Exception as e:
-        print(f"Error: Failed to connect to Milvus: {e}")
+        print(f"Error: Failed to connect to LanceDB: {e}")
         sys.exit(1)
     
-    milvus_repo = MilvusPaperRepository()
+    lancedb_repo = LanceDBPaperRepository()
     
     dates = []
     if args.date:
@@ -341,7 +349,7 @@ Examples:
     
     stats = migrate_date_range(
         sqlite_repo=sqlite_repo,
-        milvus_repo=milvus_repo,
+        lancedb_repo=lancedb_repo,
         dates=dates,
         force=args.force,
         dry_run=args.dry_run,

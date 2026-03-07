@@ -210,6 +210,44 @@ class LanceDBPaperRepository(PaperRepository):
         
         return inserted
     
+    def upsert_papers_batch(self, papers: List[Dict[str, Any]]) -> int:
+        if not papers:
+            return 0
+        
+        table = self._get_papers_table()
+        now = datetime.utcnow().isoformat()
+        
+        records = []
+        for data in papers:
+            record = {
+                "id": self._safe_str(data.get("id"), 128),
+                "title": self._safe_str(data.get("title"), 2048),
+                "abstract": self._safe_str(data.get("abstract"), 32768),
+                "authors": self._safe_str(json.dumps(data.get("authors") or []), 16384),
+                "primary_category": self._safe_str(data.get("primary_category"), 64),
+                "categories": self._safe_str(json.dumps(data.get("categories") or []), 2048),
+                "published": self._safe_str(data.get("published"), 64),
+                "updated": self._safe_str(data.get("updated"), 64),
+                "pdf_url": self._safe_str(data.get("pdf_url"), 512),
+                "abs_url": self._safe_str(data.get("abs_url"), 512),
+                "comment": self._safe_str(data.get("comment"), 8192),
+                "journal_ref": self._safe_str(data.get("journal_ref"), 1024),
+                "doi": self._safe_str(data.get("doi"), 256),
+                "fetched_at": now,
+                "embedding": [0.0] * 8,
+            }
+            records.append(record)
+        
+        try:
+            table.merge_insert("id") \
+                .when_matched_update_all() \
+                .when_not_matched_insert_all() \
+                .execute(records)
+            return len(records)
+        except Exception as e:
+            logger.error(f"Failed to upsert papers batch with merge_insert: {e}")
+            raise
+    
     def get_date_index(self, date: str) -> Optional[Dict[str, Any]]:
         table = self._get_date_index_table()
         results = table.search().where(f"date = '{date}'").limit(1).to_pandas()

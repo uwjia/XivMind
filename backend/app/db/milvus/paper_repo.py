@@ -203,6 +203,63 @@ class MilvusPaperRepository(PaperRepository):
 
         return inserted
 
+    def upsert_papers_batch(self, papers: List[Dict[str, Any]]) -> int:
+        if not papers:
+            return 0
+
+        collection = self._get_papers_collection()
+        collection.load()
+        now = datetime.utcnow().isoformat()
+
+        ids = []
+        titles = []
+        abstracts = []
+        authors_list = []
+        primary_categories = []
+        categories_list = []
+        published_list = []
+        updated_list = []
+        pdf_urls = []
+        abs_urls = []
+        comments = []
+        journal_refs = []
+        dois = []
+        fetched_at_list = []
+        embeddings = []
+
+        inserted = 0
+        for data in papers:
+            paper_id = self._safe_str(data.get("id"), 128)
+
+            ids.append(paper_id)
+            titles.append(self._safe_str(data.get("title"), 2048))
+            abstracts.append(self._safe_str(data.get("abstract"), 32768))
+            authors_list.append(self._safe_str(json.dumps(data.get("authors") or []), 16384))
+            primary_categories.append(self._safe_str(data.get("primary_category"), 64))
+            categories_list.append(self._safe_str(json.dumps(data.get("categories") or []), 2048))
+            published_list.append(self._safe_str(data.get("published"), 64))
+            updated_list.append(self._safe_str(data.get("updated"), 64))
+            pdf_urls.append(self._safe_str(data.get("pdf_url"), 512))
+            abs_urls.append(self._safe_str(data.get("abs_url"), 512))
+            comments.append(self._safe_str(data.get("comment"), 8192))
+            journal_refs.append(self._safe_str(data.get("journal_ref"), 1024))
+            dois.append(self._safe_str(data.get("doi"), 256))
+            fetched_at_list.append(now)
+            embeddings.append([0.0] * 8)
+            inserted += 1
+
+        if inserted > 0:
+            insert_data = [
+                ids, titles, abstracts, authors_list, primary_categories,
+                categories_list, published_list, updated_list, pdf_urls,
+                abs_urls, comments, journal_refs, dois,
+                fetched_at_list, embeddings,
+            ]
+            collection.insert(insert_data)
+            collection.flush()
+
+        return inserted
+    
     def get_date_index(self, date: str) -> Optional[Dict[str, Any]]:
         collection = self._get_date_index_collection()
         collection.load()

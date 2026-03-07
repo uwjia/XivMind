@@ -20,6 +20,10 @@ class PaperEmbeddingSchema(BaseTableSchema):
         settings = get_settings()
         return settings.EMBEDDING_DIM
     
+    @property
+    def primary_key(self) -> str:
+        return "paper_id"
+    
     def get_fields(self) -> List[pa.Field]:
         dim = self.embedding_dim
         return [

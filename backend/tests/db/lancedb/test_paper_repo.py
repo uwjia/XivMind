@@ -675,3 +675,145 @@ class TestLanceDBPaperRepositoryGetNextDate:
     def test_get_next_date_invalid_format(self, repo):
         result = repo._get_next_date("invalid-date")
         assert result == "invalid-date"
+
+
+class TestLanceDBPaperRepositoryUpsertPapersBatch:
+    @pytest.fixture
+    def repo(self):
+        return LanceDBPaperRepository()
+
+    def test_upsert_papers_batch_insert_new(self, repo):
+        mock_table = Mock()
+        mock_merge_insert = Mock()
+        mock_merge_insert.when_matched_update_all = Mock(return_value=mock_merge_insert)
+        mock_merge_insert.when_not_matched_insert_all = Mock(return_value=mock_merge_insert)
+        mock_merge_insert.execute = Mock()
+        mock_table.merge_insert = Mock(return_value=mock_merge_insert)
+        mock_table.list_indices = Mock(return_value=[])
+        
+        papers = [
+            {
+                "id": "2301.00001",
+                "title": "Paper 1",
+                "abstract": "Abstract 1",
+                "authors": ["Author 1"],
+                "primary_category": "cs.AI",
+                "categories": ["cs.AI"],
+                "published": "2024-01-01T00:00:00",
+            },
+            {
+                "id": "2301.00002",
+                "title": "Paper 2",
+                "abstract": "Abstract 2",
+                "authors": ["Author 2"],
+                "primary_category": "cs.LG",
+                "categories": ["cs.LG"],
+                "published": "2024-01-01T00:00:00",
+            },
+        ]
+        
+        with patch.object(repo, '_get_papers_table', return_value=mock_table):
+            result = repo.upsert_papers_batch(papers)
+            
+            assert result == 2
+            mock_table.merge_insert.assert_called_once_with("id")
+
+    def test_upsert_papers_batch_empty_list(self, repo):
+        mock_table = Mock()
+        
+        with patch.object(repo, '_get_papers_table', return_value=mock_table):
+            result = repo.upsert_papers_batch([])
+            
+            assert result == 0
+
+    def test_upsert_papers_batch_with_update(self, repo):
+        mock_table = Mock()
+        mock_merge_insert = Mock()
+        mock_merge_insert.when_matched_update_all = Mock(return_value=mock_merge_insert)
+        mock_merge_insert.when_not_matched_insert_all = Mock(return_value=mock_merge_insert)
+        mock_merge_insert.execute = Mock()
+        mock_table.merge_insert = Mock(return_value=mock_merge_insert)
+        mock_table.list_indices = Mock(return_value=[])
+        
+        papers = [
+            {
+                "id": "2301.00001",
+                "title": "Updated Title",
+                "abstract": "Updated Abstract",
+                "authors": ["Updated Author"],
+                "primary_category": "cs.LG",
+                "categories": ["cs.LG"],
+                "published": "2024-01-02T00:00:00",
+            },
+        ]
+        
+        with patch.object(repo, '_get_papers_table', return_value=mock_table):
+            result = repo.upsert_papers_batch(papers)
+            
+            assert result == 1
+            mock_merge_insert.when_matched_update_all.assert_called_once()
+            mock_merge_insert.when_not_matched_insert_all.assert_called_once()
+
+    def test_upsert_papers_batch_mixed_insert_and_update(self, repo):
+        mock_table = Mock()
+        mock_merge_insert = Mock()
+        mock_merge_insert.when_matched_update_all = Mock(return_value=mock_merge_insert)
+        mock_merge_insert.when_not_matched_insert_all = Mock(return_value=mock_merge_insert)
+        mock_merge_insert.execute = Mock()
+        mock_table.merge_insert = Mock(return_value=mock_merge_insert)
+        mock_table.list_indices = Mock(return_value=[])
+        
+        papers = [
+            {
+                "id": "2301.00001",
+                "title": "Paper 1",
+                "abstract": "Abstract 1",
+                "authors": [],
+                "primary_category": "cs.AI",
+                "categories": [],
+                "published": "2024-01-01T00:00:00",
+            },
+            {
+                "id": "2301.00002",
+                "title": "Paper 2",
+                "abstract": "Abstract 2",
+                "authors": [],
+                "primary_category": "cs.LG",
+                "categories": [],
+                "published": "2024-01-01T00:00:00",
+            },
+        ]
+        
+        with patch.object(repo, '_get_papers_table', return_value=mock_table):
+            result = repo.upsert_papers_batch(papers)
+            
+            assert result == 2
+
+    def test_upsert_papers_batch_creates_index_if_missing(self, repo):
+        mock_table = Mock()
+        mock_index = Mock()
+        mock_index.name = "id_idx"
+        mock_table.list_indices = Mock(return_value=[mock_index])
+        
+        mock_merge_insert = Mock()
+        mock_merge_insert.when_matched_update_all = Mock(return_value=mock_merge_insert)
+        mock_merge_insert.when_not_matched_insert_all = Mock(return_value=mock_merge_insert)
+        mock_merge_insert.execute = Mock()
+        mock_table.merge_insert = Mock(return_value=mock_merge_insert)
+        
+        papers = [
+            {
+                "id": "2301.00001",
+                "title": "Paper 1",
+                "abstract": "Abstract 1",
+                "authors": [],
+                "primary_category": "cs.AI",
+                "categories": [],
+                "published": "2024-01-01T00:00:00",
+            },
+        ]
+        
+        with patch.object(repo, '_get_papers_table', return_value=mock_table):
+            result = repo.upsert_papers_batch(papers)
+            
+            assert result == 1

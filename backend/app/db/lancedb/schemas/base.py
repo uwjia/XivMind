@@ -24,6 +24,11 @@ class BaseTableSchema(ABC):
         """Return the embedding dimension."""
         pass
     
+    @property
+    def primary_key(self) -> str | None:
+        """Return the primary key field name. Override in subclass if needed."""
+        return None
+    
     @abstractmethod
     def get_fields(self) -> List[pa.Field]:
         """Return the list of PyArrow fields."""

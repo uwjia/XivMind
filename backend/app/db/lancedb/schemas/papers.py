@@ -18,6 +18,10 @@ class PaperSchema(BaseTableSchema):
     def embedding_dim(self) -> int:
         return 8
     
+    @property
+    def primary_key(self) -> str:
+        return "id"
+    
     def get_fields(self) -> List[pa.Field]:
         return [
             pa.field("id", pa.string()),

@@ -168,7 +168,43 @@ class SQLitePaperRepository(PaperRepository):
                     inserted += 1
             conn.commit()
         return inserted
+    
+    def upsert_papers_batch(self, papers: List[Dict[str, Any]]) -> int:
+        upserted = 0
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            for data in papers:
+                title = self._safe_str(data.get("title"), 2048)
+                abstract = self._safe_str(data.get("abstract"), 32768)
+                comment = self._safe_str(data.get("comment"), 8192)
+                journal_ref = self._safe_str(data.get("journal_ref"), 1024)
+                doi = self._safe_str(data.get("doi"), 256)
 
+                cursor.execute('''
+                    INSERT OR REPLACE INTO papers (
+                        id, title, abstract, authors, primary_category, categories,
+                        published, updated, pdf_url, abs_url, comment, journal_ref, doi
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    self._safe_str(data.get("id")),
+                    title,
+                    abstract,
+                    json.dumps(data.get("authors") or []),
+                    self._safe_str(data.get("primary_category")),
+                    json.dumps(data.get("categories") or []),
+                    self._safe_str(data.get("published")),
+                    self._safe_str(data.get("updated")),
+                    self._safe_str(data.get("pdf_url")),
+                    self._safe_str(data.get("abs_url")),
+                    comment,
+                    journal_ref,
+                    doi,
+                ))
+                if cursor.rowcount > 0:
+                    upserted += 1
+            conn.commit()
+        return upserted
+    
     def get_date_index(self, date: str) -> Optional[Dict[str, Any]]:
         with self._get_connection() as conn:
             cursor = conn.cursor()
