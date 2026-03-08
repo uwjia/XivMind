@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html
 from fastapi.staticfiles import StaticFiles
 from app.routers import arxiv, bookmarks, downloads, skills, llm, graph, subagents, memory, conversation
-from app.db.milvus.client import milvus_client
 from app.services import download_service
 from app.config import get_settings
 from contextlib import asynccontextmanager
@@ -18,8 +17,6 @@ logging.basicConfig(
     ]
 )
 
-logging.getLogger("pymilvus").setLevel(logging.WARNING)
-
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
 
 
@@ -31,6 +28,7 @@ async def lifespan(app: FastAPI):
     if settings.DATABASE_TYPE.lower() == "milvus":
         try:
             logging.info("Creating Milvus collections...")
+            from app.db.milvus.client import milvus_client
             milvus_client.init_collections()
             logging.info("Milvus collections created successfully")
         except ConnectionError as e:

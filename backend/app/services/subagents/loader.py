@@ -149,6 +149,8 @@ class SubAgentLoader:
         tools: Optional[List[str]] = None,
         system_prompt: str = "",
     ) -> bool:
+        newline = "\n"
+        default_prompt = f"# {name}{newline}{newline}Write your system prompt here..."
         template = f"""---
 id: {agent_id}
 name: {name}
@@ -162,7 +164,7 @@ max_turns: 10
 temperature: 0.7
 ---
 
-{system_prompt or f"# {name}\\n\\nWrite your system prompt here..."}
+{system_prompt or default_prompt}
 """
         return self.save_agent_raw(agent_id, template)
     

@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     ANTHROPIC_BASE_URL: str = ""
     
     LOCAL_EMBEDDING_MODEL: str = "BAAI/bge-m3"
-    USE_LOCAL_EMBEDDING: bool = False
+    USE_LOCAL_EMBEDDING: bool = True
     
     EMBEDDING_DEVICE: str = "auto"
     EMBEDDING_BATCH_SIZE: int = 32

@@ -1,0 +1,61 @@
+# XivMind GPU Version - with LanceDB + CUDA
+# Usage: docker-compose -f docker/docker-compose.xivmind.gpu.yml up -d
+
+version: '3.8'
+
+services:
+  xivmind:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.gpu
+    image: xivmind:gpu
+    container_name: xivmind-gpu
+    restart: unless-stopped
+    ports:
+      - "${XIVMIND_PORT:-8000}:8000"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ../.env:/app/.env:ro
+    environment:
+      - XIVMIND_DOCKER=true
+      - DATABASE_TYPE=lancedb
+      - LANCEDB_PATH=/app/data/lancedb
+      - DOWNLOAD_DIR=/app/data/downloads
+      - XIVMIND_MODELS_CACHE=/app/models
+      - HF_ENDPOINT=${HF_ENDPOINT:-https://hf-mirror.com}
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - LLM_MODEL=${LLM_MODEL:-gpt-4o-mini}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GLM_API_KEY=${GLM_API_KEY:-}
+      - QWEN_API_KEY=${QWEN_API_KEY:-}
+      - USE_LOCAL_EMBEDDING=true
+      - LOCAL_EMBEDDING_MODEL=${LOCAL_EMBEDDING_MODEL:-BAAI/bge-m3}
+      - EMBEDDING_DEVICE=cuda
+      - EMBEDDING_BATCH_SIZE=${EMBEDDING_BATCH_SIZE:-64}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  xivmind_data:
+    name: xivmind_data
+  xivmind_models:
+    name: xivmind_models

@@ -1,0 +1,48 @@
+# ============================================
+# XivMind GPU Version - with LanceDB + CUDA 12.8
+# ============================================
+# Using NVIDIA NGC PyTorch with CUDA 12.8
+FROM pytorch/pytorch:2.8.0-cuda12.8-cudnn9-runtime
+
+LABEL maintainer="XivMind"
+LABEL description="XivMind - arXiv Paper Management System (GPU)"
+LABEL version="0.3.0"
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    XIVMIND_DOCKER=true \
+    EMBEDDING_DEVICE=cuda \
+    CUDA_VISIBLE_DEVICES=0
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements-gpu.txt .
+
+RUN pip install --no-cache-dir -r requirements-gpu.txt
+
+COPY app ./app
+COPY skills ./skills
+COPY subagents ./subagents
+COPY main_standalone.py .
+COPY .env.example .env.example
+COPY static ./static
+
+RUN mkdir -p /app/data/lancedb /app/data/downloads /app/models
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+COPY docker/docker-entrypoint.sh .
+RUN chmod +x docker-entrypoint.sh
+
+ENTRYPOINT ["./docker-entrypoint.sh"]
+CMD ["python", "main_standalone.py"]
