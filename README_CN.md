@@ -169,19 +169,10 @@ Milvus 模式提供更好的可扩展性和向量搜索能力。
 
 **1. 启动 Milvus 数据库**
 
-**Windows:**
-```cmd
-cd backend
-milvus.bat start          # 标准模式
-milvus.bat start lite     # 轻量模式（内存占用更少）
-```
-
-**Linux/Mac:**
 ```bash
-cd backend
-chmod +x milvus.sh
-./milvus.sh start         # 标准模式
-./milvus.sh start lite    # 轻量模式
+cd backend/docker
+docker-compose -f compose/milvus.yml up -d      # 完整模式 (etcd + minio + standalone + attu)
+docker-compose -f compose/milvus.lite.yml up -d # 轻量模式（嵌入式，内存占用更少）
 ```
 
 **2. 配置并启动后端**
@@ -221,6 +212,31 @@ npm run dev
 ```
 
 应用将在 `http://localhost:5173` 可用
+
+### 方式四：Docker 部署
+
+将 XivMind 部署为 Docker 容器，适用于生产环境或隔离环境。
+
+**CPU 版本（LanceDB）：**
+```bash
+cd backend/docker
+docker-compose -f compose/xivmind.yml up -d
+```
+
+**GPU 版本（CUDA 12.8）：**
+```bash
+cd backend/docker
+docker-compose -f compose/xivmind.gpu.yml up -d
+```
+
+**配置说明：**
+- 复制 `.env.example` 为 `.env` 并配置您的设置
+- 如果未提供 `.env` 文件，容器会自动从示例创建
+- 数据和模型存储在 Docker 命名卷中
+
+**访问地址：** http://localhost:8000
+
+更多详情请参阅 [backend/docker/README.md](backend/docker/README.md)。
 
 ## 后端脚本
 
@@ -353,14 +369,14 @@ ollama pull qwen2
 
 ## 数据库对比
 
-| 特性 | SQLite | LanceDB | Milvus |
-|------|--------|---------|--------|
-| 安装 | 无需安装 | 无需安装 | 需要 Docker |
-| 内存 | 极少 | 极少 | ~1-2GB |
-| 向量搜索 | 不支持 | 支持 | 支持 |
-| 可扩展性 | 单机 | 单机 | 分布式 |
-| 需要服务器 | 否 | 否 | 是 |
-| 使用场景 | 基础开发 | 带 AI 功能的开发 | 生产环境 |
+| 特性 | SQLite | LanceDB | Milvus | Docker |
+|------|--------|---------|--------|--------|
+| 安装 | 无需安装 | 无需安装 | 需要 Docker | 需要 Docker |
+| 内存 | 极少 | 极少 | ~1-2GB | ~8-9GB 镜像 |
+| 向量搜索 | 不支持 | 支持 | 支持 | 支持 |
+| 可扩展性 | 单机 | 单机 | 分布式 | 容器化 |
+| 需要服务器 | 否 | 否 | 是 | 是 |
+| 使用场景 | 基础开发 | 带 AI 功能的开发 | 生产环境 | 生产环境 / 隔离环境 |
 
 ## 服务地址
 

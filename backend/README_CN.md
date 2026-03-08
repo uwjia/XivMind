@@ -391,7 +391,7 @@ curl http://localhost:9091/healthz
 
 ### 端口冲突
 
-如果默认端口被占用，可以修改 `docker-compose.yml` 或 `docker-compose.lite.yml` 中的端口映射。
+如果默认端口被占用，可以修改 `docker/compose/xivmind.yml` 或 `docker/compose/milvus.lite.yml` 中的端口映射。
 
 ### 数据持久化
 

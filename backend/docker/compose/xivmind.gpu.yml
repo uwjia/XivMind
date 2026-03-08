@@ -1,12 +1,12 @@
 # XivMind GPU Version - with LanceDB + CUDA
-# Usage: docker-compose -f docker/docker-compose.xivmind.gpu.yml up -d
+# Usage: docker-compose -f compose/xivmind.gpu.yml up -d
 
 version: '3.8'
 
 services:
   xivmind:
     build:
-      context: ..
+      context: ../..
       dockerfile: docker/Dockerfile.gpu
     image: xivmind:gpu
     container_name: xivmind-gpu
@@ -14,9 +14,9 @@ services:
     ports:
       - "${XIVMIND_PORT:-8000}:8000"
     volumes:
-      - ./data:/app/data
-      - ./models:/app/models
-      - ../.env:/app/.env:ro
+      - xivmind_data:/app/data
+      - xivmind_models:/app/models
+      - ../../.env:/app/.env:ro
     environment:
       - XIVMIND_DOCKER=true
       - DATABASE_TYPE=lancedb

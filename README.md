@@ -169,19 +169,10 @@ Milvus mode provides better scalability and vector search capabilities.
 
 **1. Start Milvus Database**
 
-**Windows:**
-```cmd
-cd backend
-milvus.bat start          # Standard mode
-milvus.bat start lite     # Lite mode (less memory)
-```
-
-**Linux/Mac:**
 ```bash
-cd backend
-chmod +x milvus.sh
-./milvus.sh start         # Standard mode
-./milvus.sh start lite    # Lite mode
+cd backend/docker
+docker-compose -f compose/milvus.yml up -d      # Full stack (etcd + minio + standalone + attu)
+docker-compose -f compose/milvus.lite.yml up -d # Lite mode (embedded, less memory)
 ```
 
 **2. Configure and Start Backend**
@@ -221,6 +212,31 @@ npm run dev
 ```
 
 The application will be available at `http://localhost:5173`
+
+### Option 4: Docker Deployment
+
+Deploy XivMind as a Docker container for production or isolated environments.
+
+**CPU Version (with LanceDB):**
+```bash
+cd backend/docker
+docker-compose -f compose/xivmind.yml up -d
+```
+
+**GPU Version (CUDA 12.8):**
+```bash
+cd backend/docker
+docker-compose -f compose/xivmind.gpu.yml up -d
+```
+
+**Configuration:**
+- Copy `.env.example` to `.env` and configure your settings
+- The container will automatically create a `.env` file from the example if not provided
+- Data and models are stored in Docker named volumes
+
+**Access:** http://localhost:8000
+
+For more details, see [backend/docker/README.md](backend/docker/README.md).
 
 ## Backend Scripts
 
@@ -353,14 +369,14 @@ ollama pull qwen2
 
 ## Database Comparison
 
-| Feature | SQLite | LanceDB | Milvus |
-|---------|--------|---------|--------|
-| Setup | No setup required | No setup required | Requires Docker |
-| Memory | Minimal | Minimal | ~1-2GB |
-| Vector Search | Not supported | Supported | Supported |
-| Scalability | Single machine | Single machine | Distributed |
-| Server Required | No | No | Yes |
-| Use Case | Basic development | Development with AI features | Production |
+| Feature | SQLite | LanceDB | Milvus | Docker |
+|---------|--------|---------|--------|--------|
+| Setup | No setup required | No setup required | Requires Docker | Docker required |
+| Memory | Minimal | Minimal | ~1-2GB | ~8-9GB image |
+| Vector Search | Not supported | Supported | Supported | Supported |
+| Scalability | Single machine | Single machine | Distributed | Containerized |
+| Server Required | No | No | Yes | Yes |
+| Use Case | Basic development | Development with AI features | Production | Production / Isolated |
 
 ## Service URLs
 

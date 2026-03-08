@@ -391,7 +391,7 @@ curl http://localhost:9091/healthz
 
 ### Port Conflicts
 
-Modify port mappings in `docker-compose.yml` or `docker-compose.lite.yml` if default ports are occupied.
+Modify port mappings in `docker/compose/milvus.yml` or `docker/compose/milvus.lite.yml` if default ports are occupied.
 
 ### Data Persistence
 
