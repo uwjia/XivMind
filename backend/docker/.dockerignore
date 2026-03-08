@@ -9,7 +9,7 @@ venv/
 env/
 .ENV/
 
-# 测试和覆盖率
+# Testing and coverage
 .pytest_cache/
 .coverage
 htmlcov/
@@ -22,29 +22,29 @@ htmlcov/
 *.swp
 *.swo
 
-# 数据文件 (运行时生成)
+# Data files (generated at runtime)
 data/
 downloads/
 logs/
 volumes/
 
-# 构建产物
+# Build artifacts
 build/
 dist/
 *.egg-info/
 .eggs/
 
-# 本地配置
+# Local configuration
 .env
 *.local
 
-# 前端 (单独构建)
+# Frontend (built separately)
 node_modules/
 
-# Docker 相关 (避免递归)
+# Docker related (avoid recursion)
 docker/
 
-# 其他
+# Others
 .git/
 .gitignore
 *.md
