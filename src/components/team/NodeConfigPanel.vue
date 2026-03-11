@@ -41,6 +41,17 @@
           </select>
         </div>
         
+        <div v-if="selectedNode.type === 'agent'" class="config-section">
+          <label>Instruction</label>
+          <textarea
+            v-model="agentInstruction"
+            placeholder="Enter specific instruction for this agent... (optional, uses workflow input if empty)"
+            rows="3"
+            @change="updateConfig"
+          ></textarea>
+          <span class="hint">Optional: Override the workflow instruction for this agent</span>
+        </div>
+        
         <div v-if="selectedNode.type === 'skill'" class="config-section">
           <label>Skill</label>
           <select v-model="skillId" @change="updateConfig">
@@ -172,6 +183,7 @@ const availableSkills = ref<string[]>([])
 
 const nodeLabel = ref('')
 const agentId = ref('')
+const agentInstruction = ref('')
 const skillId = ref('')
 const condition = ref('')
 const inputInstruction = ref('')
@@ -210,6 +222,7 @@ watch(selectedNode, (node) => {
   if (node) {
     nodeLabel.value = node.label
     agentId.value = node.config.agentId || ''
+    agentInstruction.value = node.config.instruction || ''
     skillId.value = node.config.skillId || ''
     condition.value = node.config.condition || ''
     inputInstruction.value = node.config.instruction || ''
@@ -232,15 +245,22 @@ function updateConfig() {
       .map(id => id.trim())
       .filter(Boolean)
     
-    updateNodeConfig(selectedNode.value.id, {
+    const config: Record<string, unknown> = {
       agentId: agentId.value || undefined,
       skillId: skillId.value || undefined,
       condition: condition.value || undefined,
-      instruction: inputInstruction.value || undefined,
       paperIds: paperIds.length > 0 ? paperIds : undefined,
       timeout: timeout.value,
       maxRetries: maxRetries.value,
-    })
+    }
+    
+    if (selectedNode.value.type === 'agent') {
+      config.instruction = agentInstruction.value || undefined
+    } else if (selectedNode.value.type === 'input') {
+      config.instruction = inputInstruction.value || undefined
+    }
+    
+    updateNodeConfig(selectedNode.value.id, config)
   }
 }
 

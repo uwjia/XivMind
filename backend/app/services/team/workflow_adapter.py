@@ -80,18 +80,7 @@ class ExecutionPlan:
 
 class WorkflowAdapter:
     def __init__(self):
-        self._node_handlers = {
-            WorkflowNodeType.INPUT: self._handle_input_node,
-            WorkflowNodeType.ANALYZE: self._handle_analyze_node,
-            WorkflowNodeType.DECOMPOSE: self._handle_decompose_node,
-            WorkflowNodeType.AGENT: self._handle_agent_node,
-            WorkflowNodeType.CONDITION: self._handle_condition_node,
-            WorkflowNodeType.PARALLEL: self._handle_parallel_node,
-            WorkflowNodeType.SYNTHESIZE: self._handle_synthesize_node,
-            WorkflowNodeType.OUTPUT: self._handle_output_node,
-            WorkflowNodeType.TOOL: self._handle_tool_node,
-            WorkflowNodeType.SKILL: self._handle_skill_node,
-        }
+        pass
     
     def parse_workflow(self, workflow_data: Dict[str, Any]) -> Workflow:
         nodes = []
@@ -308,68 +297,6 @@ class WorkflowAdapter:
             current = next_node_id
         
         return branch
-    
-    def _handle_input_node(self, node: WorkflowNode, context: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            "output": context.get("input_data"),
-            "status": "success",
-        }
-    
-    def _handle_analyze_node(self, node: WorkflowNode, context: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            "output": context.get("analysis_result"),
-            "status": "success",
-        }
-    
-    def _handle_decompose_node(self, node: WorkflowNode, context: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            "output": context.get("subtasks", []),
-            "status": "success",
-        }
-    
-    def _handle_agent_node(self, node: WorkflowNode, context: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            "output": context.get("agent_result"),
-            "status": "success",
-        }
-    
-    def _handle_condition_node(self, node: WorkflowNode, context: Dict[str, Any]) -> Dict[str, Any]:
-        branch = self.evaluate_condition(node, context)
-        return {
-            "output": branch,
-            "status": "success",
-            "branch": branch,
-        }
-    
-    def _handle_parallel_node(self, node: WorkflowNode, context: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            "output": context.get("parallel_results", []),
-            "status": "success",
-        }
-    
-    def _handle_synthesize_node(self, node: WorkflowNode, context: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            "output": context.get("synthesized_result"),
-            "status": "success",
-        }
-    
-    def _handle_output_node(self, node: WorkflowNode, context: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            "output": context.get("final_output"),
-            "status": "success",
-        }
-    
-    def _handle_tool_node(self, node: WorkflowNode, context: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            "output": context.get("tool_result"),
-            "status": "success",
-        }
-    
-    def _handle_skill_node(self, node: WorkflowNode, context: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            "output": context.get("skill_result"),
-            "status": "success",
-        }
     
     def validate_workflow(self, workflow: Workflow) -> Tuple[bool, List[str]]:
         errors = []

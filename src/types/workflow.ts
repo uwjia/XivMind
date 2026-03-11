@@ -99,7 +99,7 @@ export const NODE_PORT_DEFINITIONS: Record<WorkflowNodeType, NodeTypePortDefinit
     outputs: [{ label: 'Result', dataType: 'result' }],
     configFields: [
       { key: 'agentId', label: 'Agent', type: 'select', options: [], placeholder: 'Select an agent...' },
-      { key: 'timeout', label: 'Timeout (s)', type: 'number', min: 10, max: 600, defaultValue: 120 },
+      { key: 'instruction', label: 'Instruction', type: 'textarea', placeholder: 'Optional: Override workflow instruction...' },
     ],
   },
   condition: {

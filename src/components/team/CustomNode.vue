@@ -212,6 +212,12 @@ watch(() => props.node.config, (config) => {
   if (Array.isArray(configValues.value.paperIds)) {
     configValues.value.paperIds = configValues.value.paperIds.join(', ')
   }
+  const fields = configFields.value
+  for (const field of fields) {
+    if (configValues.value[field.key] === undefined && field.defaultValue !== undefined) {
+      configValues.value[field.key] = field.defaultValue
+    }
+  }
 }, { immediate: true, deep: true })
 
 function getPortColor(dataType: PortDataType): string {
@@ -239,7 +245,10 @@ function getSelectOptions(field: NodeConfigField): string[] {
   if (field.key === 'skillId' && props.skills) {
     return props.skills
   }
-  return field.options || []
+  if (field.options && field.options.length > 0) {
+    return field.options
+  }
+  return []
 }
 
 function onNodeMouseDown(event: MouseEvent) {

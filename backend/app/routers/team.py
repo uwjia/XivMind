@@ -21,6 +21,11 @@ from app.services.team.workflow_adapter import (
     WorkflowNode as AdapterWorkflowNode,
     WorkflowNodeType,
 )
+from app.services.team.nodes import (
+    NodeRegistry,
+    NodeContext,
+    NodeResult,
+)
 
 router = APIRouter(prefix="/team", tags=["team"])
 logger = logging.getLogger(__name__)
@@ -91,12 +96,6 @@ _active_workflow_sessions: Dict[str, asyncio.Task] = {}
 
 @router.post("/analyze", response_model=TaskAnalysisResponse)
 async def analyze_task(request: TeamExecuteRequest):
-    """
-    Analyze a task to determine complexity and decomposition.
-    
-    This endpoint analyzes the task without executing it, useful for
-    previewing how the team system would handle a request.
-    """
     result = await team_manager.analyze_task_async(
         instruction=request.instruction,
         context=request.context,
@@ -114,14 +113,6 @@ async def analyze_task(request: TeamExecuteRequest):
 
 @router.post("/execute", response_model=TeamExecuteResponse)
 async def execute_team_task(request: TeamExecuteRequest):
-    """
-    Execute a task using the team system.
-    
-    The system will automatically determine whether to use single agent
-    or team mode based on task complexity.
-    
-    Set force_team_mode=true to always use team mode.
-    """
     result = await team_manager.execute(request)
     
     return TeamExecuteResponse(
@@ -142,9 +133,6 @@ async def execute_team_task(request: TeamExecuteRequest):
 
 @router.get("/sessions", response_model=SessionListResponse)
 async def list_sessions():
-    """
-    List all active team sessions.
-    """
     sessions = team_manager.list_sessions()
     return SessionListResponse(
         sessions=sessions,
@@ -154,9 +142,6 @@ async def list_sessions():
 
 @router.get("/sessions/{session_id}", response_model=Dict[str, Any])
 async def get_session(session_id: str):
-    """
-    Get details of a specific team session.
-    """
     session = team_manager.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
@@ -165,9 +150,6 @@ async def get_session(session_id: str):
 
 @router.get("/sessions/{session_id}/summary", response_model=SessionSummaryResponse)
 async def get_session_summary(session_id: str):
-    """
-    Get a summary of a team session.
-    """
     summary = team_manager.get_session_summary(session_id)
     if not summary:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
@@ -176,9 +158,6 @@ async def get_session_summary(session_id: str):
 
 @router.post("/sessions/{session_id}/cancel")
 async def cancel_session(session_id: str):
-    """
-    Cancel an active team session.
-    """
     success = await team_manager.cancel_session(session_id)
     if not success:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found or cannot be cancelled")
@@ -187,9 +166,6 @@ async def cancel_session(session_id: str):
 
 @router.get("/stats", response_model=TeamStatsResponse)
 async def get_team_stats():
-    """
-    Get statistics about the team system.
-    """
     stats = team_manager.get_stats()
     
     available_agents = []
@@ -356,113 +332,30 @@ async def _execute_single_node(
     )
     
     try:
-        context = _build_node_context(node, workflow, node_results, input_data)
+        context = NodeContext(
+            session_id=session_id,
+            workflow_id=workflow.id,
+            input_data=input_data,
+            node_results=node_results,
+            workflow=workflow,
+            get_analysis=get_analysis,
+        )
         
-        if node.type == WorkflowNodeType.INPUT:
-            result = {"output": input_data.instruction}
-            
-        elif node.type == WorkflowNodeType.ANALYZE:
-            analysis = await get_analysis()
-            
-            logger.info(f"[Workflow] Task Analysis Result:")
-            logger.info(f"  Complexity: {analysis.complexity.value}")
-            logger.info(f"  Team Mode: {analysis.use_team_mode}")
-            logger.info(f"  Subtasks: {len(analysis.subtasks)}")
-            
-            if analysis.use_team_mode and analysis.subtasks:
-                for i, subtask in enumerate(analysis.subtasks):
-                    agent = subtask.get("assigned_agent", "analysis-agent")
-                    task_type = subtask.get("task_type", "analysis")
-                    deps = subtask.get("dependencies", [])
-                    instruction = subtask.get("instruction", "")[:60]
-                    logger.info(f"  [{i}] Agent: {agent}, Type: {task_type}, Deps: {deps}")
-                    logger.info(f"      Instruction: {instruction}...")
-            
-            result = {
-                "output": {
-                    "complexity": analysis.complexity.value,
-                    "use_team_mode": analysis.use_team_mode,
-                    "subtasks": analysis.subtasks,
-                    "reasoning": analysis.reasoning,
-                }
-            }
-            
-        elif node.type == WorkflowNodeType.DECOMPOSE:
-            analysis = await get_analysis()
-            result = {"output": analysis.subtasks}
-            
-        elif node.type == WorkflowNodeType.AGENT:
-            agent_id = node.config.get("agentId", "research-agent")
-            instruction = node.config.get("instruction") or input_data.instruction
-            
-            try:
-                from app.services.subagents import subagent_manager
-                agent_result = await subagent_manager.execute_agent(
-                    agent_id=agent_id,
-                    instruction=instruction,
-                    paper_ids=input_data.paper_ids,
-                    context=input_data.context,
-                )
-                result = {"output": agent_result.output if hasattr(agent_result, 'output') else str(agent_result)}
-            except Exception as e:
-                logger.error(f"[Workflow] Agent {agent_id} execution failed: {e}")
-                result = {"output": "", "error": str(e)}
-            
-        elif node.type == WorkflowNodeType.CONDITION:
-            condition_result = workflow_adapter.evaluate_condition(node, context)
-            result = {"output": condition_result, "branch": condition_result}
-            
-        elif node.type == WorkflowNodeType.SYNTHESIZE:
-            deps = workflow_adapter.get_node_dependencies(workflow, node.id)
-            dep_results = [node_results.get(d, {}).get("output", "") for d in deps]
-            combined = "\n\n".join(str(r) for r in dep_results if r)
-            result = {"output": combined}
-            
-        elif node.type == WorkflowNodeType.OUTPUT:
-            deps = workflow_adapter.get_node_dependencies(workflow, node.id)
-            dep_results = [node_results.get(d, {}).get("output", "") for d in deps]
-            result = {"output": dep_results[0] if dep_results else ""}
-            
-        elif node.type == WorkflowNodeType.SKILL:
-            skill_id = node.config.get("skillId", "summary")
-            instruction = node.config.get("instruction") or input_data.instruction
-            
-            try:
-                from app.services.subagents import subagent_manager
-                agent_result = await subagent_manager.execute_agent(
-                    agent_id="research-agent",
-                    instruction=f"Use skill {skill_id}: {instruction}",
-                    paper_ids=input_data.paper_ids,
-                    context=input_data.context,
-                )
-                result = {"output": agent_result.output if hasattr(agent_result, 'output') else str(agent_result)}
-            except Exception as e:
-                logger.error(f"[Workflow] Skill {skill_id} execution failed: {e}")
-                result = {"output": "", "error": str(e)}
-            
-        elif node.type == WorkflowNodeType.TOOL:
-            tool_id = node.config.get("toolId", "")
-            instruction = node.config.get("instruction") or input_data.instruction
-            
-            try:
-                from app.services.subagents import subagent_manager
-                agent_result = await subagent_manager.execute_agent(
-                    agent_id="research-agent",
-                    instruction=f"Use tool {tool_id}: {instruction}",
-                    paper_ids=input_data.paper_ids,
-                    context=input_data.context,
-                )
-                result = {"output": agent_result.output if hasattr(agent_result, 'output') else str(agent_result)}
-            except Exception as e:
-                logger.error(f"[Workflow] Tool {tool_id} execution failed: {e}")
-                result = {"output": "", "error": str(e)}
-            
+        node_type = node.type.value
+        if NodeRegistry.is_registered(node_type):
+            node_instance = NodeRegistry.create(
+                node_type=node_type,
+                node_id=node.id,
+                config=node.config,
+            )
+            result = await node_instance.execute(context)
+            node_results[node.id] = result.to_dict()
         else:
-            result = {"output": None}
+            logger.warning(f"[Workflow] Unknown node type: {node_type}")
+            node_results[node.id] = {"output": None, "error": f"Unknown node type: {node_type}"}
         
-        node_results[node.id] = result
         await progress_streamer.notify_node_status(
-            session_id, node.id, "success", result=result.get("output")
+            session_id, node.id, "success", result=node_results[node.id].get("output")
         )
         
     except Exception as e:
@@ -486,20 +379,3 @@ async def _execute_parallel_nodes(
         for node in nodes
     ]
     await asyncio.gather(*tasks, return_exceptions=True)
-
-
-def _build_node_context(
-    node: AdapterWorkflowNode,
-    workflow: Workflow,
-    node_results: Dict[str, Any],
-    input_data: WorkflowInput,
-) -> Dict[str, Any]:
-    deps = workflow_adapter.get_node_dependencies(workflow, node.id)
-    dep_results = {d: node_results.get(d, {}) for d in deps}
-    
-    return {
-        "input_data": input_data.instruction,
-        "paper_ids": input_data.paper_ids,
-        "dependencies": dep_results,
-        "config": node.config,
-    }
