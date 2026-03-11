@@ -51,7 +51,7 @@ const route = useRoute()
 const sidebarStore = useSidebarStore()
 
 const searchQuery = ref<string>('')
-const isCollapsed = computed(() => sidebarStore.isCollapsed)
+const isCollapsed = computed(() => sidebarStore.effectiveCollapsed)
 
 watch(() => route.query?.q, (newQuery) => {
   if (newQuery !== undefined) {

@@ -102,6 +102,24 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          @click="goToTeam"
+          :title="isCollapsed ? 'Team' : ''"
+        >
+          <span class="picker-trigger-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#8B5CF6">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </span>
+          <span class="picker-label">Team</span>
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        <button
+          class="picker-trigger-btn"
           @click="goToMemory"
           :title="isCollapsed ? 'Memory' : ''"
         >
@@ -180,7 +198,7 @@ const sidebarStore = useSidebarStore()
 const themeStore = useThemeStore()
 const windowWidth = ref<number>(window.innerWidth)
 
-const isCollapsed = computed(() => sidebarStore.isCollapsed)
+const isCollapsed = computed(() => sidebarStore.effectiveCollapsed)
 const isMobileOpen = computed(() => sidebarStore.isMobileOpen)
 const isDark = computed(() => themeStore.isDark)
 
@@ -255,6 +273,13 @@ const goToSkills = () => {
 
 const goToSubAgents = () => {
   router.push('/subagents')
+  if (isMobileOpen.value) {
+    sidebarStore.closeMobileSidebar()
+  }
+}
+
+const goToTeam = () => {
+  router.push('/team')
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }

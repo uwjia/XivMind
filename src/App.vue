@@ -37,7 +37,7 @@ const llmStore = useLLMStore()
 const downloadStore = useDownloadStore()
 
 const isDark = computed(() => themeStore.isDark)
-const isCollapsed = computed(() => sidebarStore.isCollapsed)
+const isCollapsed = computed(() => sidebarStore.effectiveCollapsed)
 const toastVisible = computed(() => toastStore.visible)
 const toastMessage = computed(() => toastStore.message)
 const toastType = computed(() => toastStore.type)

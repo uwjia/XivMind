@@ -43,6 +43,14 @@ from .subagent import (
     SubAgentSaveRequest,
     SubAgentReloadResponse,
 )
+from app.services.team.types import (
+    TeamExecuteRequest,
+    TeamResult,
+    TaskComplexity,
+    TeamTaskStatus,
+    SubTaskStatus,
+    TeamSessionStatus,
+)
 
 __all__ = [
     "DownloadStatus",

@@ -1,0 +1,333 @@
+{
+  "id": "wf_multi_agent",
+  "name": "Multi-Agent Collaboration",
+  "description": "Complex workflow with task decomposition, parallel execution, and result synthesis",
+  "nodes": [
+    {
+      "id": "node_input_1",
+      "type": "input",
+      "label": "Input",
+      "position": { "x": 50, "y": 200 },
+      "config": {
+        "instruction": "Conduct a comprehensive analysis of this paper including methodology review, key findings, and future research directions",
+        "paperIds": []
+      },
+      "status": "idle",
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "node_input_1_out_0",
+          "type": "output",
+          "label": "Output",
+          "dataType": "text",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_analyze_1",
+      "type": "analyze",
+      "label": "Analyze Task",
+      "position": { "x": 280, "y": 200 },
+      "config": {},
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_analyze_1_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "text",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "node_analyze_1_out_0",
+          "type": "output",
+          "label": "Analysis",
+          "dataType": "analysis",
+          "required": false,
+          "connected": false
+        },
+        {
+          "id": "node_analyze_1_out_1",
+          "type": "output",
+          "label": "Metadata",
+          "dataType": "data",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_decompose_1",
+      "type": "decompose",
+      "label": "Decompose",
+      "position": { "x": 510, "y": 200 },
+      "config": {},
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_decompose_1_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "text",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "node_decompose_1_out_0",
+          "type": "output",
+          "label": "Tasks",
+          "dataType": "task",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_agent_research",
+      "type": "agent",
+      "label": "Research",
+      "position": { "x": 740, "y": 50 },
+      "config": {
+        "agentId": "research-agent",
+        "instruction": "Research and extract key information from the paper"
+      },
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_agent_research_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "text",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "node_agent_research_out_0",
+          "type": "output",
+          "label": "Result",
+          "dataType": "result",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_agent_analysis",
+      "type": "agent",
+      "label": "Analysis",
+      "position": { "x": 740, "y": 200 },
+      "config": {
+        "agentId": "analysis-agent",
+        "instruction": "Analyze the methodology and experimental design"
+      },
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_agent_analysis_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "text",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "node_agent_analysis_out_0",
+          "type": "output",
+          "label": "Result",
+          "dataType": "result",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_agent_writer",
+      "type": "agent",
+      "label": "Writer",
+      "position": { "x": 740, "y": 350 },
+      "config": {
+        "agentId": "writer-agent",
+        "instruction": "Summarize findings and write conclusions"
+      },
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_agent_writer_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "text",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "node_agent_writer_out_0",
+          "type": "output",
+          "label": "Result",
+          "dataType": "result",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_synthesize_1",
+      "type": "synthesize",
+      "label": "Synthesize",
+      "position": { "x": 970, "y": 200 },
+      "config": {},
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_synthesize_1_in_0",
+          "type": "input",
+          "label": "Input 1",
+          "dataType": "data",
+          "required": true,
+          "connected": true
+        },
+        {
+          "id": "node_synthesize_1_in_1",
+          "type": "input",
+          "label": "Input 2",
+          "dataType": "data",
+          "required": true,
+          "connected": true
+        },
+        {
+          "id": "node_synthesize_1_in_2",
+          "type": "input",
+          "label": "Input 3",
+          "dataType": "data",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "node_synthesize_1_out_0",
+          "type": "output",
+          "label": "Result",
+          "dataType": "result",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_output_1",
+      "type": "output",
+      "label": "Output",
+      "position": { "x": 1200, "y": 200 },
+      "config": {},
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_output_1_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "data",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_1",
+      "source": "node_input_1",
+      "target": "node_analyze_1",
+      "sourcePort": "node_input_1_out_0",
+      "targetPort": "node_analyze_1_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_2",
+      "source": "node_analyze_1",
+      "target": "node_decompose_1",
+      "sourcePort": "node_analyze_1_out_0",
+      "targetPort": "node_decompose_1_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_3",
+      "source": "node_decompose_1",
+      "target": "node_agent_research",
+      "sourcePort": "node_decompose_1_out_0",
+      "targetPort": "node_agent_research_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_4",
+      "source": "node_decompose_1",
+      "target": "node_agent_analysis",
+      "sourcePort": "node_decompose_1_out_0",
+      "targetPort": "node_agent_analysis_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_5",
+      "source": "node_decompose_1",
+      "target": "node_agent_writer",
+      "sourcePort": "node_decompose_1_out_0",
+      "targetPort": "node_agent_writer_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_6",
+      "source": "node_agent_research",
+      "target": "node_synthesize_1",
+      "sourcePort": "node_agent_research_out_0",
+      "targetPort": "node_synthesize_1_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_7",
+      "source": "node_agent_analysis",
+      "target": "node_synthesize_1",
+      "sourcePort": "node_agent_analysis_out_0",
+      "targetPort": "node_synthesize_1_in_1",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_8",
+      "source": "node_agent_writer",
+      "target": "node_synthesize_1",
+      "sourcePort": "node_agent_writer_out_0",
+      "targetPort": "node_synthesize_1_in_2",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_9",
+      "source": "node_synthesize_1",
+      "target": "node_output_1",
+      "sourcePort": "node_synthesize_1_out_0",
+      "targetPort": "node_output_1_in_0",
+      "animated": false,
+      "active": false
+    }
+  ],
+  "variables": []
+}

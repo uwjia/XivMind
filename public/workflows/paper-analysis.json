@@ -1,0 +1,101 @@
+{
+  "id": "wf_paper_analysis",
+  "name": "Paper Analysis",
+  "description": "Simple paper analysis workflow - analyzes a paper and provides summary",
+  "nodes": [
+    {
+      "id": "node_input_1",
+      "type": "input",
+      "label": "Input",
+      "position": { "x": 50, "y": 150 },
+      "config": {
+        "instruction": "Analyze and summarize the key contributions, methodology, and findings of this paper",
+        "paperIds": []
+      },
+      "status": "idle",
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "node_input_1_out_0",
+          "type": "output",
+          "label": "Output",
+          "dataType": "text",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_agent_1",
+      "type": "agent",
+      "label": "Research Agent",
+      "position": { "x": 300, "y": 150 },
+      "config": {
+        "agentId": "research-agent",
+        "timeout": 300,
+        "maxRetries": 1
+      },
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_agent_1_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "text",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "node_agent_1_out_0",
+          "type": "output",
+          "label": "Result",
+          "dataType": "result",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_output_1",
+      "type": "output",
+      "label": "Output",
+      "position": { "x": 550, "y": 150 },
+      "config": {},
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_output_1_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "data",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_1",
+      "source": "node_input_1",
+      "target": "node_agent_1",
+      "sourcePort": "node_input_1_out_0",
+      "targetPort": "node_agent_1_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_2",
+      "source": "node_agent_1",
+      "target": "node_output_1",
+      "sourcePort": "node_agent_1_out_0",
+      "targetPort": "node_output_1_in_0",
+      "animated": false,
+      "active": false
+    }
+  ],
+  "variables": []
+}

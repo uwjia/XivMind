@@ -1,0 +1,99 @@
+{
+  "id": "wf_quick_summary",
+  "name": "Quick Summary",
+  "description": "Minimal workflow for quick paper summarization",
+  "nodes": [
+    {
+      "id": "node_input_1",
+      "type": "input",
+      "label": "Input",
+      "position": { "x": 50, "y": 150 },
+      "config": {
+        "instruction": "Provide a brief summary of this paper in 3-5 sentences",
+        "paperIds": []
+      },
+      "status": "idle",
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "node_input_1_out_0",
+          "type": "output",
+          "label": "Output",
+          "dataType": "text",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_skill_1",
+      "type": "skill",
+      "label": "Summary Skill",
+      "position": { "x": 300, "y": 150 },
+      "config": {
+        "skillId": "summary"
+      },
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_skill_1_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "text",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "node_skill_1_out_0",
+          "type": "output",
+          "label": "Result",
+          "dataType": "result",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_output_1",
+      "type": "output",
+      "label": "Output",
+      "position": { "x": 550, "y": 150 },
+      "config": {},
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_output_1_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "data",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_1",
+      "source": "node_input_1",
+      "target": "node_skill_1",
+      "sourcePort": "node_input_1_out_0",
+      "targetPort": "node_skill_1_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_2",
+      "source": "node_skill_1",
+      "target": "node_output_1",
+      "sourcePort": "node_skill_1_out_0",
+      "targetPort": "node_output_1_in_0",
+      "animated": false,
+      "active": false
+    }
+  ],
+  "variables": []
+}

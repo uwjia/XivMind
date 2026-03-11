@@ -232,7 +232,7 @@ const configStore = useConfigStore()
 const llmStore = useLLMStore()
 
 const isDark = computed(() => themeStore.isDark)
-const isCollapsed = computed(() => sidebarStore.isCollapsed)
+const isCollapsed = computed(() => sidebarStore.effectiveCollapsed)
 const tempMaxResults = ref(configStore.maxResults)
 const isSaving = ref(false)
 const isSaved = ref(false)

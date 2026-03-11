@@ -10,6 +10,7 @@ import DataManager from '@/views/DataManager.vue'
 import SkillManager from '@/views/SkillManager.vue'
 import SubAgentManager from '@/views/SubAgentManager.vue'
 import Memory from '@/views/Memory.vue'
+import TeamManager from '@/views/TeamManager.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -66,6 +67,11 @@ const routes: RouteRecordRaw[] = [
     path: '/memory',
     name: 'Memory',
     component: Memory
+  },
+  {
+    path: '/team',
+    name: 'TeamManager',
+    component: TeamManager
   }
 ]
 

@@ -1,0 +1,142 @@
+{
+  "id": "wf_task_analysis",
+  "name": "Task Analysis",
+  "description": "Analyze task complexity, decompose into subtasks, and execute them in parallel",
+  "nodes": [
+    {
+      "id": "node_input_1",
+      "type": "input",
+      "label": "Input",
+      "position": { "x": 50, "y": 150 },
+      "config": {
+        "instruction": "Compare and analyze the differences between transformer and CNN architectures in image classification tasks, including methodology comparison, performance analysis, and future research directions",
+        "paperIds": []
+      },
+      "status": "idle",
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "node_input_1_out_0",
+          "type": "output",
+          "label": "Output",
+          "dataType": "text",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_analyze_1",
+      "type": "analyze",
+      "label": "Analyze Task",
+      "position": { "x": 280, "y": 150 },
+      "config": {},
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_analyze_1_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "text",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "node_analyze_1_out_0",
+          "type": "output",
+          "label": "Analysis",
+          "dataType": "analysis",
+          "required": false,
+          "connected": false
+        },
+        {
+          "id": "node_analyze_1_out_1",
+          "type": "output",
+          "label": "Metadata",
+          "dataType": "data",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_decompose_1",
+      "type": "decompose",
+      "label": "Execute Subtasks",
+      "position": { "x": 510, "y": 150 },
+      "config": {},
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_decompose_1_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "analysis",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "node_decompose_1_out_0",
+          "type": "output",
+          "label": "Results",
+          "dataType": "results",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_output_1",
+      "type": "output",
+      "label": "Output",
+      "position": { "x": 740, "y": 150 },
+      "config": {},
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_output_1_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "results",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_1",
+      "source": "node_input_1",
+      "target": "node_analyze_1",
+      "sourcePort": "node_input_1_out_0",
+      "targetPort": "node_analyze_1_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_2",
+      "source": "node_analyze_1",
+      "target": "node_decompose_1",
+      "sourcePort": "node_analyze_1_out_0",
+      "targetPort": "node_decompose_1_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_3",
+      "source": "node_decompose_1",
+      "target": "node_output_1",
+      "sourcePort": "node_decompose_1_out_0",
+      "targetPort": "node_output_1_in_0",
+      "animated": false,
+      "active": false
+    }
+  ],
+  "variables": []
+}

@@ -1,0 +1,277 @@
+{
+  "id": "wf_task_decomposition",
+  "name": "Task Decomposition",
+  "description": "Analyze task complexity and decompose into subtasks, and execute them in parallel",
+  "nodes": [
+    {
+      "id": "node_input_1",
+      "type": "input",
+      "label": "Input",
+      "position": { "x": 50, "y": 150 },
+      "config": {
+        "instruction": "Compare and analyze the differences between transformer and CNN architectures in image classification tasks, including methodology comparison, performance analysis, and future research directions",
+        "paperIds": []
+      },
+      "status": "idle",
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "node_input_1_out_0",
+          "type": "output",
+          "label": "Output",
+          "dataType": "text",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_analyze_1",
+      "type": "analyze",
+      "label": "Analyze Task",
+      "position": { "x": 280, "y": 150 },
+      "config": {},
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_analyze_1_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "text",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "node_analyze_1_out_0",
+          "type": "output",
+          "label": "Analysis",
+          "dataType": "analysis",
+          "required": false,
+          "connected": false
+        },
+        {
+          "id": "node_analyze_1_out_1",
+          "type": "output",
+          "label": "Metadata",
+          "dataType": "data",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_decompose_1",
+      "type": "decompose",
+      "label": "Decompose",
+      "position": { "x": 510, "y": 150 },
+      "config": {},
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_decompose_1_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "analysis",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "node_decompose_1_out_0",
+          "type": "output",
+          "label": "Subtasks",
+          "dataType": "subtasks",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_agent_1",
+      "type": "agent",
+      "label": "Agent 1",
+      "position": { "x": 740, "y": 50 },
+      "config": {
+        "agentId": "analysis-agent"
+      },
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_agent_1_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "subtasks",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "node_agent_1_out_0",
+          "type": "output",
+          "label": "Result",
+          "dataType": "result",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_agent_2",
+      "type": "agent",
+      "label": "Agent 2",
+      "position": { "x": 740, "y": 150 },
+      "config": {
+        "agentId": "analysis-agent"
+      },
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_agent_2_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "subtasks",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "node_agent_2_out_0",
+          "type": "output",
+          "label": "Result",
+          "dataType": "result",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_agent_3",
+      "type": "agent",
+      "label": "Synthesis",
+      "position": { "x": 740, "y": 250 },
+      "config": {
+        "agentId": "writer-agent"
+      },
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_agent_3_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "subtasks",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "node_agent_3_out_0",
+          "type": "output",
+          "label": "Result",
+          "dataType": "result",
+          "required": false,
+          "connected": false
+        }
+      ]
+    },
+    {
+      "id": "node_output_1",
+      "type": "output",
+      "label": "Output",
+      "position": { "x": 970, "y": 150 },
+      "config": {},
+      "status": "idle",
+      "inputs": [
+        {
+          "id": "node_output_1_in_0",
+          "type": "input",
+          "label": "Input",
+          "dataType": "result",
+          "required": true,
+          "connected": true
+        }
+      ],
+      "outputs": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_1",
+      "source": "node_input_1",
+      "target": "node_analyze_1",
+      "sourcePort": "node_input_1_out_0",
+      "targetPort": "node_analyze_1_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_2",
+      "source": "node_analyze_1",
+      "target": "node_decompose_1",
+      "sourcePort": "node_analyze_1_out_0",
+      "targetPort": "node_decompose_1_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_3",
+      "source": "node_decompose_1",
+      "target": "node_agent_1",
+      "sourcePort": "node_decompose_1_out_0",
+      "targetPort": "node_agent_1_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_4",
+      "source": "node_decompose_1",
+      "target": "node_agent_2",
+      "sourcePort": "node_decompose_1_out_0",
+      "targetPort": "node_agent_2_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_5",
+      "source": "node_decompose_1",
+      "target": "node_agent_3",
+      "sourcePort": "node_decompose_1_out_0",
+      "targetPort": "node_agent_3_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_6",
+      "source": "node_agent_1",
+      "target": "node_output_1",
+      "sourcePort": "node_agent_1_out_0",
+      "targetPort": "node_output_1_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_7",
+      "source": "node_agent_2",
+      "target": "node_output_1",
+      "sourcePort": "node_agent_2_out_0",
+      "targetPort": "node_output_1_in_0",
+      "animated": false,
+      "active": false
+    },
+    {
+      "id": "edge_8",
+      "source": "node_agent_3",
+      "target": "node_output_1",
+      "sourcePort": "node_agent_3_out_0",
+      "targetPort": "node_output_1_in_0",
+      "animated": false,
+      "active": false
+    }
+  ],
+  "variables": []
+}
