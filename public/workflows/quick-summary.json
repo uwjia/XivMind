@@ -29,7 +29,7 @@
       "id": "node_skill_1",
       "type": "skill",
       "label": "Summary Skill",
-      "position": { "x": 300, "y": 150 },
+      "position": { "x": 400, "y": 150 },
       "config": {
         "skillId": "summary"
       },
@@ -59,7 +59,7 @@
       "id": "node_output_1",
       "type": "output",
       "label": "Output",
-      "position": { "x": 550, "y": 150 },
+      "position": { "x": 750, "y": 150 },
       "config": {},
       "status": "idle",
       "inputs": [

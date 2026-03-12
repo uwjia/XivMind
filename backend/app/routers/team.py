@@ -379,3 +379,83 @@ async def _execute_parallel_nodes(
         for node in nodes
     ]
     await asyncio.gather(*tasks, return_exceptions=True)
+
+
+_active_dynamic_sessions: Dict[str, asyncio.Task] = {}
+
+
+@router.post("/workflow/dynamic/execute", response_model=WorkflowExecuteResponse)
+async def execute_dynamic_workflow(request: WorkflowExecuteRequest):
+    workflow = workflow_adapter.parse_workflow(request.workflow)
+    
+    input_data = WorkflowInput(
+        instruction=request.input.get("instruction", ""),
+        paper_ids=request.input.get("paperIds"),
+        context=request.input.get("context"),
+    )
+    
+    session_id = str(uuid.uuid4())
+    
+    await progress_streamer.create_session(session_id)
+    
+    task = asyncio.create_task(
+        _execute_dynamic_workflow_background(session_id, workflow, input_data)
+    )
+    _active_dynamic_sessions[session_id] = task
+    
+    return WorkflowExecuteResponse(
+        session_id=session_id,
+        status="started",
+        message="Dynamic workflow execution started",
+    )
+
+
+@router.post("/workflow/dynamic/cancel/{session_id}")
+async def cancel_dynamic_workflow(session_id: str):
+    if session_id in _active_dynamic_sessions:
+        task = _active_dynamic_sessions[session_id]
+        task.cancel()
+        del _active_dynamic_sessions[session_id]
+        
+        await progress_streamer.notify_session_completed(
+            session_id, error="Workflow cancelled by user"
+        )
+        
+        return {"success": True, "message": f"Dynamic workflow session '{session_id}' cancelled"}
+    
+    raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
+
+
+async def _execute_dynamic_workflow_background(
+    session_id: str,
+    workflow: Workflow,
+    input_data: WorkflowInput,
+):
+    from app.services.team.dynamic_executor import DynamicWorkflowExecutor
+    
+    executor = DynamicWorkflowExecutor(session_id)
+    
+    try:
+        await asyncio.sleep(0.5)
+        
+        await progress_streamer.notify_log(
+            session_id, "info", f"Starting dynamic workflow execution"
+        )
+        
+        await executor.initialize(workflow, input_data)
+        
+        final_output = await executor.run_full_workflow()
+        
+        logger.info(f"[DynamicWorkflow] Session {session_id} completed with output length: {len(str(final_output))}")
+        
+    except asyncio.CancelledError:
+        logger.info(f"[DynamicWorkflow] Session {session_id} cancelled")
+        await progress_streamer.notify_session_completed(session_id, error="Cancelled")
+        
+    except Exception as e:
+        logger.error(f"[DynamicWorkflow] Session {session_id} failed: {e}")
+        await progress_streamer.notify_session_completed(session_id, error=str(e))
+        
+    finally:
+        if session_id in _active_dynamic_sessions:
+            del _active_dynamic_sessions[session_id]

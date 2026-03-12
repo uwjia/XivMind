@@ -29,7 +29,7 @@
       "id": "node_agent_1",
       "type": "agent",
       "label": "Research Agent",
-      "position": { "x": 300, "y": 150 },
+      "position": { "x": 400, "y": 150 },
       "config": {
         "agentId": "research-agent",
         "timeout": 300,
@@ -61,7 +61,7 @@
       "id": "node_output_1",
       "type": "output",
       "label": "Output",
-      "position": { "x": 550, "y": 150 },
+      "position": { "x": 750, "y": 150 },
       "config": {},
       "status": "idle",
       "inputs": [

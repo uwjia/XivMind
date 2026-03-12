@@ -7,6 +7,9 @@ import type {
   WorkflowNodeType,
   NodeStatus,
   NodeConfig,
+  DynamicNodeConfig,
+  DynamicWorkflowPhase,
+  SubtaskInfo,
 } from '@/types/workflow'
 import { createNode, createEdge, WORKFLOW_TEMPLATES, areTypesCompatible } from '@/types/workflow'
 
@@ -31,6 +34,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const executionLogs = ref<Array<{ timestamp: Date; level: string; message: string; nodeId?: string }>>([])
   const executionOutput = ref<string | null>(null)
   const currentSessionId = ref<string | null>(null)
+  
+  const isDynamicMode = ref(false)
+  const dynamicPhase = ref<DynamicWorkflowPhase>('idle')
+  const dynamicPhaseMessage = ref('')
+  const dynamicNodeIds = ref<string[]>([])
+  const dynamicEdgeIds = ref<string[]>([])
+  const subtasks = ref<SubtaskInfo[]>([])
+  const agentResults = ref<Record<string, any>>({})
 
   const selectedNode = computed(() => {
     if (!selectedNodeId.value) return null
@@ -388,6 +399,117 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
+  function setDynamicMode(value: boolean) {
+    isDynamicMode.value = value
+  }
+
+  function setDynamicPhase(phase: DynamicWorkflowPhase, message: string = '') {
+    dynamicPhase.value = phase
+    dynamicPhaseMessage.value = message
+  }
+
+  function addDynamicNode(config: DynamicNodeConfig): WorkflowNode {
+    const node = createNode(
+      config.nodeType as WorkflowNodeType,
+      config.position,
+      config.config
+    )
+    
+    node.id = config.nodeId
+    node.label = config.label
+    
+    nodes.value.push(node)
+    dynamicNodeIds.value.push(node.id)
+    
+    return node
+  }
+
+  function addDynamicEdge(source: string, target: string): WorkflowEdge | null {
+    const existingEdge = edges.value.find(
+      e => e.source === source && e.target === target
+    )
+    if (existingEdge) {
+      return null
+    }
+    
+    const sourceNode = nodes.value.find(n => n.id === source)
+    const targetNode = nodes.value.find(n => n.id === target)
+    
+    const sourcePort = sourceNode?.outputs[0]?.id
+    
+    let targetPort: string | undefined
+    if (targetNode) {
+      const connectedInputPorts = new Set(
+        edges.value
+          .filter(e => e.target === target)
+          .map(e => e.targetPort)
+      )
+      
+      const availableInput = targetNode.inputs.find(
+        input => !connectedInputPorts.has(input.id)
+      )
+      
+      if (availableInput) {
+        targetPort = availableInput.id
+      } else {
+        const newPortId = `${target}_in_${targetNode.inputs.length}`
+        targetNode.inputs.push({
+          id: newPortId,
+          type: 'input',
+          label: `Input ${targetNode.inputs.length + 1}`,
+          dataType: 'data',
+          required: false,
+          connected: false,
+        })
+        targetPort = newPortId
+      }
+    }
+    
+    const edge = createEdge(source, target, sourcePort, targetPort)
+    edges.value.push(edge)
+    dynamicEdgeIds.value.push(edge.id)
+    
+    updateNodeConnections(source)
+    updateNodeConnections(target)
+    
+    return edge
+  }
+
+  function setSubtasks(newSubtasks: SubtaskInfo[]) {
+    subtasks.value = newSubtasks
+  }
+
+  function setAgentResult(nodeId: string, result: any) {
+    agentResults.value[nodeId] = result
+  }
+
+  function clearDynamicState() {
+    dynamicNodeIds.value.forEach(nodeId => {
+      const index = nodes.value.findIndex(n => n.id === nodeId)
+      if (index !== -1) {
+        nodes.value.splice(index, 1)
+      }
+    })
+    
+    dynamicEdgeIds.value.forEach(edgeId => {
+      const index = edges.value.findIndex(e => e.id === edgeId)
+      if (index !== -1) {
+        edges.value.splice(index, 1)
+      }
+    })
+    
+    dynamicNodeIds.value = []
+    dynamicEdgeIds.value = []
+    subtasks.value = []
+    agentResults.value = {}
+    dynamicPhase.value = 'idle'
+    dynamicPhaseMessage.value = ''
+  }
+
+  function getDynamicNodes(): WorkflowNode[] {
+    return nodes.value.filter(n => dynamicNodeIds.value.includes(n.id))
+  }
+
   function $reset() {
     currentWorkflow.value = null
     nodes.value = []
@@ -455,5 +577,20 @@ export const useWorkflowStore = defineStore('workflow', () => {
     setCurrentSessionId,
     exportWorkflow,
     $reset,
+    isDynamicMode,
+    dynamicPhase,
+    dynamicPhaseMessage,
+    dynamicNodeIds,
+    dynamicEdgeIds,
+    subtasks,
+    agentResults,
+    setDynamicMode,
+    setDynamicPhase,
+    addDynamicNode,
+    addDynamicEdge,
+    setSubtasks,
+    setAgentResult,
+    clearDynamicState,
+    getDynamicNodes,
   }
 })

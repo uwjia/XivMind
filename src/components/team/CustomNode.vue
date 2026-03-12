@@ -55,9 +55,10 @@
           <textarea
             v-if="field.type === 'textarea'"
             v-model="configValues[field.key]"
-            class="config-textarea"
+            class="config-textarea auto-resize"
             :placeholder="field.placeholder"
-            rows="2"
+            rows="5"
+            @input="autoResizeTextarea"
             @change="updateConfig(field.key, configValues[field.key])"
             @mousedown.stop
           ></textarea>
@@ -218,6 +219,13 @@ watch(() => props.node.config, (config) => {
       configValues.value[field.key] = field.defaultValue
     }
   }
+  nextTick(() => {
+    document.querySelectorAll('.config-textarea.auto-resize').forEach((el) => {
+      const textarea = el as HTMLTextAreaElement
+      textarea.style.height = 'auto'
+      textarea.style.height = textarea.scrollHeight + 'px'
+    })
+  })
 }, { immediate: true, deep: true })
 
 function getPortColor(dataType: PortDataType): string {
@@ -239,16 +247,28 @@ function isHoverValid(portId: string, type: string): boolean {
 }
 
 function getSelectOptions(field: NodeConfigField): string[] {
-  if (field.key === 'agentId' && props.agents) {
-    return props.agents
+  if (field.key === 'agentId') {
+    if (props.agents && props.agents.length > 0) {
+      return props.agents
+    }
+    return ['research-agent', 'analysis-agent', 'writer-agent']
   }
-  if (field.key === 'skillId' && props.skills) {
-    return props.skills
+  if (field.key === 'skillId') {
+    if (props.skills && props.skills.length > 0) {
+      return props.skills
+    }
+    return ['summary', 'translation', 'citation', 'related-papers']
   }
   if (field.options && field.options.length > 0) {
     return field.options
   }
   return []
+}
+
+function autoResizeTextarea(event: Event) {
+  const textarea = event.target as HTMLTextAreaElement
+  textarea.style.height = 'auto'
+  textarea.style.height = textarea.scrollHeight + 'px'
 }
 
 function onNodeMouseDown(event: MouseEvent) {
@@ -295,8 +315,8 @@ function updateConfig(key: string, value: any) {
 <style scoped>
 .custom-node {
   position: absolute;
-  min-width: 180px;
-  max-width: 280px;
+  min-width: 250px;
+  max-width: 350px;
   background: var(--bg-secondary);
   border: 2px solid var(--border-color);
   border-radius: 8px;
@@ -479,8 +499,15 @@ function updateConfig(key: string, value: any) {
 }
 
 .config-textarea {
-  resize: vertical;
+  resize: none;
   min-height: 40px;
+  max-height: 200px;
+  overflow-y: auto;
+  line-height: 1.2;
+}
+
+.config-textarea.auto-resize {
+  height: auto;
 }
 
 .config-select {

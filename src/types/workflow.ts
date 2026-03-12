@@ -668,3 +668,98 @@ export const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
     ],
   },
 ]
+
+export interface NodeStatusEvent {
+  nodeId: string
+  status: 'idle' | 'pending' | 'running' | 'success' | 'error'
+  result?: unknown
+  error?: string
+  progress?: number
+  timestamp: string
+}
+
+export interface SessionCompletedEvent {
+  sessionId: string
+  output?: string
+  error?: string
+  timestamp: string
+}
+
+export interface LogEvent {
+  level: 'info' | 'warn' | 'error'
+  message: string
+  nodeId?: string
+  timestamp: string
+}
+
+export interface SubtaskStatusEvent {
+  subtaskId: string
+  status: string
+  agentId?: string
+  timestamp: string
+}
+
+export interface SubtaskInfo {
+  id: string
+  instruction: string
+  assignedAgent: string
+  dependencies: string[]
+  metadata?: Record<string, any>
+}
+
+export interface DynamicNodeConfig {
+  nodeId: string
+  nodeType: 'agent' | 'synthesize' | 'output'
+  label: string
+  config: Record<string, any>
+  position: { x: number; y: number }
+  sourceNodeIds?: string[]
+}
+
+export interface SubtasksCreatedEvent {
+  subtasks: SubtaskInfo[]
+  timestamp: string
+}
+
+export interface DynamicNodeCreatedEvent {
+  nodeId: string
+  nodeType: string
+  label: string
+  config: Record<string, any>
+  position: { x: number; y: number }
+  sourceNodeIds?: string[]
+  timestamp: string
+}
+
+export interface DynamicEdgeCreatedEvent {
+  source: string
+  target: string
+  timestamp: string
+}
+
+export interface ExecutionPhaseEvent {
+  phase: string
+  message: string
+  timestamp: string
+}
+
+export type DynamicWorkflowPhase = 
+  | 'idle'
+  | 'initializing'
+  | 'analyzing'
+  | 'creating_nodes'
+  | 'executing'
+  | 'synthesizing'
+  | 'finalizing'
+  | 'completed'
+  | 'error'
+
+export interface DynamicWorkflowState {
+  phase: DynamicWorkflowPhase
+  phaseMessage: string
+  subtasks: SubtaskInfo[]
+  dynamicNodeIds: string[]
+  dynamicEdgeIds: string[]
+  agentResults: Record<string, any>
+  finalOutput: string | null
+}

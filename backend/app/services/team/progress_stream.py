@@ -203,6 +203,63 @@ class ProgressStreamer:
         
         await self.broadcast_to_session(session_id, "log", data)
     
+    async def notify_subtasks_created(
+        self,
+        session_id: str,
+        subtasks: list,
+    ):
+        await self.broadcast_to_session(session_id, "subtasks_created", {
+            "subtasks": subtasks,
+            "timestamp": datetime.now().isoformat(),
+        })
+    
+    async def notify_dynamic_node_created(
+        self,
+        session_id: str,
+        node_id: str,
+        node_type: str,
+        label: str,
+        config: Dict[str, Any],
+        position: Dict[str, float],
+        source_node_ids: Optional[list] = None,
+    ):
+        data = {
+            "nodeId": node_id,
+            "nodeType": node_type,
+            "label": label,
+            "config": config,
+            "position": position,
+            "timestamp": datetime.now().isoformat(),
+        }
+        if source_node_ids:
+            data["sourceNodeIds"] = source_node_ids
+        
+        await self.broadcast_to_session(session_id, "dynamic_node_created", data)
+    
+    async def notify_dynamic_edge_created(
+        self,
+        session_id: str,
+        source: str,
+        target: str,
+    ):
+        await self.broadcast_to_session(session_id, "dynamic_edge_created", {
+            "source": source,
+            "target": target,
+            "timestamp": datetime.now().isoformat(),
+        })
+    
+    async def notify_execution_phase(
+        self,
+        session_id: str,
+        phase: str,
+        message: str,
+    ):
+        await self.broadcast_to_session(session_id, "execution_phase", {
+            "phase": phase,
+            "message": message,
+            "timestamp": datetime.now().isoformat(),
+        })
+    
     def get_client_count(self, session_id: Optional[str] = None) -> int:
         if session_id:
             return len(self._session_clients.get(session_id, set()))

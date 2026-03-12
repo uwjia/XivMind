@@ -29,7 +29,7 @@
       "id": "node_analyze_1",
       "type": "analyze",
       "label": "Analyze Task",
-      "position": { "x": 280, "y": 200 },
+      "position": { "x": 380, "y": 200 },
       "config": {},
       "status": "idle",
       "inputs": [
@@ -65,7 +65,7 @@
       "id": "node_decompose_1",
       "type": "decompose",
       "label": "Decompose",
-      "position": { "x": 510, "y": 200 },
+      "position": { "x": 710, "y": 200 },
       "config": {},
       "status": "idle",
       "inputs": [
@@ -93,7 +93,7 @@
       "id": "node_agent_research",
       "type": "agent",
       "label": "Research",
-      "position": { "x": 740, "y": 50 },
+      "position": { "x": 1040, "y": -150 },
       "config": {
         "agentId": "research-agent",
         "instruction": "Research and extract key information from the paper"
@@ -124,7 +124,7 @@
       "id": "node_agent_analysis",
       "type": "agent",
       "label": "Analysis",
-      "position": { "x": 740, "y": 200 },
+      "position": { "x": 1040, "y": 200 },
       "config": {
         "agentId": "analysis-agent",
         "instruction": "Analyze the methodology and experimental design"
@@ -155,7 +155,7 @@
       "id": "node_agent_writer",
       "type": "agent",
       "label": "Writer",
-      "position": { "x": 740, "y": 350 },
+      "position": { "x": 1040, "y": 550 },
       "config": {
         "agentId": "writer-agent",
         "instruction": "Summarize findings and write conclusions"
@@ -186,7 +186,7 @@
       "id": "node_synthesize_1",
       "type": "synthesize",
       "label": "Synthesize",
-      "position": { "x": 970, "y": 200 },
+      "position": { "x": 1370, "y": 200 },
       "config": {},
       "status": "idle",
       "inputs": [
@@ -230,7 +230,7 @@
       "id": "node_output_1",
       "type": "output",
       "label": "Output",
-      "position": { "x": 1200, "y": 200 },
+      "position": { "x": 1700, "y": 200 },
       "config": {},
       "status": "idle",
       "inputs": [

@@ -126,6 +126,40 @@
     </div>
     
     <div class="toolbar-right">
+      <div class="mode-switch">
+        <button 
+          class="mode-btn"
+          :class="{ active: !isDynamicMode }"
+          @click="setDynamicMode(false)"
+          title="Normal Mode"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          <span>Normal</span>
+        </button>
+        <button 
+          class="mode-btn dynamic"
+          :class="{ active: isDynamicMode }"
+          @click="setDynamicMode(true)"
+          title="Dynamic Mode - Nodes created automatically during execution"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 2v4"/>
+            <path d="M12 18v4"/>
+            <path d="M2 12h4"/>
+            <path d="M18 12h4"/>
+          </svg>
+          <span>Dynamic</span>
+        </button>
+      </div>
+      
+      <div class="separator"></div>
+      
       <div class="execute-wrapper">
         <button 
           v-if="!isExecuting"
@@ -219,6 +253,7 @@ const props = defineProps<{
   rightDrawerCollapsed?: boolean
   showLogs?: boolean
   showOutput?: boolean
+  isDynamicMode?: boolean
 }>()
 
 const {
@@ -279,12 +314,14 @@ const workflowName = computed({
 const canExecute = computed(() => {
   if (isExecuting.value) return false
   if (nodes.value.length === 0) return false
+  if (props.isDynamicMode) return true
   const validation = validateWorkflow()
   return validation.valid
 })
 
 const validationErrors = computed(() => {
   if (isExecuting.value || nodes.value.length === 0) return []
+  if (props.isDynamicMode) return []
   const validation = validateWorkflow()
   return validation.errors
 })
@@ -293,6 +330,7 @@ const emit = defineEmits<{
   (e: 'save'): void
   (e: 'load'): void
   (e: 'execute'): void
+  (e: 'execute-dynamic'): void
   (e: 'stop'): void
   (e: 'toggle-left-drawer'): void
   (e: 'toggle-right-drawer'): void
@@ -300,6 +338,7 @@ const emit = defineEmits<{
   (e: 'toggle-logs'): void
   (e: 'toggle-output'): void
   (e: 'open-templates'): void
+  (e: 'set-dynamic-mode', mode: boolean): void
 }>()
 
 function updateName() {
@@ -374,19 +413,29 @@ async function execute() {
     return
   }
   
-  const validation = validateWorkflow()
-  if (!validation.valid) {
-    console.log('execute validation errors:' + validation.errors)
-    return
+  if (!props.isDynamicMode) {
+    const validation = validateWorkflow()
+    if (!validation.valid) {
+      console.log('execute validation errors:' + validation.errors)
+      return
+    }
   }
   
   isExecutingInternal.value = true
   
   try {
-    emit('execute')
+    if (props.isDynamicMode) {
+      emit('execute-dynamic')
+    } else {
+      emit('execute')
+    }
   } finally {
     isExecutingInternal.value = false
   }
+}
+
+function setDynamicMode(mode: boolean) {
+  emit('set-dynamic-mode', mode)
 }
 
 function stop() {
@@ -704,5 +753,53 @@ onUnmounted(() => {
   position: absolute;
   left: 0;
   color: #FBBF24;
+}
+
+.mode-switch {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.mode-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.mode-btn.active {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mode-btn.dynamic.active {
+  background: rgba(139, 92, 246, 0.2);
+  color: #8B5CF6;
+}
+
+.mode-btn.dynamic.active svg {
+  color: #8B5CF6;
 }
 </style>

@@ -1,4 +1,11 @@
-import type { Workflow, WorkflowNode } from '@/types/workflow'
+import type { 
+  Workflow, 
+  WorkflowNode,
+  SubtasksCreatedEvent,
+  DynamicNodeCreatedEvent,
+  DynamicEdgeCreatedEvent,
+  ExecutionPhaseEvent,
+} from '@/types/workflow'
 
 export interface WorkflowExecuteRequest {
   workflow: Workflow
@@ -150,6 +157,26 @@ class WorkflowAPI {
       const data = JSON.parse(event.data)
       this._notifyHandlers('heartbeat', data)
     })
+    
+    this.eventSource.addEventListener('subtasks_created', (event) => {
+      const data: SubtasksCreatedEvent = JSON.parse(event.data)
+      this._notifyHandlers('subtasks_created', data)
+    })
+    
+    this.eventSource.addEventListener('dynamic_node_created', (event) => {
+      const data: DynamicNodeCreatedEvent = JSON.parse(event.data)
+      this._notifyHandlers('dynamic_node_created', data)
+    })
+    
+    this.eventSource.addEventListener('dynamic_edge_created', (event) => {
+      const data: DynamicEdgeCreatedEvent = JSON.parse(event.data)
+      this._notifyHandlers('dynamic_edge_created', data)
+    })
+    
+    this.eventSource.addEventListener('execution_phase', (event) => {
+      const data: ExecutionPhaseEvent = JSON.parse(event.data)
+      this._notifyHandlers('execution_phase', data)
+    })
   }
 
   disconnect(): void {
@@ -183,6 +210,39 @@ class WorkflowAPI {
 
   async cancel(sessionId: string): Promise<{ success: boolean; message: string }> {
     const response = await fetch(`${API_BASE}/cancel/${sessionId}`, {
+      method: 'POST',
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Cancel failed: ${response.statusText}`)
+    }
+    
+    return response.json()
+  }
+
+  async executeDynamic(
+    workflow: Workflow,
+    input: { instruction: string; paperIds?: string[]; context?: Record<string, unknown> }
+  ): Promise<WorkflowExecuteResponse> {
+    const response = await fetch(`${API_BASE}/dynamic/execute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        workflow: this._serializeWorkflow(workflow),
+        input,
+      }),
+    })
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: response.statusText }))
+      throw new Error(error.detail || 'Dynamic execution failed')
+    }
+    
+    return response.json()
+  }
+
+  async cancelDynamic(sessionId: string): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`${API_BASE}/dynamic/cancel/${sessionId}`, {
       method: 'POST',
     })
     

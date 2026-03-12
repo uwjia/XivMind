@@ -5,9 +5,11 @@
       :right-drawer-collapsed="activeDrawer !== 'config'"
       :show-logs="activeDrawer === 'logs'"
       :show-output="activeDrawer === 'output'"
+      :is-dynamic-mode="isDynamicMode"
       @save="handleSave"
       @load="handleLoad"
       @execute="handleExecute"
+      @execute-dynamic="handleExecuteDynamic"
       @stop="handleStop"
       @toggle-left-drawer="leftDrawerCollapsed = !leftDrawerCollapsed"
       @toggle-right-drawer="toggleDrawer('config')"
@@ -15,6 +17,7 @@
       @toggle-logs="toggleDrawer('logs')"
       @toggle-output="toggleDrawer('output')"
       @open-templates="openTemplates"
+      @set-dynamic-mode="handleSetDynamicMode"
     />
     
     <div class="editor-main">
@@ -164,7 +167,11 @@ import WorkflowTemplates from './WorkflowTemplates.vue'
 import ExecutionInputDialog from './ExecutionInputDialog.vue'
 import OutputEditDialog from './OutputEditDialog.vue'
 import { useWorkflow } from '@/composables/useWorkflow'
+import { useDynamicWorkflow } from '@/composables/useDynamicWorkflow'
+import { useWorkflowStore } from '@/stores/workflow-store'
 import type { WorkflowNodeType } from '@/types/workflow'
+
+const store = useWorkflowStore()
 
 const {
   createNewWorkflow,
@@ -185,6 +192,10 @@ const {
   executionOutput,
   clearExecutionLogs,
 } = useWorkflow()
+
+const {
+  executeDynamicWorkflow: executeDynamic,
+} = useDynamicWorkflow()
 
 const props = defineProps<{
   activeView?: 'task' | 'workflow'
@@ -211,6 +222,7 @@ const showEditDialog = ref(false)
 const logsListRef = ref<HTMLElement | null>(null)
 const logsDrawerWidth = ref(320)
 const outputDrawerWidth = ref(320)
+const isDynamicMode = ref(false)
 
 function toggleDrawer(drawer: 'config' | 'logs' | 'output') {
   if (activeDrawer.value === drawer) {
@@ -448,6 +460,31 @@ function handleTemplateApply(templateId: string) {
 
 function openTemplates() {
   showTemplates.value = true
+}
+
+function handleSetDynamicMode(mode: boolean) {
+  isDynamicMode.value = mode
+}
+
+async function handleExecuteDynamic() {
+  const instruction = inputNode.value?.config?.instruction
+  const paperIds = inputNode.value?.config?.paperIds
+  
+  if (!instruction) {
+    monitorRef.value?.addLog('System', 'error', 'No instruction provided')
+    return
+  }
+  
+  monitorRef.value?.addLog('System', 'info', 'Dynamic workflow execution started')
+  
+  const workflow = store.exportWorkflow()
+  const success = await executeDynamic(workflow, { instruction, paperIds })
+  
+  if (success) {
+    monitorRef.value?.addLog('System', 'info', 'Dynamic workflow execution completed')
+  } else {
+    monitorRef.value?.addLog('System', 'error', 'Dynamic workflow execution failed')
+  }
 }
 
 onMounted(() => {
