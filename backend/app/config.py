@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     SQLITE_DB_PATH: str = "./data/xivmind.db"
     LANCEDB_PATH: str = "./data/lancedb"
 
+    LOG_LEVEL: str = "INFO"
+    LOG_DIR: str = "./logs"
+    LOG_FILE_MAX_SIZE: str = "10 MB"
+    LOG_FILE_RETENTION: str = "7 days"
+    LOG_CONSOLE_ENABLED: bool = True
+    LOG_FILE_ENABLED: bool = True
+    LOG_JSON_ENABLED: bool = False
+
     ARXIV_MAX_RETRIES: int = 3
     ARXIV_RETRY_BASE_DELAY: float = 1.0
     ARXIV_BATCH_SIZE: int = 50

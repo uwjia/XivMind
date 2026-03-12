@@ -7,48 +7,45 @@ from app.services import download_service
 from app.config import get_settings
 from contextlib import asynccontextmanager
 import os
-import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler()
-    ]
-)
+from app.core.logging import setup_logging_from_settings
+from app.middleware import RequestIDMiddleware
+from loguru import logger
+
+setup_logging_from_settings()
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logging.info("Starting application lifespan...")
+    logger.info("Starting application lifespan...")
     settings = get_settings()
     
     if settings.DATABASE_TYPE.lower() == "milvus":
         try:
-            logging.info("Creating Milvus collections...")
+            logger.info("Creating Milvus collections...")
             from app.db.milvus.client import milvus_client
             milvus_client.init_collections()
-            logging.info("Milvus collections created successfully")
+            logger.info("Milvus collections created successfully")
         except ConnectionError as e:
-            logging.error(f"Failed to start application: {e}")
-            logging.error("Exiting...")
+            logger.error(f"Failed to start application: {e}")
+            logger.error("Exiting...")
             import os
             os._exit(1)
         except Exception as e:
-            logging.error(f"Unexpected error during startup: {e}")
+            logger.error(f"Unexpected error during startup: {e}")
             import os
             os._exit(1)
     else:
-        logging.info(f"Using {settings.DATABASE_TYPE} database, skipping Milvus initialization")
+        logger.info(f"Using {settings.DATABASE_TYPE} database, skipping Milvus initialization")
     
-    logging.info("Resetting incomplete download tasks...")
+    logger.info("Resetting incomplete download tasks...")
     reset_count = download_service.reset_incomplete_tasks()
     if reset_count > 0:
-        logging.info(f"Reset {reset_count} incomplete download tasks to failed status")
+        logger.info(f"Reset {reset_count} incomplete download tasks to failed status")
     
-    logging.info("Initializing SubAgents...")
+    logger.info("Initializing SubAgents...")
     from app.services.subagents import (
         register_default_agents,
         load_dynamic_agents,
@@ -60,7 +57,7 @@ async def lifespan(app: FastAPI):
     load_dynamic_agents()
     start_agent_watcher()
     
-    logging.info("Application startup complete")
+    logger.info("Application startup complete")
     yield
 
 
@@ -79,6 +76,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(RequestIDMiddleware)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
