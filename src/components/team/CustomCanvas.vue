@@ -94,8 +94,8 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick, watch } from 'vue'
-import CustomNode from './CustomNode.vue'
-import FloatingToolbar from './FloatingToolbar.vue'
+import CustomNode from '@/components/team/CustomNode.vue'
+import FloatingToolbar from '@/components/team/FloatingToolbar.vue'
 import { useTeam } from '@/composables/useTeam'
 import type { WorkflowNode, WorkflowEdge, Port, PortDataType } from '@/types/workflow'
 import { areTypesCompatible } from '@/types/workflow'

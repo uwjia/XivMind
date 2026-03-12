@@ -166,7 +166,7 @@
 import { ref, computed, watch } from 'vue'
 import { useWorkflow } from '@/composables/useWorkflow'
 import { getNodeTypeInfo } from '@/types/workflow'
-import NodePreview from './NodePreview.vue'
+import NodePreview from '@/components/team/NodePreview.vue'
 
 const {
   selectedNode,

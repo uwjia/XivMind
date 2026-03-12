@@ -82,7 +82,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import { useWorkflow } from '@/composables/useWorkflow'
-import OutputEditDialog from './OutputEditDialog.vue'
+import OutputEditDialog from '@/components/team/OutputEditDialog.vue'
 
 interface LogEntry {
   timestamp: Date

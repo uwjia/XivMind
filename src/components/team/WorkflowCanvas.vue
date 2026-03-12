@@ -49,7 +49,7 @@ import type { Data, Node, Edge, Options } from 'vis-network/standalone'
 import { useWorkflow } from '@/composables/useWorkflow'
 import { useTeam } from '@/composables/useTeam'
 import { getNodeTypeInfo, NODE_PORT_DEFINITIONS, type WorkflowNodeType } from '@/types/workflow'
-import FloatingToolbar from './FloatingToolbar.vue'
+import FloatingToolbar from '@/components/team/FloatingToolbar.vue'
 
 const {
   nodes,

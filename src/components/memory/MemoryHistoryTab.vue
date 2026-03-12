@@ -135,7 +135,7 @@
 <script setup lang="ts">
 import { useMemoryHistory } from '@/composables/memory'
 import { useMemoryStore } from '@/stores/memory-store'
-import StoreMemoryModal from './StoreMemoryModal.vue'
+import StoreMemoryModal from '@/components/memory/StoreMemoryModal.vue'
 
 const memoryStore = useMemoryStore()
 const {
