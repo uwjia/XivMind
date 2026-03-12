@@ -261,15 +261,17 @@ class LanceDBPaperRepository(PaperRepository):
         table = self._get_date_index_table()
         now = datetime.utcnow().isoformat()
         
-        table.delete(f"date = '{date}'")
-        
         record = {
             "date": date,
             "total_count": total_count,
             "fetched_at": now,
             "embedding": [0.0] * 8,
         }
-        table.add([record])
+        
+        table.merge_insert("date") \
+            .when_matched_update_all() \
+            .when_not_matched_insert_all() \
+            .execute([record])
     
     def _get_next_date(self, date: str) -> str:
         try:
@@ -562,8 +564,6 @@ class LanceDBPaperRepository(PaperRepository):
         table = self._get_embedding_index_table()
         now = datetime.utcnow().isoformat()
         
-        table.delete(f"date = '{date}'")
-        
         record = {
             "date": date,
             "total_count": total_count,
@@ -571,7 +571,11 @@ class LanceDBPaperRepository(PaperRepository):
             "model_name": model_name,
             "embedding": [0.0] * 8,
         }
-        table.add([record])
+        
+        table.merge_insert("date") \
+            .when_matched_update_all() \
+            .when_not_matched_insert_all() \
+            .execute([record])
     
     def get_all_embedding_indexes(self) -> List[Dict[str, Any]]:
         table = self._get_embedding_index_table()
