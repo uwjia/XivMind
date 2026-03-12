@@ -507,14 +507,19 @@ class TestLanceDBPaperRepositoryDateIndex:
 
     def test_insert_date_index(self, repo):
         mock_table = Mock()
-        mock_table.delete = Mock()
-        mock_table.add = Mock()
+        mock_merge_insert = Mock()
+        mock_merge_insert.when_matched_update_all = Mock(return_value=mock_merge_insert)
+        mock_merge_insert.when_not_matched_insert_all = Mock(return_value=mock_merge_insert)
+        mock_merge_insert.execute = Mock()
+        mock_table.merge_insert = Mock(return_value=mock_merge_insert)
         
         with patch.object(repo, '_get_date_index_table', return_value=mock_table):
             repo.insert_date_index("2024-01-15", 100)
             
-            mock_table.delete.assert_called_once()
-            mock_table.add.assert_called_once()
+            mock_table.merge_insert.assert_called_once_with("date")
+            mock_merge_insert.when_matched_update_all.assert_called_once()
+            mock_merge_insert.when_not_matched_insert_all.assert_called_once()
+            mock_merge_insert.execute.assert_called_once()
 
     def test_delete_date_index(self, repo):
         mock_table = Mock()
@@ -598,14 +603,19 @@ class TestLanceDBPaperRepositoryEmbeddingIndex:
 
     def test_insert_embedding_index(self, repo):
         mock_table = Mock()
-        mock_table.delete = Mock()
-        mock_table.add = Mock()
+        mock_merge_insert = Mock()
+        mock_merge_insert.when_matched_update_all = Mock(return_value=mock_merge_insert)
+        mock_merge_insert.when_not_matched_insert_all = Mock(return_value=mock_merge_insert)
+        mock_merge_insert.execute = Mock()
+        mock_table.merge_insert = Mock(return_value=mock_merge_insert)
         
         with patch.object(repo, '_get_embedding_index_table', return_value=mock_table):
             repo.insert_embedding_index("2024-01-15", 100, "test-model")
             
-            mock_table.delete.assert_called_once()
-            mock_table.add.assert_called_once()
+            mock_table.merge_insert.assert_called_once_with("date")
+            mock_merge_insert.when_matched_update_all.assert_called_once()
+            mock_merge_insert.when_not_matched_insert_all.assert_called_once()
+            mock_merge_insert.execute.assert_called_once()
 
     def test_get_all_embedding_indexes(self, repo):
         mock_table = Mock()

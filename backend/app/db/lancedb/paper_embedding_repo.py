@@ -133,9 +133,10 @@ class LanceDBPaperEmbeddingRepository(PaperEmbeddingRepository):
             return None
         
         row = results.iloc[0]
+        embedding = row.get("embedding")
         return {
             "paper_id": row.get("paper_id"),
-            "embedding": list(row.get("embedding")) if row.get("embedding") else None,
+            "embedding": list(embedding) if embedding is not None else None,
             "embedding_model": row.get("embedding_model"),
             "created_at": row.get("created_at"),
         }

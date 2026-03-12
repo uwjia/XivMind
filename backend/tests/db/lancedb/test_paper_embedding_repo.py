@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import Mock, patch
 import pandas as pd
+import numpy as np
 
 from app.db.lancedb.paper_embedding_repo import LanceDBPaperEmbeddingRepository
 
@@ -174,6 +175,52 @@ class TestLanceDBPaperEmbeddingRepositoryGetEmbedding:
             result = repo.get_embedding("nonexistent")
             
             assert result is None
+
+    def test_get_embedding_with_numpy_array(self, repo):
+        mock_table = Mock()
+        numpy_embedding = np.array([0.1] * 1536, dtype=np.float32)
+        df = pd.DataFrame([{
+            "paper_id": "2301.12345",
+            "embedding": [numpy_embedding],
+            "embedding_model": "test-model",
+            "created_at": "2024-01-01T00:00:00",
+        }])
+        
+        mock_search = Mock()
+        mock_search.where = Mock(return_value=mock_search)
+        mock_search.limit = Mock(return_value=mock_search)
+        mock_search.to_pandas = Mock(return_value=df)
+        mock_table.search = Mock(return_value=mock_search)
+        
+        with patch.object(repo, '_get_table', return_value=mock_table):
+            result = repo.get_embedding("2301.12345")
+            
+            assert result is not None
+            assert result["paper_id"] == "2301.12345"
+            assert result["embedding_model"] == "test-model"
+            assert isinstance(result["embedding"], list)
+
+    def test_get_embedding_with_none_embedding(self, repo):
+        mock_table = Mock()
+        df = pd.DataFrame([{
+            "paper_id": "2301.12345",
+            "embedding": None,
+            "embedding_model": "test-model",
+            "created_at": "2024-01-01T00:00:00",
+        }])
+        
+        mock_search = Mock()
+        mock_search.where = Mock(return_value=mock_search)
+        mock_search.limit = Mock(return_value=mock_search)
+        mock_search.to_pandas = Mock(return_value=df)
+        mock_table.search = Mock(return_value=mock_search)
+        
+        with patch.object(repo, '_get_table', return_value=mock_table):
+            result = repo.get_embedding("2301.12345")
+            
+            assert result is not None
+            assert result["paper_id"] == "2301.12345"
+            assert result["embedding"] is None
 
 
 class TestLanceDBPaperEmbeddingRepositoryGetEmbeddingsBatch:
