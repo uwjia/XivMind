@@ -101,6 +101,20 @@ export function useDateIndexes() {
     return embeddingIndexes.value.length
   })
 
+  const getLatestStoredDate = (): string | null => {
+    if (dateIndexes.value.length === 0) {
+      console.log('getLatestStoredDate No date indexes found')
+      return null
+    }
+    
+    const datesWithPapers = dateIndexes.value
+      .filter(idx => idx.total_count > 0)
+      .map(idx => idx.date)
+      .sort((a, b) => b.localeCompare(a))
+    
+    return datesWithPapers[0] || null
+  }
+
   const fetchDateIndexes = async (forceRefresh = false) => {
     const now = Date.now()
     if (!forceRefresh && now - lastFetchTime < CACHE_DURATION && dateIndexes.value.length > 0) {
@@ -225,6 +239,7 @@ export function useDateIndexes() {
     totalDays,
     totalPapers,
     totalEmbeddedDays,
+    getLatestStoredDate,
     fetchDateIndexes,
     refreshDateIndexes,
     getPaperCount,

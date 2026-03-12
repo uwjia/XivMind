@@ -176,12 +176,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onActivated, ref, watch } from 'vue'
+import { onMounted, onActivated, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { usePaperStore } from '@/stores/paper-store'
 import { useConfigStore } from '@/stores/config-store'
 import { useBookmarkStore } from '@/stores/bookmark-store'
-import { categories } from '@/utils/categoryColors'
 import PaperCard from '@/components/PaperCard.vue'
 import PaperCardSimple from '@/components/PaperCardSimple.vue'
 import DatePicker from '@/components/DatePicker.vue'
@@ -189,11 +187,8 @@ import CategoryPicker from '@/components/CategoryPicker.vue'
 import { KnowledgeGraph, GraphControls, GraphStatistics } from '@/components/graph'
 import CategoryDrawer from '@/components/CategoryDrawer.vue'
 import { usePaperFilter } from '@/composables/usePaperFilter'
-import { useDateIndexes } from '@/composables/useDateIndexes'
 import { useKnowledgeGraph } from '@/composables/useKnowledgeGraph'
-import type { Paper } from '@/types'
 
-const paperStore = usePaperStore()
 const configStore = useConfigStore()
 const bookmarkStore = useBookmarkStore()
 const jumpPageInput = ref<string>('')
@@ -218,10 +213,17 @@ const {
   goToFirstPage,
   goToPreviousPage,
   goToNextPage,
-  goToPage
+  goToPage,
+  handleFilterCategorySelect,
+  localFilterCategory,
+  filteredPapers,
+  filterDescription,
+  categoryCounts,
+  checkAndLoadPapers,
+  toggleFilterDrawer,
+  closeFilterDrawer,
+  isFilterDrawerOpen,
 } = usePaperFilter()
-
-const { dateIndexes, fetchDateIndexes } = useDateIndexes()
 
 const {
   isGraphView,
@@ -237,81 +239,6 @@ const {
   handleGraphReset
 } = useKnowledgeGraph(selectedDate, selectedCategory)
 
-const isFilterDrawerOpen = ref(false)
-const localFilterCategory = ref<string | null>(null)
-
-const toggleFilterDrawer = () => {
-  isFilterDrawerOpen.value = !isFilterDrawerOpen.value
-}
-
-const closeFilterDrawer = () => {
-  isFilterDrawerOpen.value = false
-}
-
-const handleFilterCategorySelect = (categoryId: string | null) => {
-  localFilterCategory.value = categoryId
-}
-
-const allPapers = computed<Paper[]>(() => {
-  return paperStore.getFilteredPapers()
-})
-
-const filteredPapers = computed<Paper[]>(() => {
-  const papers = allPapers.value
-  if (!localFilterCategory.value || localFilterCategory.value === 'cs*') {
-    return papers
-  }
-  if (localFilterCategory.value === 'other') {
-    const csCategoryIds = categories.map(cat => cat.id)
-    return papers.filter(paper => !csCategoryIds.includes(paper.primaryCategory))
-  }
-  return papers.filter(paper => paper.primaryCategory === localFilterCategory.value)
-})
-
-const categoryCounts = computed(() => {
-  const counts: Record<string, number> = {}
-  for (const paper of allPapers.value) {
-    const category = paper.primaryCategory
-    if (category) {
-      counts[category] = (counts[category] || 0) + 1
-    }
-  }
-  return counts
-})
-
-const getLatestStoredDate = (): string | null => {
-  if (dateIndexes.value.length === 0) return null
-  
-  const datesWithPapers = dateIndexes.value
-    .filter(idx => idx.total_count > 0)
-    .map(idx => idx.date)
-    .sort((a, b) => b.localeCompare(a))
-  
-  return datesWithPapers[0] || null
-}
-
-const checkAndLoadPapers = async () => {
-  console.log('Checking if papers need to be loaded...')
-  console.log('Current papers count:', paperStore.papers.length)
-  
-  if (paperStore.papers.length === 0) {
-    console.log('No papers in store, fetching date indexes first...')
-    await fetchDateIndexes()
-    
-    const latestDate = getLatestStoredDate()
-    
-    if (latestDate) {
-      console.log('Found latest stored date:', latestDate)
-      handleDateSelect(new Date(latestDate))
-    } else {
-      console.log('No stored dates found, loading default papers...')
-      loadPapers(0)
-    }
-  } else {
-    console.log('Papers already loaded, skipping fetch')
-  }
-}
-
 const handleGoToPage = () => {
   const targetPage = parseInt(jumpPageInput.value)
   if (targetPage && targetPage > 0) {
@@ -319,34 +246,6 @@ const handleGoToPage = () => {
     jumpPageInput.value = ''
   }
 }
-
-const filterDescription = computed(() => {
-  const parts = []
-  
-  if (selectedCategory.value !== 'all') {
-    const category = categories.find(cat => cat.id === selectedCategory.value)
-    if (category) {
-      parts.push(`${selectedCategory.value} (${category.name})`)
-    } else {
-      parts.push(selectedCategory.value)
-    }
-  }
-  
-  if (selectedDate.value !== 'all') {
-    if (selectedDate.value instanceof Date) {
-      const year = selectedDate.value.getFullYear()
-      const month = String(selectedDate.value.getMonth() + 1).padStart(2, '0')
-      const day = String(selectedDate.value.getDate()).padStart(2, '0')
-      parts.push(`${year}-${month}-${day}`)
-    } else {
-      parts.push(selectedDate.value)
-    }
-  }
-  
-  parts.push(`Page ${ currentPage.value + 1 } of ${filteredPapers.value.length} papers`)
-  
-  return parts.join(' · ')
-})
 
 const refreshPapers = async () => {
   console.log('Refreshing papers...')
@@ -401,7 +300,6 @@ onMounted(async () => {
 
 onActivated(() => {
   console.log('Home activated (returned from another page)')
-  fetchDateIndexes()
 })
 </script>
 

@@ -3,15 +3,19 @@ import { usePaperStore } from '@/stores/paper-store'
 import { useConfigStore } from '@/stores/config-store'
 import { useToastStore } from '@/stores/toast-store'
 import { useDateIndexes } from '@/composables/useDateIndexes'
+import type { Paper } from '@/types'
+import { categories } from '@/utils/categoryColors'
 
 const isDatePickerOpen = ref(false)
 const isCategoryPickerOpen = ref(false)
+
+const isFilterDrawerOpen = ref(false)
 
 export function usePaperFilter() {
   const paperStore = usePaperStore()
   const configStore = useConfigStore()
   const toastStore = useToastStore()
-  const { refreshDateIndexes } = useDateIndexes()
+  const { fetchDateIndexes, getLatestStoredDate, refreshDateIndexes } = useDateIndexes()
 
   const { currentPage } = toRefs(paperStore)
   
@@ -19,6 +23,68 @@ export function usePaperFilter() {
   const selectedDate = computed(() => paperStore.selectedDate)
   const loading = computed(() => paperStore.loading)
   const error = computed(() => paperStore.error)
+
+  
+const localFilterCategory = ref<string | null>(null)
+
+const allPapers = computed<Paper[]>(() => {
+  return paperStore.getFilteredPapers()
+})
+
+const handleFilterCategorySelect = (categoryId: string | null) => {
+  localFilterCategory.value = categoryId
+}
+
+const filteredPapers = computed<Paper[]>(() => {
+  const papers = allPapers.value
+  if (!localFilterCategory.value || localFilterCategory.value === 'cs*') {
+    return papers
+  }
+  if (localFilterCategory.value === 'other') {
+    const csCategoryIds = categories.map(cat => cat.id)
+    return papers.filter(paper => !csCategoryIds.includes(paper.primaryCategory))
+  }
+  return papers.filter(paper => paper.primaryCategory === localFilterCategory.value)
+})
+
+const categoryCounts = computed(() => {
+  const counts: Record<string, number> = {}
+  for (const paper of allPapers.value) {
+    const category = paper.primaryCategory
+    if (category) {
+      counts[category] = (counts[category] || 0) + 1
+    }
+  }
+  return counts
+})
+
+const filterDescription = computed(() => {
+  const parts = []
+  
+  if (selectedCategory.value !== 'all') {
+    const category = categories.find(cat => cat.id === selectedCategory.value)
+    if (category) {
+      parts.push(`${selectedCategory.value} (${category.name})`)
+    } else {
+      parts.push(selectedCategory.value)
+    }
+  }
+  
+  if (selectedDate.value !== 'all') {
+    if (selectedDate.value instanceof Date) {
+      const year = selectedDate.value.getFullYear()
+      const month = String(selectedDate.value.getMonth() + 1).padStart(2, '0')
+      const day = String(selectedDate.value.getDate()).padStart(2, '0')
+      parts.push(`${year}-${month}-${day}`)
+    } else {
+      parts.push(selectedDate.value)
+    }
+  }
+  
+  parts.push(`Page ${ currentPage.value + 1 } of ${filteredPapers.value.length} papers`)
+  
+  return parts.join(' · ')
+})
 
   const toggleDatePicker = () => {
     isDatePickerOpen.value = !isDatePickerOpen.value
@@ -90,6 +156,36 @@ export function usePaperFilter() {
     }
   }
 
+  const checkAndLoadPapers = async () => {
+    console.log('Checking if papers need to be loaded...')
+    console.log('Current papers count:', paperStore.papers.length)
+    
+    if (paperStore.papers.length === 0) {
+      console.log('No papers in store, fetching date indexes first...')
+      await fetchDateIndexes()
+      
+      const latestDate = getLatestStoredDate()
+      
+      if (latestDate) {
+        console.log('Found latest stored date:', latestDate)
+        handleDateSelect(new Date(latestDate))
+      } else {
+        console.log('No stored dates found, loading default papers...')
+        loadPapers(0)
+      }
+    } else {
+      console.log('Papers already loaded, skipping fetch')
+    }
+  }
+
+  const toggleFilterDrawer = () => {
+    isFilterDrawerOpen.value = !isFilterDrawerOpen.value
+  }
+
+  const closeFilterDrawer = () => {
+    isFilterDrawerOpen.value = false
+  }
+
   const goToFirstPage = () => {
     paperStore.setCurrentPage(0)
     loadPapers(0)
@@ -147,6 +243,15 @@ export function usePaperFilter() {
     goToFirstPage,
     goToPreviousPage,
     goToNextPage,
-    goToPage
+    goToPage,
+    handleFilterCategorySelect,
+    localFilterCategory,
+    filteredPapers,
+    filterDescription,
+    categoryCounts,
+    checkAndLoadPapers,
+    toggleFilterDrawer,
+    closeFilterDrawer,
+    isFilterDrawerOpen,
   }
 }
