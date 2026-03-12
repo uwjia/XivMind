@@ -5,7 +5,6 @@ export const useSidebarStore = defineStore('sidebar', () => {
   const isCollapsed = ref<boolean>(false)
   const isMobileOpen = ref<boolean>(false)
   const forceCollapsed = ref<boolean>(false)
-  const previousCollapsedState = ref<boolean | null>(null)
 
   const effectiveCollapsed = computed(() => {
     return forceCollapsed.value || isCollapsed.value
@@ -34,16 +33,11 @@ export const useSidebarStore = defineStore('sidebar', () => {
   }
 
   const enterForceCollapse = () => {
-    previousCollapsedState.value = isCollapsed.value
     forceCollapsed.value = true
   }
 
   const exitForceCollapse = () => {
     forceCollapsed.value = false
-    if (previousCollapsedState.value !== null) {
-      isCollapsed.value = previousCollapsedState.value
-      previousCollapsedState.value = null
-    }
   }
 
   return {
