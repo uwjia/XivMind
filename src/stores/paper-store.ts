@@ -63,7 +63,7 @@ export const usePaperStore = defineStore('paper', () => {
     error.value = value
   }
 
-  const fetchPapers = async (options: FetchOptions = {}) => {
+  const fetchTodayPapersBackend = async (options: FetchOptions = {}) => {
     try {
       setLoading(true)
       setError(null)
@@ -71,7 +71,7 @@ export const usePaperStore = defineStore('paper', () => {
       const configStore = useConfigStore()
       const { category = 'cs*', maxResults = configStore.maxResults, start = 0 } = options
 
-      const data = await arxivBackendAPI.fetchPapers({ category, maxResults, start })
+      const data = await arxivBackendAPI.fetchTodayPapers({ category, maxResults, start })
       setPapers(data)
 
       return data
@@ -189,7 +189,7 @@ export const usePaperStore = defineStore('paper', () => {
     setCurrentPage,
     setLoading,
     setError,
-    fetchPapers,
+    fetchTodayPapersBackend,
     fetchTodayPapers,
     fetchPapersByDateRange,
     searchPapers,

@@ -123,15 +123,6 @@ const filterDescription = computed(() => {
       const category = selectedCategory.value === 'all' ? 'cs*' : selectedCategory.value
       const dateValue = selectedDate.value
       
-      const fetchDefault = () => paperStore.fetchPapers({ 
-        category, 
-        maxResults: configStore.maxResults, 
-        start: startIndex 
-      })
-
-      const fetchByDateRange = (startTimestamp: string, endTimestamp: string) => 
-        paperStore.fetchPapersByDateRange(startTimestamp, endTimestamp, category, configStore.maxResults, startIndex)
-      
       let dateForQuery: Date | null = null
       if (dateValue instanceof Date) {
         dateForQuery = dateValue
@@ -141,8 +132,16 @@ const filterDescription = computed(() => {
       
       if (dateForQuery && !isNaN(dateForQuery.getTime())) {
         const { startTimestamp, endTimestamp } = getDateTimestamps(dateForQuery)
+        const fetchByDateRange = (startTimestamp: string, endTimestamp: string) => 
+          paperStore.fetchPapersByDateRange(startTimestamp, endTimestamp, category, configStore.maxResults, startIndex)
         await fetchByDateRange(startTimestamp, endTimestamp)
       } else {
+        // for case when selectedDate is 'all'
+        const fetchDefault = () => paperStore.fetchTodayPapersBackend({ 
+          category, 
+          maxResults: configStore.maxResults, 
+          start: startIndex 
+        })
         await fetchDefault()
       }
       

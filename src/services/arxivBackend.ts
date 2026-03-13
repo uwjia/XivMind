@@ -99,7 +99,7 @@ interface FetchOptions {
 }
 
 export const arxivBackendAPI = {
-  async fetchPapers(options: FetchOptions = {}): Promise<Paper[]> {
+  async fetchTodayPapers(options: FetchOptions = {}): Promise<Paper[]> {
     const {
       category,
       maxResults = 50,
@@ -107,8 +107,10 @@ export const arxivBackendAPI = {
     } = options
 
     const today = new Date()
-    const dateStr = today.toISOString().split('T')[0]
-    
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const dateStr = yesterday.toISOString().split('T')[0]
+
     return this.queryPapers(dateStr, category, maxResults, start)
   },
 
@@ -143,13 +145,6 @@ export const arxivBackendAPI = {
     console.log('Backend response:', data.papers.length, 'papers, total:', data.total)
     
     return data.papers.map(transformBackendPaper)
-  },
-
-  async fetchTodayPapers(category: string = 'all', maxResults?: number, fetchCategory: string = 'cs*'): Promise<Paper[]> {
-    const today = new Date()
-    const dateStr = today.toISOString().split('T')[0]
-    
-    return this.queryPapers(dateStr, category, maxResults, 0, fetchCategory)
   },
 
   async fetchPapersByDate(category: string = 'all', daysAgo: number = 1, maxResults?: number, fetchCategory: string = 'cs*'): Promise<Paper[]> {
