@@ -121,10 +121,10 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useNoteStore } from '@/stores/note-store'
 import { useToastStore } from '@/stores/toast-store'
 import { useDraggable, useResizable } from '@/composables/useNotePanel'
-import NoteItem from './NoteItem.vue'
-import NoteEditor from './NoteEditor.vue'
-import NoteToolbar from './NoteToolbar.vue'
-import NoteExportModal from './NoteExportModal.vue'
+import NoteItem from '@/components/note/NoteItem.vue'
+import NoteEditor from '@/components/note/NoteEditor.vue'
+import NoteToolbar from '@/components/note/NoteToolbar.vue'
+import NoteExportModal from '@/components/note/NoteExportModal.vue'
 
 const noteStore = useNoteStore()
 const toastStore = useToastStore()
