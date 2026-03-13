@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, type Ref } from 'vue'
 import type { NotePanelPosition, NotePanelSize } from '@/types/note'
 
 interface UseDraggableOptions {
@@ -131,5 +131,126 @@ export function useResizable(options: UseResizableOptions) {
     size,
     isResizing,
     handleResizeMouseDown
+  }
+}
+
+interface UseNotePanelKeyboardOptions {
+  isVisible: Ref<boolean>
+  isEditing: Ref<boolean>
+  onCancelEdit: () => void
+  onClearSelection: () => void
+  hasSelection: Ref<boolean> | (() => boolean)
+  onTogglePanel: () => void
+}
+
+export function useNotePanelKeyboard(options: UseNotePanelKeyboardOptions) {
+  const {
+    isVisible,
+    isEditing,
+    onCancelEdit,
+    onClearSelection,
+    hasSelection,
+    onTogglePanel
+  } = options
+
+  const handleKeydown = (e: KeyboardEvent) => {
+    if (!isVisible.value) return
+
+    const getHasSelection = typeof hasSelection === 'function'
+      ? hasSelection
+      : () => hasSelection.value
+
+    if (e.key === 'Escape') {
+      if (isEditing.value) {
+        onCancelEdit()
+      } else if (getHasSelection()) {
+        onClearSelection()
+      }
+    }
+
+    if (e.ctrlKey && e.shiftKey && e.key === 'N') {
+      e.preventDefault()
+      onTogglePanel()
+    }
+  }
+
+  onMounted(() => {
+    document.addEventListener('keydown', handleKeydown)
+  })
+
+  onUnmounted(() => {
+    document.removeEventListener('keydown', handleKeydown)
+  })
+
+  return {
+    handleKeydown
+  }
+}
+
+interface UseNotePanelResizeOptions {
+  position: Ref<NotePanelPosition>
+  size: Ref<NotePanelSize>
+  onPositionChange: (x: number, y: number) => void
+  onResetPosition: () => void
+  hasUserMovedPanel: Ref<boolean> | (() => boolean)
+  isVisible: Ref<boolean>
+}
+
+export function useNotePanelResize(options: UseNotePanelResizeOptions) {
+  const {
+    position,
+    size,
+    onPositionChange,
+    onResetPosition,
+    hasUserMovedPanel,
+    isVisible
+  } = options
+
+  const adjustPositionOnResize = () => {
+    const panelWidth = size.value.width
+    const panelHeight = size.value.height
+    const padding = 10
+
+    let newX = position.value.x
+    let newY = position.value.y
+
+    if (position.value.x + panelWidth > window.innerWidth - padding) {
+      newX = Math.max(padding, window.innerWidth - panelWidth - padding)
+    }
+
+    if (position.value.y + panelHeight > window.innerHeight - padding) {
+      newY = Math.max(padding, window.innerHeight - panelHeight - padding)
+    }
+
+    if (newX !== position.value.x || newY !== position.value.y) {
+      position.value = { x: newX, y: newY }
+      onPositionChange(newX, newY)
+    }
+  }
+
+  const handleWindowResize = () => {
+    adjustPositionOnResize()
+
+    const getHasUserMovedPanel = typeof hasUserMovedPanel === 'function'
+      ? hasUserMovedPanel
+      : () => hasUserMovedPanel.value
+
+    if (!getHasUserMovedPanel() && isVisible.value) {
+      onResetPosition()
+      position.value = { ...position.value }
+    }
+  }
+
+  onMounted(() => {
+    window.addEventListener('resize', handleWindowResize)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('resize', handleWindowResize)
+  })
+
+  return {
+    adjustPositionOnResize,
+    handleWindowResize
   }
 }

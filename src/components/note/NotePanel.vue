@@ -117,22 +117,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useNoteStore } from '@/stores/note-store'
-import { useToastStore } from '@/stores/toast-store'
-import { useDraggable, useResizable } from '@/composables/useNotePanel'
+import { useDraggable, useResizable, useNotePanelKeyboard, useNotePanelResize } from '@/composables/note/useNotePanel'
+import { useNoteEditor } from '@/composables/note/useNoteEditor'
+import { useNoteActions } from '@/composables/note/useNoteActions'
+import { useNoteSelection } from '@/composables/note/useNoteSelection'
 import NoteItem from '@/components/note/NoteItem.vue'
 import NoteEditor from '@/components/note/NoteEditor.vue'
 import NoteToolbar from '@/components/note/NoteToolbar.vue'
 import NoteExportModal from '@/components/note/NoteExportModal.vue'
 
 const noteStore = useNoteStore()
-const toastStore = useToastStore()
-
-const isEditing = ref(false)
-const editingNoteId = ref<string | null>(null)
-const editingContent = ref('')
-const editingTags = ref<string[]>([])
 const showExportModal = ref(false)
 
 const {
@@ -152,6 +148,50 @@ const {
   onSizeChange: (s) => noteStore.updateSize(s.width, s.height)
 })
 
+const {
+  isEditing,
+  editingNoteId,
+  editingContent,
+  editingTags,
+  startAdd: startAddNote,
+  startEdit: startEditNote,
+  cancel: cancelEdit,
+  save: handleSaveNote
+} = useNoteEditor()
+
+const {
+  deleteNote: handleDeleteNote,
+  deleteSelected: handleDeleteSelected,
+  copyNote: handleCopyNote,
+  copySelected: handleCopySelected,
+  setSearchQuery,
+  setFilter
+} = useNoteActions()
+
+const {
+  toggleSelection,
+  toggleSelectAll,
+  clearSelection
+} = useNoteSelection()
+
+useNotePanelKeyboard({
+  isVisible: computed(() => noteStore.isVisible),
+  isEditing,
+  onCancelEdit: cancelEdit,
+  onClearSelection: clearSelection,
+  hasSelection: () => noteStore.selectedIds.length > 0,
+  onTogglePanel: () => noteStore.togglePanel()
+})
+
+useNotePanelResize({
+  position,
+  size,
+  onPositionChange: (x, y) => noteStore.updatePosition(x, y),
+  onResetPosition: () => noteStore.resetToDefaultPosition(),
+  hasUserMovedPanel: () => noteStore.hasUserMovedPanel,
+  isVisible: computed(() => noteStore.isVisible)
+})
+
 watch(() => noteStore.position, (newPos) => {
   position.value = { ...newPos }
 }, { deep: true })
@@ -167,37 +207,6 @@ watch(() => noteStore.isVisible, async (visible) => {
     position.value = { ...noteStore.position }
   }
 })
-
-const adjustPositionOnResize = () => {
-  const panelWidth = size.value.width
-  const panelHeight = size.value.height
-  const padding = 10
-  
-  let newX = position.value.x
-  let newY = position.value.y
-  
-  if (position.value.x + panelWidth > window.innerWidth - padding) {
-    newX = Math.max(padding, window.innerWidth - panelWidth - padding)
-  }
-  
-  if (position.value.y + panelHeight > window.innerHeight - padding) {
-    newY = Math.max(padding, window.innerHeight - panelHeight - padding)
-  }
-  
-  if (newX !== position.value.x || newY !== position.value.y) {
-    position.value = { x: newX, y: newY }
-    noteStore.updatePosition(newX, newY)
-  }
-}
-
-const handleWindowResize = () => {
-  adjustPositionOnResize()
-  
-  if (!noteStore.hasUserMovedPanel && noteStore.isVisible) {
-    noteStore.resetToDefaultPosition()
-    position.value = { ...noteStore.position }
-  }
-}
 
 const isVisible = computed(() => noteStore.isVisible)
 const isMinimized = computed(() => noteStore.isMinimized)
@@ -217,112 +226,6 @@ const hidePanel = () => {
   noteStore.hidePanel()
 }
 
-const setSearchQuery = (query: string) => {
-  noteStore.setSearchQuery(query)
-}
-
-const setFilter = (tag: string | null) => {
-  noteStore.setFilter(tag)
-}
-
-const toggleSelection = (id: string) => {
-  noteStore.toggleSelection(id)
-}
-
-const toggleSelectAll = () => {
-  noteStore.toggleSelectAll()
-}
-
-const clearSelection = () => {
-  noteStore.clearSelection()
-}
-
-const startAddNote = () => {
-  isEditing.value = true
-  editingNoteId.value = null
-  editingContent.value = ''
-  editingTags.value = []
-}
-
-const startEditNote = (id: string) => {
-  const note = noteStore.getNoteById(id)
-  if (note) {
-    isEditing.value = true
-    editingNoteId.value = id
-    editingContent.value = note.content
-    editingTags.value = [...note.tags]
-  }
-}
-
-const cancelEdit = () => {
-  isEditing.value = false
-  editingNoteId.value = null
-  editingContent.value = ''
-  editingTags.value = []
-}
-
-const handleSaveNote = (content: string, tags: string[]) => {
-  if (editingNoteId.value) {
-    noteStore.updateNote(editingNoteId.value, content, tags)
-    toastStore.showSuccess('Note updated')
-  } else {
-    noteStore.addNote(content, tags)
-    toastStore.showSuccess('Note added')
-  }
-  cancelEdit()
-}
-
-const handleDeleteNote = async (id: string) => {
-  noteStore.deleteNote(id)
-  toastStore.showInfo('Note deleted')
-}
-
-const handleDeleteSelected = () => {
-  const count = noteStore.selectedIds.length
-  noteStore.deleteSelected()
-  toastStore.showInfo(`${count} notes deleted`)
-}
-
-const handleCopyNote = async (id: string) => {
-  const success = await noteStore.copyNote(id)
-  if (success) {
-    toastStore.showSuccess('Copied to clipboard')
-  }
-}
-
-const handleCopySelected = async () => {
-  const success = await noteStore.copySelected()
-  if (success) {
-    toastStore.showSuccess('Copied to clipboard')
-  }
-}
-
-const handleKeydown = (e: KeyboardEvent) => {
-  if (!isVisible.value) return
-
-  if (e.key === 'Escape') {
-    if (isEditing.value) {
-      cancelEdit()
-    } else if (noteStore.selectedIds.length > 0) {
-      clearSelection()
-    }
-  }
-
-  if (e.ctrlKey && e.shiftKey && e.key === 'N') {
-    e.preventDefault()
-    noteStore.togglePanel()
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('keydown', handleKeydown)
-  window.addEventListener('resize', handleWindowResize)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeydown)
-  window.removeEventListener('resize', handleWindowResize)
-})
 </script>
 
 <style scoped>

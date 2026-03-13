@@ -170,7 +170,7 @@ defineEmits<{
   border-radius: 6px;
   padding: 4px 8px;
   flex: 1;
-  max-width: 160px;
+  max-width: 200px;
 }
 
 .search-icon {

@@ -86,8 +86,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import type { ExportFormat, Note } from '@/types/note'
+import { toRef } from 'vue'
+import type { Note } from '@/types/note'
+import { useNoteExport } from '@/composables/note/useNoteExport'
 
 const props = defineProps<{
   visible: boolean
@@ -98,116 +99,25 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const format = ref<ExportFormat>('text')
-const includeTimestamps = ref(true)
-const includeTags = ref(true)
-const includeSource = ref(true)
+const {
+  format,
+  includeTimestamps,
+  includeTags,
+  includeSource,
+  createPreviewComputed,
+  copyToClipboard,
+  downloadFile
+} = useNoteExport()
 
-const formatDate = (date: Date): string => {
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(date)
-}
-
-const previewContent = computed(() => {
-  const notesToExport = props.notes.slice(0, 3)
-
-  switch (format.value) {
-    case 'json':
-      return JSON.stringify(notesToExport, null, 2)
-
-    case 'markdown':
-      return notesToExport.map(n => {
-        let md = `## ${formatDate(new Date(n.createdAt))}\n\n${n.content}`
-        if (includeTags.value && n.tags.length > 0) {
-          md += `\n\n**Tags:** ${n.tags.map(t => `\`${t}\``).join(' ')}`
-        }
-        if (includeSource.value && n.source) {
-          md += `\n\n**Source:** ${n.source}`
-        }
-        return md
-      }).join('\n\n---\n\n')
-
-    case 'text':
-    default:
-      return notesToExport.map(n => {
-        let text = n.content
-        if (includeTimestamps.value) {
-          text = `[${formatDate(new Date(n.createdAt))}] ${text}`
-        }
-        if (includeTags.value && n.tags.length > 0) {
-          text += `\nTags: ${n.tags.join(', ')}`
-        }
-        if (includeSource.value && n.source) {
-          text += `\nSource: ${n.source}`
-        }
-        return text
-      }).join('\n\n---\n\n')
-  }
-})
-
-const generateExportContent = (): string => {
-  switch (format.value) {
-    case 'json':
-      return JSON.stringify(props.notes, null, 2)
-
-    case 'markdown':
-      return props.notes.map(n => {
-        let md = `## ${formatDate(new Date(n.createdAt))}\n\n${n.content}`
-        if (includeTags.value && n.tags.length > 0) {
-          md += `\n\n**Tags:** ${n.tags.map(t => `\`${t}\``).join(' ')}`
-        }
-        if (includeSource.value && n.source) {
-          md += `\n\n**Source:** ${n.source}`
-        }
-        return md
-      }).join('\n\n---\n\n')
-
-    case 'text':
-    default:
-      return props.notes.map(n => {
-        let text = n.content
-        if (includeTimestamps.value) {
-          text = `[${formatDate(new Date(n.createdAt))}] ${text}`
-        }
-        if (includeTags.value && n.tags.length > 0) {
-          text += `\nTags: ${n.tags.join(', ')}`
-        }
-        if (includeSource.value && n.source) {
-          text += `\nSource: ${n.source}`
-        }
-        return text
-      }).join('\n\n---\n\n')
-  }
-}
+const notesRef = toRef(props, 'notes')
+const previewContent = createPreviewComputed(notesRef)
 
 const copyPreview = async () => {
-  try {
-    await navigator.clipboard.writeText(generateExportContent())
-  } catch {
-    // Handle error silently
-  }
+  await copyToClipboard(props.notes)
 }
 
 const handleExport = () => {
-  const content = generateExportContent()
-  const extension = format.value === 'json' ? 'json' : format.value === 'markdown' ? 'md' : 'txt'
-  const mimeType = format.value === 'json' ? 'application/json' : 'text/plain'
-
-  const blob = new Blob([content], { type: mimeType })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `xivmind-notes-${new Date().toISOString().slice(0, 10)}.${extension}`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
-
+  downloadFile(props.notes)
   emit('close')
 }
 </script>
