@@ -37,6 +37,18 @@
           </button>
         </div>
       </div>
+
+      <div class="header-right">
+        <button ref="noteBtnRef" class="note-btn" @click="toggleNotePanel" title="Notes Panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <span v-if="noteCount > 0" class="note-badge">{{ noteCount }}</span>
+        </button>
+      </div>
     </div>
   </header>
 </template>
@@ -45,13 +57,17 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useSidebarStore } from '@/stores/sidebar-store'
+import { useNoteStore } from '@/stores/note-store'
 
 const router = useRouter()
 const route = useRoute()
 const sidebarStore = useSidebarStore()
+const noteStore = useNoteStore()
 
 const searchQuery = ref<string>('')
 const isCollapsed = computed(() => sidebarStore.effectiveCollapsed)
+const noteCount = computed(() => noteStore.notes.length)
+const noteBtnRef = ref<HTMLElement | null>(null)
 
 watch(() => route.query?.q, (newQuery) => {
   if (newQuery !== undefined) {
@@ -68,6 +84,23 @@ const handleSearch = () => {
 const toggleSidebar = () => {
   sidebarStore.toggleSidebar()
 }
+
+const updateNoteBtnPosition = () => {
+  if (noteBtnRef.value) {
+    const rect = noteBtnRef.value.getBoundingClientRect()
+    noteStore.setNoteBtnPosition(rect.right, rect.bottom)
+  }
+}
+
+const toggleNotePanel = () => {
+  updateNoteBtnPosition()
+  noteStore.togglePanel()
+}
+
+defineExpose({
+  noteBtnRef,
+  updateNoteBtnPosition
+})
 </script>
 
 <style scoped>
@@ -211,6 +244,52 @@ const toggleSidebar = () => {
 
 .search-bar input::placeholder {
   color: var(--text-muted);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.note-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-secondary);
+}
+
+.note-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent-color);
+}
+
+.note-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.note-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--accent-color);
+  color: white;
+  font-size: 0.65rem;
+  padding: 2px 5px;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+  font-weight: 600;
 }
 
 @media (max-width: 768px) {
