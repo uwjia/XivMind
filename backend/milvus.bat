@@ -7,6 +7,10 @@ echo ==========================================
 
 cd /d "%~dp0"
 
+set COMPOSE_DIR=docker\compose
+set COMPOSE_FILE=%COMPOSE_DIR%\milvus.yml
+set COMPOSE_LITE_FILE=%COMPOSE_DIR%\milvus.lite.yml
+
 if "%1"=="" goto usage
 if "%1"=="start" goto start
 if "%1"=="stop" goto stop
@@ -17,10 +21,10 @@ if "%1"=="clean" goto clean
 goto usage
 
 :start
-set COMPOSE_FILE=docker-compose.yml
-if "%2"=="lite" set COMPOSE_FILE=docker-compose.lite.yml
-echo Starting Milvus services (%COMPOSE_FILE%)...
-docker-compose -f %COMPOSE_FILE% up -d
+set USE_FILE=%COMPOSE_FILE%
+if "%2"=="lite" set USE_FILE=%COMPOSE_LITE_FILE%
+echo Starting Milvus services (%USE_FILE%)...
+docker-compose -f %USE_FILE% up -d
 echo.
 echo Milvus is starting...
 echo   - Milvus: http://localhost:19530
@@ -43,8 +47,8 @@ goto end
 
 :stop
 echo Stopping Milvus services...
-docker-compose -f docker-compose.yml down 2>nul
-docker-compose -f docker-compose.lite.yml down 2>nul
+docker-compose -f %COMPOSE_FILE% down 2>nul
+docker-compose -f %COMPOSE_LITE_FILE% down 2>nul
 echo Milvus services stopped.
 goto end
 
@@ -54,23 +58,23 @@ call :start %2
 goto end
 
 :status
-docker-compose -f docker-compose.yml ps 2>nul
-docker-compose -f docker-compose.lite.yml ps 2>nul
+docker-compose -f %COMPOSE_FILE% ps 2>nul
+docker-compose -f %COMPOSE_LITE_FILE% ps 2>nul
 goto end
 
 :logs
-set COMPOSE_FILE=docker-compose.yml
-if exist volumes\milvus-lite set COMPOSE_FILE=docker-compose.lite.yml
-docker-compose -f %COMPOSE_FILE% logs -f %2
+set USE_FILE=%COMPOSE_FILE%
+if exist docker\compose\volumes\milvus-lite set USE_FILE=%COMPOSE_LITE_FILE%
+docker-compose -f %USE_FILE% logs -f %2
 goto end
 
 :clean
 echo WARNING: This will delete all data!
 set /p confirm="Are you sure? (y/N): "
 if /i "%confirm%"=="y" (
-    docker-compose -f docker-compose.yml down -v 2>nul
-    docker-compose -f docker-compose.lite.yml down -v 2>nul
-    rmdir /s /q volumes 2>nul
+    docker-compose -f %COMPOSE_FILE% down -v 2>nul
+    docker-compose -f %COMPOSE_LITE_FILE% down -v 2>nul
+    rmdir /s /q docker\compose\volumes 2>nul
     echo All data cleaned.
 ) else (
     echo Cancelled.
@@ -91,6 +95,10 @@ echo.
 echo Modes:
 echo   (default)     - Standard mode with separate etcd, MinIO containers
 echo   lite          - Embedded mode (etcd/MinIO embedded in Milvus)
+echo.
+echo Compose files:
+echo   %COMPOSE_FILE%
+echo   %COMPOSE_LITE_FILE%
 exit /b 1
 
 :end

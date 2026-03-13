@@ -36,7 +36,8 @@ class Settings(BaseSettings):
 
     ARXIV_MAX_RETRIES: int = 3
     ARXIV_RETRY_BASE_DELAY: float = 1.0
-    ARXIV_BATCH_SIZE: int = 50
+    ARXIV_BATCH_SIZE: int = 300
+    ARXIV_FETCH_DELAY: float = 5.0
 
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = ""

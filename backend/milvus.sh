@@ -7,17 +7,21 @@ echo "=========================================="
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+COMPOSE_DIR="docker/compose"
+COMPOSE_FILE="$COMPOSE_DIR/milvus.yml"
+COMPOSE_LITE_FILE="$COMPOSE_DIR/milvus.lite.yml"
+
 MODE="${2:-standard}"
-COMPOSE_FILE="docker-compose.yml"
+USE_FILE="$COMPOSE_FILE"
 
 if [ "$MODE" = "lite" ]; then
-    COMPOSE_FILE="docker-compose.lite.yml"
+    USE_FILE="$COMPOSE_LITE_FILE"
 fi
 
 case "$1" in
     start)
-        echo "Starting Milvus services ($COMPOSE_FILE)..."
-        docker-compose -f "$COMPOSE_FILE" up -d
+        echo "Starting Milvus services ($USE_FILE)..."
+        docker-compose -f "$USE_FILE" up -d
         echo ""
         echo "Milvus is starting..."
         echo "  - Milvus: http://localhost:19530"
@@ -36,26 +40,26 @@ case "$1" in
         ;;
     stop)
         echo "Stopping Milvus services..."
-        docker-compose -f docker-compose.yml down 2>/dev/null
-        docker-compose -f docker-compose.lite.yml down 2>/dev/null
+        docker-compose -f "$COMPOSE_FILE" down 2>/dev/null
+        docker-compose -f "$COMPOSE_LITE_FILE" down 2>/dev/null
         echo "Milvus services stopped."
         ;;
     restart)
         echo "Restarting Milvus services..."
-        docker-compose -f docker-compose.yml down 2>/dev/null
-        docker-compose -f docker-compose.lite.yml down 2>/dev/null
-        docker-compose -f "$COMPOSE_FILE" up -d
+        docker-compose -f "$COMPOSE_FILE" down 2>/dev/null
+        docker-compose -f "$COMPOSE_LITE_FILE" down 2>/dev/null
+        docker-compose -f "$USE_FILE" up -d
         echo "Milvus services restarted."
         ;;
     status)
-        docker-compose -f docker-compose.yml ps 2>/dev/null
-        docker-compose -f docker-compose.lite.yml ps 2>/dev/null
+        docker-compose -f "$COMPOSE_FILE" ps 2>/dev/null
+        docker-compose -f "$COMPOSE_LITE_FILE" ps 2>/dev/null
         ;;
     logs)
-        if [ -d "volumes/milvus-lite" ]; then
-            docker-compose -f docker-compose.lite.yml logs -f "${2:-standalone}"
+        if [ -d "docker/compose/volumes/milvus-lite" ]; then
+            docker-compose -f "$COMPOSE_LITE_FILE" logs -f "${2:-standalone}"
         else
-            docker-compose -f docker-compose.yml logs -f "${2:-standalone}"
+            docker-compose -f "$COMPOSE_FILE" logs -f "${2:-standalone}"
         fi
         ;;
     clean)
@@ -63,9 +67,9 @@ case "$1" in
         read -p "Are you sure? (y/N) " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            docker-compose -f docker-compose.yml down -v 2>/dev/null
-            docker-compose -f docker-compose.lite.yml down -v 2>/dev/null
-            rm -rf volumes
+            docker-compose -f "$COMPOSE_FILE" down -v 2>/dev/null
+            docker-compose -f "$COMPOSE_LITE_FILE" down -v 2>/dev/null
+            rm -rf docker/compose/volumes
             echo "All data cleaned."
         fi
         ;;
@@ -83,6 +87,10 @@ case "$1" in
         echo "Modes:"
         echo "  (default)      - Standard mode with separate etcd, MinIO containers"
         echo "  lite           - Embedded mode (etcd/MinIO embedded in Milvus)"
+        echo ""
+        echo "Compose files:"
+        echo "  $COMPOSE_FILE"
+        echo "  $COMPOSE_LITE_FILE"
         exit 1
         ;;
 esac

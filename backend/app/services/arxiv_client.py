@@ -21,7 +21,8 @@ class ArxivClient:
         self.settings = get_settings()
         self.max_retries = getattr(self.settings, "ARXIV_MAX_RETRIES", 3)
         self.retry_base_delay = getattr(self.settings, "ARXIV_RETRY_BASE_DELAY", 1.0)
-        self.batch_size = getattr(self.settings, "ARXIV_BATCH_SIZE", 500)
+        self.batch_size = getattr(self.settings, "ARXIV_BATCH_SIZE", 300)
+        self.fetch_delay = getattr(self.settings, "ARXIV_FETCH_DELAY", 5.0)
 
     def _date_to_arxiv_format(self, date_str: str) -> tuple[str, str]:
         """
@@ -229,7 +230,7 @@ class ArxivClient:
                         f"sortOrder=descending"
                     )
                 
-                logger.info(f"Fetching {category or 'all'} papers for {date}, start={start}")
+                logger.info(f"Fetching {category or 'all'} papers for {date}, start={start}, url={url}")
                 xml_text = await self._fetch_with_retry_url(client, url)
                 papers, total = self._parse_response(xml_text)
                 
@@ -244,7 +245,7 @@ class ArxivClient:
                 
                 start += self.batch_size
                 
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(self.fetch_delay)
         
         logger.info(f"Total {category or 'all'} papers fetched for {date}: {len(all_papers)}")
         return all_papers

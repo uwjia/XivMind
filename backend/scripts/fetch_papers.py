@@ -126,7 +126,7 @@ async def fetch_date_range(
     print(f"Rate limit wait: {retry_wait}s on failure")
     print(f"{'='*60}\n")
     
-    async with httpx.AsyncClient(timeout=120.0) as client:
+    async with httpx.AsyncClient(timeout=300.0) as client:
         success_count = 0
         fail_count = 0
         total_papers = 0
@@ -206,7 +206,7 @@ async def fetch_single_date(date: str, category: str = "cs*"):
     print(f"Category: {category}")
     print(f"{'='*60}\n")
     
-    async with httpx.AsyncClient(timeout=120.0) as client:
+    async with httpx.AsyncClient(timeout=300.0) as client:
         result = await fetch_papers_for_date(client, date, category)
         
         if result.get("success"):
@@ -239,7 +239,7 @@ async def retry_failed_dates(category: str = "cs*", delay: float = 1.0, retry_wa
     print(f"Retrying {len(failed_dates)} failed dates")
     print(f"{'='*60}\n")
     
-    async with httpx.AsyncClient(timeout=120.0) as client:
+    async with httpx.AsyncClient(timeout=300.0) as client:
         success_count = 0
         still_failed = []
         
