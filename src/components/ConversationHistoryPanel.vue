@@ -3,13 +3,19 @@
     <div
       v-if="visible"
       class="conversation-history-panel"
+      :class="{ dragging: isDragging }"
       :style="panelStyle"
-      @mousedown="startDrag"
     >
-      <div class="panel-header" @mousedown.stop="startDrag">
-        <span class="panel-title">Conversation History</span>
-        <button class="close-btn" @click="$emit('close')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18">
+      <div class="panel-header" @mousedown="startDrag">
+        <div class="header-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="header-icon">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span class="header-title">Conversations</span>
+          <span class="conversation-count">{{ conversationStore.conversations.length }}</span>
+        </div>
+        <button class="header-btn close" @click.stop="$emit('close')" title="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -112,6 +118,8 @@
           </div>
         </div>
       </div>
+
+      <div class="resize-handle" @mousedown="startResize" />
     </div>
   </Teleport>
 </template>
@@ -159,7 +167,12 @@ const sortedConversations = computed(() => {
 const position = ref({ x: 100, y: 100 })
 const size = ref({ width: 500, height: 400 })
 const isDragging = ref(false)
+const isResizing = ref(false)
 const dragOffset = ref({ x: 0, y: 0 })
+const resizeStart = ref({ x: 0, y: 0, width: 0, height: 0 })
+
+const minSize = { width: 300, height: 200 }
+const maxSize = { width: 800, height: 600 }
 
 const panelStyle = computed(() => ({
   left: `${position.value.x}px`,
@@ -187,7 +200,7 @@ watch(() => props.visible, (visible) => {
 })
 
 function startDrag(e: MouseEvent) {
-  if ((e.target as HTMLElement).closest('.close-btn, .conversation-item, input, button, .delete-confirm-overlay')) {
+  if ((e.target as HTMLElement).closest('.header-btn, .conversation-item, input, button, .delete-confirm-overlay, .resize-handle')) {
     return
   }
   isDragging.value = true
@@ -195,6 +208,7 @@ function startDrag(e: MouseEvent) {
     x: e.clientX - position.value.x,
     y: e.clientY - position.value.y,
   }
+  e.preventDefault()
 }
 
 function onDrag(e: MouseEvent) {
@@ -209,18 +223,64 @@ function stopDrag() {
   isDragging.value = false
 }
 
+function startResize(e: MouseEvent) {
+  e.preventDefault()
+  e.stopPropagation()
+  isResizing.value = true
+  resizeStart.value = {
+    x: e.clientX,
+    y: e.clientY,
+    width: size.value.width,
+    height: size.value.height,
+  }
+}
+
+function onResize(e: MouseEvent) {
+  if (!isResizing.value) return
+
+  const deltaX = e.clientX - resizeStart.value.x
+  const deltaY = e.clientY - resizeStart.value.y
+
+  const newWidth = Math.max(
+    minSize.width,
+    Math.min(maxSize.width, resizeStart.value.width + deltaX)
+  )
+  const newHeight = Math.max(
+    minSize.height,
+    Math.min(maxSize.height, resizeStart.value.height + deltaY)
+  )
+
+  size.value = { width: newWidth, height: newHeight }
+}
+
+function stopResize() {
+  isResizing.value = false
+}
+
 function selectConversation(sessionId: string) {
   emit('select', sessionId)
 }
 
 onMounted(() => {
-  window.addEventListener('mousemove', onDrag)
-  window.addEventListener('mouseup', stopDrag)
+  window.addEventListener('mousemove', (e) => {
+    onDrag(e)
+    onResize(e)
+  })
+  window.addEventListener('mouseup', () => {
+    stopDrag()
+    stopResize()
+  })
 })
 
 onUnmounted(() => {
-  window.removeEventListener('mousemove', onDrag)
-  window.removeEventListener('mouseup', stopDrag)
+  window.removeEventListener('mousemove', (e) => {
+    onDrag(e)
+    onResize(e)
+  })
+  window.removeEventListener('mouseup', () => {
+    stopDrag()
+    stopResize()
+  })
 })
 </script>
 
@@ -235,43 +295,79 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  resize: both;
-  min-width: 300px;
-  min-height: 200px;
+}
+
+.conversation-history-panel.dragging {
+  user-select: none;
+  cursor: move;
 }
 
 .panel-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: 12px 16px;
-  background: var(--bg-secondary, #16213e);
-  border-bottom: 1px solid var(--border-color, #2d2d44);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
   cursor: move;
   user-select: none;
 }
 
-.panel-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary, #e0e0e0);
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.close-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary, #888);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
+.header-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--accent-color);
+}
+
+.header-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.conversation-count {
+  background: var(--accent-color);
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.header-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
 }
 
-.close-btn:hover {
-  background: var(--hover-bg, rgba(255, 255, 255, 0.1));
-  color: var(--text-primary, #e0e0e0);
+.header-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.header-btn.close:hover {
+  background: rgba(220, 53, 69, 0.15);
+  color: var(--danger-color);
+}
+
+.header-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .panel-search {
@@ -481,5 +577,26 @@ onUnmounted(() => {
 .btn-delete {
   background: #f44336;
   color: white;
+}
+
+.resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: se-resize;
+}
+
+.resize-handle::before {
+  content: '';
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--text-muted, #666);
+  border-bottom: 2px solid var(--text-muted, #666);
+  opacity: 0.5;
 }
 </style>
