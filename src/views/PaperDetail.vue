@@ -170,7 +170,7 @@
                 <circle cx="12" cy="12" r="10" stroke-width="2" fill="none"/>
                 <circle cx="12" cy="12" r="10" stroke-width="2" fill="none" stroke-dasharray="62.83" :stroke-dashoffset="62.83 - (62.83 * downloadProgress / 100)" style="transform: rotate(-90deg); transform-origin: center;"/>
               </svg>
-              <svg v-else-if="downloadStatus === 'completed'" viewBox="0 0 24 24" fill="none" stroke="#4CAF50">
+              <svg v-else-if="downloadStatus === 'completed' || isDownloaded" viewBox="0 0 24 24" fill="none" stroke="#4CAF50">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                 <polyline points="22 4 12 14.01 9 11.01"/>
               </svg>
@@ -185,7 +185,7 @@
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
               <span v-if="downloadStatus === 'downloading'">{{ downloadProgress }}%</span>
-              <span v-else-if="downloadStatus === 'completed'">Downloaded</span>
+              <span v-else-if="downloadStatus === 'completed' || isDownloaded">Downloaded</span>
               <span v-else-if="downloadStatus === 'failed'">Retry Download</span>
               <span v-else-if="downloadStatus === 'pending'">Queued</span>
               <span v-else>Download</span>
@@ -257,6 +257,7 @@ const {
   error,
   paper,
   isBookmarked,
+  isDownloaded,
   downloadStatus,
   downloadProgress,
   relatedPapers,
@@ -265,6 +266,7 @@ const {
   fetchPaperById,
   fetchRelatedPapers,
   checkBookmark,
+  checkDownload,
   toggleBookmark,
   downloadPdf,
 } = usePaperDetail()
@@ -282,6 +284,7 @@ onMounted(async () => {
   await fetchPaperById(paperId)
   if (paper.value?.id) {
     await checkBookmark()
+    await checkDownload()
     await fetchRelatedPapers()
   }
 })
@@ -291,6 +294,7 @@ watch(() => route.params.id, async (newId) => {
     await fetchPaperById(newId as string)
     if (paper.value?.id) {
       await checkBookmark()
+      await checkDownload()
       await fetchRelatedPapers()
     }
   }

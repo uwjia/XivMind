@@ -1,10 +1,17 @@
 from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
+from pydantic import BaseModel
 from app.models import (
     DownloadTaskCreate,
     DownloadTaskResponse,
     DownloadTaskListResponse,
+    DownloadCheckBatchRequest,
+    DownloadCheckBatchResponse,
+    DownloadCheckResponse,
     MessageResponse,
     DownloadStatus,
+    SyncResultDetail,
+    SyncLocalFilesResponse,
+
 )
 from app.services import download_service
 from app.download_manager import download_manager
@@ -91,6 +98,34 @@ async def create_download_task(task: DownloadTaskCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/check/{paper_id}", response_model=DownloadCheckResponse)
+async def check_download(paper_id: str):
+    try:
+        task = download_service.get_task_by_paper_id(paper_id)
+        is_downloaded = task is not None and task.get("status") == "completed"
+        return DownloadCheckResponse(is_downloaded=is_downloaded)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/sync", response_model=SyncLocalFilesResponse)
+async def sync_local_files():
+    try:
+        result = download_service.sync_local_files()
+        return SyncLocalFilesResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/check-batch", response_model=DownloadCheckBatchResponse)
+async def check_downloads_batch(request: DownloadCheckBatchRequest):
+    try:
+        result = download_service.check_batch(request.paper_ids)
+        return DownloadCheckBatchResponse(downloads=result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("", response_model=DownloadTaskListResponse)
 async def get_download_tasks(
     limit: int = Query(default=100, ge=1, le=1000),
@@ -99,6 +134,30 @@ async def get_download_tasks(
     try:
         items, total, completed_count = download_service.get_all_tasks(limit=limit, offset=offset)
         return DownloadTaskListResponse(total=total, completed_count=completed_count, items=items)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/incomplete", response_model=DownloadTaskListResponse)
+async def get_incomplete_tasks(
+    limit: int = Query(default=100, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
+):
+    try:
+        items, total = download_service.get_incomplete(limit=limit, offset=offset)
+        return DownloadTaskListResponse(total=total, completed_count=0, items=items)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/missing-files", response_model=DownloadTaskListResponse)
+async def get_missing_files(
+    limit: int = Query(default=100, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
+):
+    try:
+        items, total = download_service.get_missing_files(limit=limit, offset=offset)
+        return DownloadTaskListResponse(total=total, completed_count=len(items), items=items)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -195,6 +254,68 @@ async def open_download_file(task_id: str):
         task = download_service.get_task(task_id)
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
+        
+        file_path = task.get("file_path")
+        if not file_path:
+            raise HTTPException(status_code=404, detail="File path not found")
+        
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="File does not exist")
+        
+        system = platform.system()
+        if system == "Windows":
+            os.startfile(file_path)
+        elif system == "Darwin":
+            subprocess.run(["open", file_path])
+        else:
+            subprocess.run(["xdg-open", file_path])
+        
+        return MessageResponse(message="File opened successfully")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{task_id}/open-folder", response_model=MessageResponse)
+async def open_containing_folder(task_id: str):
+    try:
+        task = download_service.get_task(task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        file_path = task.get("file_path")
+        if not file_path:
+            raise HTTPException(status_code=404, detail="File path not found")
+        
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="File does not exist")
+        
+        system = platform.system()
+        if system == "Windows":
+            subprocess.run(["explorer", "/select,", file_path])
+        elif system == "Darwin":
+            subprocess.run(["open", "-R", file_path])
+        else:
+            folder_path = os.path.dirname(file_path)
+            subprocess.run(["xdg-open", folder_path])
+        
+        return MessageResponse(message="Folder opened successfully")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/open-by-paper-id/{paper_id}", response_model=MessageResponse)
+async def open_file_by_paper_id(paper_id: str):
+    try:
+        task = download_service.get_task_by_paper_id(paper_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Download task not found")
+        
+        if task.get("status") != "completed":
+            raise HTTPException(status_code=400, detail="Download not completed")
         
         file_path = task.get("file_path")
         if not file_path:

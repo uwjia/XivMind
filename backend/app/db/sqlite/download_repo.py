@@ -79,6 +79,12 @@ class SQLiteDownloadRepository(DownloadRepository):
         now = datetime.utcnow().isoformat()
 
         title = self._safe_str(data.get("title"), 1024)
+        status = data.get("status", "pending")
+        progress = data.get("progress", 0)
+        file_path = data.get("file_path", "")
+        file_size = data.get("file_size", 0)
+        created_at = data.get("created_at", now)
+        updated_at = data.get("updated_at", now)
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -93,13 +99,13 @@ class SQLiteDownloadRepository(DownloadRepository):
                 self._safe_str(data.get("arxiv_id")),
                 title,
                 self._safe_str(data.get("pdf_url")),
-                "pending",
-                0,
+                status,
+                progress,
+                self._safe_str(file_path) if file_path else "",
+                file_size,
                 "",
-                0,
-                "",
-                now,
-                now,
+                created_at,
+                updated_at,
             ))
             conn.commit()
 
@@ -109,13 +115,13 @@ class SQLiteDownloadRepository(DownloadRepository):
             "arxiv_id": self._safe_str(data.get("arxiv_id")),
             "title": title,
             "pdf_url": self._safe_str(data.get("pdf_url")),
-            "status": "pending",
-            "progress": 0,
-            "file_path": "",
-            "file_size": 0,
+            "status": status,
+            "progress": progress,
+            "file_path": self._safe_str(file_path) if file_path else "",
+            "file_size": file_size,
             "error_message": "",
-            "created_at": now,
-            "updated_at": now,
+            "created_at": created_at,
+            "updated_at": updated_at,
         }
 
     def remove(self, id: str) -> bool:
@@ -142,6 +148,38 @@ class SQLiteDownloadRepository(DownloadRepository):
 
             cursor.execute('''
                 SELECT * FROM downloads ORDER BY created_at DESC LIMIT ? OFFSET ?
+            ''', (limit, offset))
+            rows = cursor.fetchall()
+            return [self._row_to_response(row) for row in rows], total
+
+    def get_incomplete(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM downloads WHERE status != ?', ('completed',))
+            total = cursor.fetchone()[0]
+
+            cursor.execute('''
+                SELECT id, paper_id, arxiv_id, title, pdf_url, status, progress,
+                       file_path, file_size, error_message, created_at, updated_at
+                FROM downloads 
+                WHERE status != 'completed'
+                ORDER BY created_at DESC LIMIT ? OFFSET ?
+            ''', (limit, offset))
+            rows = cursor.fetchall()
+            return [self._row_to_response(row) for row in rows], total
+
+    def get_completed_paginated(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM downloads WHERE status = ?', ('completed',))
+            total = cursor.fetchone()[0]
+
+            cursor.execute('''
+                SELECT id, paper_id, arxiv_id, title, pdf_url, status, progress,
+                       file_path, file_size, error_message, created_at, updated_at
+                FROM downloads 
+                WHERE status = 'completed'
+                ORDER BY created_at DESC LIMIT ? OFFSET ?
             ''', (limit, offset))
             rows = cursor.fetchall()
             return [self._row_to_response(row) for row in rows], total
@@ -227,3 +265,18 @@ class SQLiteDownloadRepository(DownloadRepository):
             cursor = conn.cursor()
             cursor.execute('SELECT COUNT(*) FROM downloads WHERE status = ?', ('completed',))
             return cursor.fetchone()[0]
+
+    def check_batch(self, paper_ids: List[str]) -> Dict[str, bool]:
+        if not paper_ids:
+            return {}
+        
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            placeholders = ','.join('?' * len(paper_ids))
+            cursor.execute(f'''
+                SELECT paper_id FROM downloads 
+                WHERE paper_id IN ({placeholders}) AND status = 'completed'
+            ''', paper_ids)
+            completed_paper_ids = {row[0] for row in cursor.fetchall()}
+        
+        return {paper_id: paper_id in completed_paper_ids for paper_id in paper_ids}

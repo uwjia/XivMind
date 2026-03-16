@@ -1,7 +1,7 @@
 from .common import MessageResponse
 from .paper import PaperBase, Paper
 from .bookmark import BookmarkCreate, BookmarkResponse, BookmarkListResponse, BookmarkCheckBatchRequest, BookmarkCheckBatchResponse
-from .download import DownloadStatus, DownloadTaskCreate, DownloadTaskResponse, DownloadTaskListResponse
+from .download import DownloadStatus, DownloadTaskCreate, DownloadTaskResponse, DownloadTaskListResponse, DownloadCheckBatchRequest, DownloadCheckBatchResponse, DownloadCheckResponse, SyncResultDetail, SyncLocalFilesResponse
 from .search import (
     SearchResult,
     SemanticSearchRequest,
@@ -65,6 +65,9 @@ __all__ = [
     "DownloadTaskCreate",
     "DownloadTaskResponse",
     "DownloadTaskListResponse",
+    "DownloadCheckBatchRequest",
+    "DownloadCheckBatchResponse",
+    "DownloadCheckResponse",
     "SearchResult",
     "SemanticSearchRequest",
     "SemanticSearchResult",
@@ -96,4 +99,6 @@ __all__ = [
     "SubAgentCreateRequest",
     "SubAgentSaveRequest",
     "SubAgentReloadResponse",
+    "SyncResultDetail",
+    "SyncLocalFilesResponse",
 ]

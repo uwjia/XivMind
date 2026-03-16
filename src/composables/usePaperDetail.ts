@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { usePaperStore } from '@/stores/paper-store'
 import { useBookmarkStore } from '@/stores/bookmark-store'
+import { useDownloadStore } from '@/stores/download-store'
 import { useToastStore } from '@/stores/toast-store'
 import { arxivBackendAPI } from '@/services/arxivBackend'
 import { useDownloadHandler } from '@/composables/useDownloadHandler'
@@ -15,6 +16,7 @@ export interface RelatedPaper {
 export function usePaperDetail() {
   const paperStore = usePaperStore()
   const bookmarkStore = useBookmarkStore()
+  const downloadStore = useDownloadStore()
   const toastStore = useToastStore()
   const { getStatus: getDownloadStatus, getProgress: getDownloadProgress, handleDownload } = useDownloadHandler()
 
@@ -22,6 +24,7 @@ export function usePaperDetail() {
   const error = ref<string | null>(null)
   const paper = ref<Paper | null>(null)
   const isBookmarked = ref(false)
+  const isDownloaded = ref(false)
 
   const relatedPapers = ref<RelatedPaper[]>([])
   const relatedLoading = ref(false)
@@ -29,7 +32,11 @@ export function usePaperDetail() {
 
   const downloadStatus = computed(() => {
     if (!paper.value?.id) return 'none'
-    return getDownloadStatus(paper.value.id)
+    const status = getDownloadStatus(paper.value.id)
+    if (status === 'none' && isDownloaded.value) {
+      return 'completed'
+    }
+    return status
   })
 
   const downloadProgress = computed(() => {
@@ -89,6 +96,12 @@ export function usePaperDetail() {
     }
   }
 
+  const checkDownload = async () => {
+    if (paper.value?.id) {
+      isDownloaded.value = await downloadStore.checkDownload(paper.value.id)
+    }
+  }
+
   const toggleBookmark = async () => {
     if (!paper.value?.id) return
     try {
@@ -129,6 +142,7 @@ export function usePaperDetail() {
     error,
     paper,
     isBookmarked,
+    isDownloaded,
     downloadStatus,
     downloadProgress,
     relatedPapers,
@@ -137,6 +151,7 @@ export function usePaperDetail() {
     fetchPaperById,
     fetchRelatedPapers,
     checkBookmark,
+    checkDownload,
     toggleBookmark,
     downloadPdf,
   }

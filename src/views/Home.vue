@@ -180,6 +180,7 @@ import { onMounted, onActivated, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConfigStore } from '@/stores/config-store'
 import { useBookmarkStore } from '@/stores/bookmark-store'
+import { useDownloadStore } from '@/stores/download-store'
 import PaperCard from '@/components/PaperCard.vue'
 import PaperCardSimple from '@/components/PaperCardSimple.vue'
 import DatePicker from '@/components/DatePicker.vue'
@@ -191,6 +192,7 @@ import { useKnowledgeGraph } from '@/composables/useKnowledgeGraph'
 
 const configStore = useConfigStore()
 const bookmarkStore = useBookmarkStore()
+const downloadStore = useDownloadStore()
 const jumpPageInput = ref<string>('')
 const route = useRoute()
 const router = useRouter()
@@ -286,6 +288,7 @@ watch(filteredPapers, async (papers) => {
     const paperIds = papers.map(p => p.id).filter(Boolean)
     if (paperIds.length > 0) {
       await bookmarkStore.checkBookmarksBatch(paperIds)
+      await downloadStore.checkDownloadsBatch(paperIds)
     }
   }
 }, { immediate: true })

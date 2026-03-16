@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { useConfigStore } from '@/stores/config-store'
 import { ref } from 'vue'
 import { apiService, type DownloadTask, type DownloadTaskData } from '@/services/api'
 
@@ -103,7 +102,19 @@ export const useDownloadStore = defineStore('download', () => {
   const error = ref<string | null>(null)
   const wsConnected = ref(false)
   const initialized = ref(false)
-  const configStore = useConfigStore()
+  const downloadedIds = ref<Set<string>>(new Set())
+
+  const addDownloadedId = (paperId: string) => {
+    const newSet = new Set(downloadedIds.value)
+    newSet.add(paperId)
+    downloadedIds.value = newSet
+  }
+
+  const removeDownloadedId = (paperId: string) => {
+    const newSet = new Set(downloadedIds.value)
+    newSet.delete(paperId)
+    downloadedIds.value = newSet
+  }
 
   const setLoading = (value: boolean) => {
     loading.value = value
@@ -118,7 +129,6 @@ export const useDownloadStore = defineStore('download', () => {
     
     initialized.value = true
     await connectWebSocket()
-    await fetchTasks(configStore.maxResults, 0)
   }
 
   const connectWebSocket = async () => {
@@ -144,6 +154,9 @@ export const useDownloadStore = defineStore('download', () => {
                 const existingIndex = tasks.value.findIndex(t => t.id === taskId)
                 if (existingIndex >= 0) {
                   tasks.value[existingIndex] = updatedTask
+                  if (status === 'completed') {
+                    addDownloadedId(task.paper_id)
+                  }
                 }
               } catch (e) {
                 console.error('Failed to fetch updated task:', e)
@@ -195,6 +208,11 @@ export const useDownloadStore = defineStore('download', () => {
       tasks.value = result.items
       total.value = result.total
       completedCount.value = result.completed_count
+      result.items.forEach(item => {
+        if (item.status === 'completed') {
+          addDownloadedId(item.paper_id)
+        }
+      })
       return result
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
@@ -229,6 +247,7 @@ export const useDownloadStore = defineStore('download', () => {
         tasks.value.splice(taskIndex, 1)
         if (task && task.status === 'completed') {
           completedCount.value = Math.max(0, completedCount.value - 1)
+          removeDownloadedId(task.paper_id)
         }
       }
     } catch (err) {
@@ -295,6 +314,92 @@ export const useDownloadStore = defineStore('download', () => {
     return tasks.value.filter(t => t.status === 'failed')
   }
 
+  const checkDownload = async (paperId: string) => {
+    try {
+      const result = await apiService.checkDownload(paperId)
+      if (result.is_downloaded) {
+        addDownloadedId(paperId)
+      } else {
+        removeDownloadedId(paperId)
+      }
+      return result.is_downloaded
+    } catch (err) {
+      console.error('Error checking download:', err)
+      return false
+    }
+  }
+
+  const checkDownloadsBatch = async (paperIds: string[]) => {
+    try {
+      const result = await apiService.checkDownloadsBatch(paperIds)
+      const newSet = new Set(downloadedIds.value)
+      Object.entries(result.downloads).forEach(([paperId, isDownloaded]) => {
+        if (isDownloaded) {
+          newSet.add(paperId)
+        } else {
+          newSet.delete(paperId)
+        }
+      })
+      downloadedIds.value = newSet
+      return result.downloads
+    } catch (err) {
+      console.error('Error checking downloads batch:', err)
+      return {}
+    }
+  }
+
+  const isDownloaded = (paperId: string) => {
+    return downloadedIds.value.has(paperId)
+  }
+
+  const syncLocalFiles = async () => {
+    try {
+      setLoading(true)
+      const result = await apiService.syncLocalFiles()
+      // await fetchTasks()
+      return result
+    } catch (err) {
+      console.error('Error syncing local files:', err)
+      setError(err instanceof Error ? err.message : 'Failed to sync local files')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchMissingFiles = async (limit: number = 100, offset: number = 0) => {
+    try {
+      setLoading(true)
+      const result = await apiService.getMissingFiles(limit, offset)
+      tasks.value = result.items
+      total.value = result.total
+      return result
+    } catch (err) {
+      console.error('Error fetching missing files:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch missing files')
+      return { items: [], total: 0, completed_count: 0 }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchIncomplete = async (limit: number = 100, offset: number = 0) => {
+    try {
+      setLoading(true)
+      const result = await apiService.getIncomplete(limit, offset)
+      tasks.value = result.items
+      total.value = result.total
+      completedCount.value = result.completed_count
+      return result
+    } catch (err) {
+      console.error('Error fetching incomplete tasks:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch incomplete tasks')
+      return { items: [], total: 0, completed_count: 0 }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return {
     tasks,
     total,
@@ -318,5 +423,11 @@ export const useDownloadStore = defineStore('download', () => {
     getFailedTasks,
     setLoading,
     setError,
+    checkDownload,
+    checkDownloadsBatch,
+    isDownloaded,
+    syncLocalFiles,
+    fetchMissingFiles,
+    fetchIncomplete,
   }
 })

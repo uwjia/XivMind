@@ -140,13 +140,13 @@
                 <text x="8" y="16" font-size="6" fill="#F44336" font-weight="bold">PDF</text>
               </svg>
             </span>
-            <span class="stat-link download-btn" :class="getDownloadStatus(bookmark.paper_id)" @click="handleDownloadClick(bookmark)" :title="getDownloadTitle(bookmark.paper_id)">
+            <span class="stat-link download-btn" :class="getDownloadStatus(bookmark.paper_id)" @click.stop="handleDownloadClick(bookmark)" :title="getDownloadTitle(bookmark.paper_id)">
               <svg v-if="getDownloadStatus(bookmark.paper_id) === 'downloading'" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="#2196F3" stroke-width="2" fill="none"/>
                 <circle cx="12" cy="12" r="10" stroke="#64B5F6" stroke-width="2" fill="none" stroke-dasharray="62.83" :stroke-dashoffset="62.83 - (62.83 * getDownloadProgress(bookmark.paper_id) / 100)" style="transform: rotate(-90deg); transform-origin: center;"/>
                 <text x="12" y="16" font-size="8" fill="#2196F3" text-anchor="middle" font-weight="bold">{{ getDownloadProgress(bookmark.paper_id) }}%</text>
               </svg>
-              <svg v-else-if="getDownloadStatus(bookmark.paper_id) === 'completed'" viewBox="0 0 24 24" fill="none">
+              <svg v-else-if="getDownloadStatus(bookmark.paper_id) === 'completed' || isDownloaded(bookmark.paper_id)" viewBox="0 0 24 24" fill="none">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <polyline points="22 4 12 14.01 9 11.01" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
@@ -220,8 +220,10 @@ import { useBookmarkActions } from '@/composables/useBookmarkActions'
 import { getTagStyle, getCategoryFullName, getCategoryShortName } from '@/utils/categoryColors'
 import { useDateFormatter } from '@/composables/useDateFormatter'
 import CategoryDrawer from '@/components/CategoryDrawer.vue'
+import { useDownloadStore } from '@/stores/download-store'
 
 const route = useRoute()
+const downloadStore = useDownloadStore()
 const { formatShortDate, formatDateTime } = useDateFormatter()
 const {
   loading,
@@ -254,7 +256,7 @@ const {
   handleGoToPage,
   getDownloadStatus,
   getDownloadProgress,
-  getDownloadTitle
+  getDownloadTitle,
 } = useBookmarkActions()
 
 onMounted(() => {
@@ -272,6 +274,17 @@ watch(
     }
   }
 )
+
+const isDownloaded = ((id: string) => downloadStore.isDownloaded(id))
+
+watch(filteredBookmarks, async (papers) => {
+  if (papers.length > 0) {
+    const paperIds = papers.map(p => p.paper_id).filter(Boolean)
+    if (paperIds.length > 0) {
+      await downloadStore.checkDownloadsBatch(paperIds)
+    }
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>

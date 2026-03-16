@@ -3,6 +3,42 @@
     <div class="page-header">
       <h1>Download Manager <span v-if="completedCount > 0" class="total-count">(total {{ completedCount }} completed)</span></h1>
       <div class="header-actions">
+        <div class="filter-dropdown">
+          <select v-model="filterMode" @change="setFilterMode(filterMode)" class="filter-select">
+            <option value="all">All Tasks</option>
+            <option value="incomplete">Incomplete</option>
+            <option value="missing">Missing Files</option>
+          </select>
+        </div>
+        <div class="view-toggle">
+          <button 
+            class="toggle-btn" 
+            :class="{ active: viewMode === 'list' }"
+            @click="viewMode = 'list'"
+            title="List View"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <line x1="8" y1="6" x2="21" y2="6" stroke-width="2"/>
+              <line x1="8" y1="12" x2="21" y2="12" stroke-width="2"/>
+              <line x1="8" y1="18" x2="21" y2="18" stroke-width="2"/>
+              <line x1="3" y1="6" x2="3.01" y2="6" stroke-width="2"/>
+              <line x1="3" y1="12" x2="3.01" y2="12" stroke-width="2"/>
+              <line x1="3" y1="18" x2="3.01" y2="18" stroke-width="2"/>
+            </svg>
+          </button>
+          <button 
+            class="toggle-btn" 
+            :class="{ active: viewMode === 'desktop' }"
+            @click="viewMode = 'desktop'"
+            title="Desktop View"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" stroke-width="2"/>
+              <line x1="8" y1="21" x2="16" y2="21" stroke-width="2"/>
+              <line x1="12" y1="17" x2="12" y2="21" stroke-width="2"/>
+            </svg>
+          </button>
+        </div>
         <span v-if="wsConnected" class="ws-status connected">
           <span class="ws-dot"></span>
           Real-time
@@ -11,18 +47,24 @@
           <span class="ws-dot"></span>
           Polling
         </span>
-        <button @click="refreshTasks" class="refresh-btn" :disabled="loading">
+        <button @click="syncLocalFiles" class="sync-btn" :disabled="loading" title="Sync local PDF files">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="17 8 12 3 7 8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="3" x2="12" y2="15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button @click="refreshTasks" class="refresh-btn" :disabled="loading" title="Refresh download tasks">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path d="M23 4v6h-6"/>
             <path d="M1 20v-6h6"/>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
           </svg>
-          Refresh
         </button>
       </div>
     </div>
 
-    <div v-if="loading && tasks.length === 0" class="loading-state">
+    <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
       <p>Loading download tasks...</p>
     </div>
@@ -33,11 +75,16 @@
         <polyline points="7,10 12,15 17,10"/>
         <line x1="12" y1="15" x2="12" y2="3"/>
       </svg>
-      <p>No download tasks</p>
-      <span>Click the download button on any paper to start downloading!</span>
+      <p v-if="filterMode === 'incomplete'">No incomplete tasks</p>
+      <p v-else-if="filterMode === 'missing'">No missing files</p>
+      <p v-else>No download tasks</p>
+      <span v-if="filterMode === 'all'">Click the download button on any paper to start downloading!</span>
     </div>
 
     <template v-else>
+      <DesktopView v-if="viewMode === 'desktop'" :tasks="tasks" />
+      
+      <template v-else>
       <div class="downloads-list">
         <div v-for="task in tasks" :key="task.id" class="download-card" :class="task.status">
           <div class="download-header">
@@ -89,17 +136,6 @@
               Cancel
             </button>
             <button
-              v-if="task.status === 'failed'"
-              @click="retryTask(task.id)"
-              class="action-btn retry"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M23 4v6h-6"/>
-                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-              </svg>
-              Retry
-            </button>
-            <button
               v-if="task.status === 'completed' && task.file_path"
               @click="openFile(task.id)"
               class="action-btn open"
@@ -110,6 +146,16 @@
                 <line x1="10" y1="14" x2="21" y2="3"/>
               </svg>
               Open File
+            </button>
+            <button
+              @click="retryTask(task.id)"
+              class="action-btn retry"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M23 4v6h-6"/>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+              Retry
             </button>
             <button
               @click="deleteTask(task.id)"
@@ -162,6 +208,7 @@
           <button class="pagination-btn" @click="handleGoToPage">Go</button>
         </div>
       </div>
+      </template>
     </template>
 
     <ConfirmDialog
@@ -178,11 +225,25 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useDownloadActions } from '@/composables/useDownloadActions'
 import { useDateFormatter } from '@/composables/useDateFormatter'
 import { formatFileSize, getDownloadStatusLabel } from '@/utils/format'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import DesktopView from '@/components/desktop/DesktopView.vue'
+
+const STORAGE_KEY = 'xivmind-downloads-view-mode'
+
+const getSavedViewMode = (): 'list' | 'desktop' => {
+  const saved = localStorage.getItem(STORAGE_KEY)
+  return (saved === 'list' || saved === 'desktop') ? saved : 'list'
+}
+
+const viewMode = ref<'list' | 'desktop'>(getSavedViewMode())
+
+watch(viewMode, (newMode) => {
+  localStorage.setItem(STORAGE_KEY, newMode)
+})
 
 const {
   tasks,
@@ -194,6 +255,7 @@ const {
   jumpPageInput,
   showDeleteConfirm,
   deleteConfirmMessage,
+  filterMode,
   fetchTasks,
   refreshTasks,
   retryTask,
@@ -206,7 +268,9 @@ const {
   goToFirstPage,
   goToPreviousPage,
   goToNextPage,
-  handleGoToPage
+  handleGoToPage,
+  syncLocalFiles,
+  setFilterMode,
 } = useDownloadActions()
 
 const { formatDateTime } = useDateFormatter()
@@ -248,6 +312,74 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.filter-dropdown {
+  display: flex;
+}
+
+.filter-select {
+  padding: 8px 32px 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: all 0.2s;
+}
+
+.filter-select:hover {
+  border-color: var(--accent-color);
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.1);
+}
+
+.view-toggle {
+  display: flex;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-primary);
+}
+
+.toggle-btn.active {
+  background: var(--bg-primary);
+  color: var(--accent-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .ws-status {
@@ -307,6 +439,35 @@ onMounted(() => {
 }
 
 .refresh-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sync-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.sync-btn:hover:not(:disabled) {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.sync-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sync-btn svg {
   width: 18px;
   height: 18px;
 }

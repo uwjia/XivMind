@@ -37,3 +37,30 @@ class DownloadTaskListResponse(BaseModel):
     total: int
     completed_count: int
     items: List[DownloadTaskResponse]
+
+
+class DownloadCheckBatchRequest(BaseModel):
+    paper_ids: list[str]
+
+
+class DownloadCheckBatchResponse(BaseModel):
+    downloads: dict[str, bool]
+
+
+class DownloadCheckResponse(BaseModel):
+    is_downloaded: bool
+
+
+class SyncResultDetail(BaseModel):
+    paper_id: str
+    status: str
+    file_path: str
+    reason: str | None = None
+
+
+class SyncLocalFilesResponse(BaseModel):
+    added: int
+    skipped: int
+    errors: int
+    details: list[SyncResultDetail]
+

@@ -52,6 +52,12 @@ class LanceDBDownloadRepository(DownloadRepository):
         now = datetime.utcnow().isoformat()
         
         title = self._safe_str(data.get("title"), 1024)
+        status = data.get("status", "pending")
+        progress = data.get("progress", 0)
+        file_path = data.get("file_path", "")
+        file_size = data.get("file_size", 0)
+        created_at = data.get("created_at", now)
+        updated_at = data.get("updated_at", now)
         
         record = {
             "id": task_id,
@@ -59,13 +65,13 @@ class LanceDBDownloadRepository(DownloadRepository):
             "arxiv_id": self._safe_str(data.get("arxiv_id")),
             "title": title,
             "pdf_url": self._safe_str(data.get("pdf_url")),
-            "status": "pending",
-            "progress": 0,
-            "file_path": "",
-            "file_size": 0,
+            "status": status,
+            "progress": progress,
+            "file_path": self._safe_str(file_path) if file_path else "",
+            "file_size": file_size,
             "error_message": "",
-            "created_at": now,
-            "updated_at": now,
+            "created_at": created_at,
+            "updated_at": updated_at,
             "embedding": [0.0] * 8,
         }
         
@@ -77,13 +83,13 @@ class LanceDBDownloadRepository(DownloadRepository):
             "arxiv_id": self._safe_str(data.get("arxiv_id")),
             "title": title,
             "pdf_url": self._safe_str(data.get("pdf_url")),
-            "status": "pending",
-            "progress": 0,
-            "file_path": "",
-            "file_size": 0,
+            "status": status,
+            "progress": progress,
+            "file_path": self._safe_str(file_path) if file_path else "",
+            "file_size": file_size,
             "error_message": "",
-            "created_at": now,
-            "updated_at": now,
+            "created_at": created_at,
+            "updated_at": updated_at,
         }
     
     def remove(self, id: str) -> bool:
@@ -260,3 +266,80 @@ class LanceDBDownloadRepository(DownloadRepository):
             count += 1
         
         return count
+    
+    def check_batch(self, paper_ids: List[str]) -> Dict[str, bool]:
+        if not paper_ids:
+            return {}
+        
+        table = self._get_table()
+        
+        try:
+            paper_ids_str = ", ".join(f"'{pid}'" for pid in paper_ids)
+            filter_str = f"paper_id IN ({paper_ids_str}) AND status = 'completed'"
+            
+            lance_ds = table.to_lance()
+            scanner = lance_ds.scanner(
+                columns=["paper_id"],
+                filter=filter_str,
+            )
+            df = scanner.to_table().to_pandas()
+            completed_paper_ids = set(df["paper_id"].tolist())
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for check_batch, falling back to pandas: {e}")
+            df = table.to_pandas()
+            completed_df = df[(df["paper_id"].isin(paper_ids)) & (df["status"] == "completed")]
+            completed_paper_ids = set(completed_df["paper_id"].tolist())
+        
+        return {paper_id: paper_id in completed_paper_ids for paper_id in paper_ids}
+
+    def get_incomplete(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
+        table = self._get_table()
+        
+        try:
+            lance_ds = table.to_lance()
+            scanner = lance_ds.scanner(
+                columns=[
+                    "id", "paper_id", "arxiv_id", "title", "pdf_url",
+                    "status", "progress", "file_path", "file_size",
+                    "error_message", "created_at", "updated_at"
+                ],
+                filter="status != 'completed'",
+                limit=limit,
+                offset=offset,
+                order_by=[ColumnOrdering("created_at", ascending=False)],
+            )
+            df = scanner.to_table().to_pandas()
+            total = len(df)
+            return [self._entity_to_response(row) for _, row in df.iterrows()], total
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for get_incomplete, falling back to pandas: {e}")
+            df = table.to_pandas()
+            incomplete_df = df[df["status"] != "completed"]
+            total = len(incomplete_df)
+            return [self._entity_to_response(row) for _, row in incomplete_df.iterrows()], total
+
+    def get_completed_paginated(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
+        table = self._get_table()
+        
+        try:
+            lance_ds = table.to_lance()
+            scanner = lance_ds.scanner(
+                columns=[
+                    "id", "paper_id", "arxiv_id", "title", "pdf_url",
+                    "status", "progress", "file_path", "file_size",
+                    "error_message", "created_at", "updated_at"
+                ],
+                filter="status = 'completed'",
+                limit=limit,
+                offset=offset,
+                order_by=[ColumnOrdering("created_at", ascending=False)],
+            )
+            df = scanner.to_table().to_pandas()
+            total = len(df)
+            return [self._entity_to_response(row) for _, row in df.iterrows()], total
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for get_completed_paginated, falling back to pandas: {e}")
+            df = table.to_pandas()
+            completed_df = df[df["status"] == "completed"]
+            total = len(completed_df)
+            return [self._entity_to_response(row) for _, row in completed_df.iterrows()], total

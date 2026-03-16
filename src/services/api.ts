@@ -5,7 +5,7 @@ export { bookmarkAPI } from '@/services/bookmark'
 export type { BookmarkData, Bookmark, BookmarkListResponse } from '@/services/bookmark'
 
 export { downloadAPI } from '@/services/download'
-export type { DownloadTaskData, DownloadTask, DownloadTaskListResponse } from '@/services/download'
+export type { DownloadTaskData, DownloadTask, DownloadTaskListResponse, SyncLocalFilesResponse, SyncResultDetail } from '@/services/download'
 
 import { bookmarkAPI } from '@/services/bookmark'
 import { downloadAPI } from '@/services/download'
@@ -25,4 +25,11 @@ export const apiService = {
   retryDownloadTask: downloadAPI.retry,
   cancelDownloadTask: downloadAPI.cancel,
   openDownloadFile: downloadAPI.openFile,
+  openContainingFolder: downloadAPI.openContainingFolder,
+  checkDownloadsBatch: downloadAPI.checkBatch,
+  openFileByPaperId: downloadAPI.openFileByPaperId,
+  checkDownload: downloadAPI.check,
+  syncLocalFiles: downloadAPI.syncLocalFiles,
+  getMissingFiles: downloadAPI.getMissingFiles,
+  getIncomplete: downloadAPI.getIncomplete,
 }

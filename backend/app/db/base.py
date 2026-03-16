@@ -91,6 +91,21 @@ class DownloadRepository(BaseRepository):
         """Count completed download tasks."""
         pass
 
+    @abstractmethod
+    def check_batch(self, paper_ids: List[str]) -> Dict[str, bool]:
+        """Check if multiple papers have been downloaded (completed status)."""
+        pass
+
+    @abstractmethod
+    def get_incomplete(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
+        """Get incomplete download tasks (status != 'completed') with pagination."""
+        pass
+
+    @abstractmethod
+    def get_completed_paginated(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
+        """Get completed download tasks with pagination."""
+        pass
+
 
 class PaperRepository(BaseRepository):
     """Abstract repository for papers."""

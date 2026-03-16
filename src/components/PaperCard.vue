@@ -91,7 +91,7 @@
               <circle cx="12" cy="12" r="10" stroke="#64B5F6" stroke-width="2" fill="none" stroke-dasharray="62.83" :stroke-dashoffset="62.83 - (62.83 * downloadProgress / 100)" style="transform: rotate(-90deg); transform-origin: center;"/>
               <text x="12" y="16" font-size="8" fill="#2196F3" text-anchor="middle" font-weight="bold">{{ downloadProgress }}%</text>
             </svg>
-            <svg v-else-if="downloadStatus === 'completed'" viewBox="0 0 24 24" fill="none">
+            <svg v-else-if="downloadStatus === 'completed' || isDownloaded" viewBox="0 0 24 24" fill="none">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <polyline points="22 4 12 14.01 9 11.01" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -130,6 +130,7 @@ import MarkdownItKatex from 'markdown-it-katex'
 import 'katex/dist/katex.min.css'
 import { getCategoryColor, getTagStyle, categories } from '@/utils/categoryColors'
 import { useBookmarkStore } from '@/stores/bookmark-store'
+import { useDownloadStore } from '@/stores/download-store'
 import { useToastStore } from '@/stores/toast-store'
 import { useDownloadHandler } from '@/composables/useDownloadHandler'
 import type { Paper } from '@/types'
@@ -141,10 +142,13 @@ const props = defineProps<{
 
 const router = useRouter()
 const bookmarkStore = useBookmarkStore()
+const downloadStore = useDownloadStore()
 const toastStore = useToastStore()
 const { getStatus, getProgress, handleDownload, getStatusTitle } = useDownloadHandler()
 
 const isBookmarked = computed(() => bookmarkStore.isBookmarked(props.paper?.id || ''))
+
+const isDownloaded = computed(() => downloadStore.isDownloaded(props.paper?.id || ''))
 
 const downloadStatus = computed(() => getStatus(props.paper?.id || ''))
 

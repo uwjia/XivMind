@@ -5,6 +5,8 @@ import { useConfigStore } from '@/stores/config-store'
 import { useToastStore } from '@/stores/toast-store'
 import { apiService } from '@/services/api'
 
+export type FilterMode = 'all' | 'incomplete' | 'missing'
+
 export function useDownloadActions() {
   const router = useRouter()
   const downloadStore = useDownloadStore()
@@ -27,6 +29,8 @@ export function useDownloadActions() {
   const taskToDelete = ref<string | null>(null)
   const taskToDeleteTitle = ref<string>('')
 
+  const filterMode = ref<FilterMode>('all')
+
   const deleteConfirmMessage = computed(() => {
     if (taskToDeleteTitle.value) {
       return `Are you sure you want to delete the download task for "${taskToDeleteTitle.value}"? This action cannot be undone.`
@@ -37,7 +41,13 @@ export function useDownloadActions() {
   const fetchTasks = async () => {
     try {
       const offset = currentPage.value * pageSize.value
-      await downloadStore.fetchTasks(pageSize.value, offset)
+      if (filterMode.value === 'all') {
+        await downloadStore.fetchTasks(pageSize.value, offset)
+      } else if (filterMode.value === 'incomplete') {
+         await downloadStore.fetchIncomplete(pageSize.value, offset)
+      } else if (filterMode.value === 'missing') {
+        await downloadStore.fetchMissingFiles(pageSize.value, offset)
+      }
     } catch (error) {
       console.error('Failed to fetch download tasks:', error)
       toastStore.showError('Failed to load download tasks')
@@ -45,6 +55,7 @@ export function useDownloadActions() {
   }
 
   const refreshTasks = () => {
+    currentPage.value = 0
     fetchTasks()
   }
 
@@ -150,6 +161,32 @@ export function useDownloadActions() {
     router.push({ name: 'PaperDetail', params: { id: paperId } })
   }
 
+  const syncLocalFiles = async () => {
+    try {
+      const result = await downloadStore.syncLocalFiles()
+      if (result.added > 0) {
+        toastStore.showSuccess(`Synced ${result.added} local PDF file(s) to database`)
+      } else if (result.skipped > 0) {
+        toastStore.showInfo(`All ${result.skipped} file(s) already in database`)
+      } else if (result.errors > 0) {
+        toastStore.showInfo(`Sync completed with ${result.errors} error(s)`)
+      } else {
+        toastStore.showInfo('No PDF files found to sync')
+      }
+      return result
+    } catch (error) {
+      console.error('Failed to sync local files:', error)
+      toastStore.showError('Failed to sync local files')
+      throw error
+    }
+  }
+
+  const setFilterMode = async (mode: FilterMode) => {
+    filterMode.value = mode
+    currentPage.value = 0
+    await fetchTasks()
+  }
+
   return {
     tasks,
     total,
@@ -162,6 +199,7 @@ export function useDownloadActions() {
     jumpPageInput,
     showDeleteConfirm,
     deleteConfirmMessage,
+    filterMode,
     fetchTasks,
     refreshTasks,
     retryTask,
@@ -175,6 +213,8 @@ export function useDownloadActions() {
     goToPreviousPage,
     goToNextPage,
     goToPage,
-    handleGoToPage
+    handleGoToPage,
+    syncLocalFiles,
+    setFilterMode,
   }
 }

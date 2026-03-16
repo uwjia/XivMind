@@ -13,6 +13,10 @@ export function useDownloadHandler() {
   const downloadStore = useDownloadStore()
   const toastStore = useToastStore()
 
+  const isDownloaded = (paperId: string): boolean => {
+    return downloadStore.isDownloaded(paperId)
+  }
+
   const getStatus = (paperId: string): string => {
     const task = downloadStore.tasks.find(t => t.paper_id === paperId)
     return task?.status || 'none'
@@ -63,6 +67,9 @@ export function useDownloadHandler() {
           toastStore.showInfo('Download already queued')
           return false
       }
+    } else if (downloadStore.isDownloaded(params.paperId)) {
+      await apiService.openFileByPaperId(params.paperId)
+      return true
     }
 
     try {
@@ -103,6 +110,7 @@ export function useDownloadHandler() {
     getProgress, 
     getTask,
     handleDownload,
-    getStatusTitle
+    getStatusTitle,
+    isDownloaded,
   }
 }

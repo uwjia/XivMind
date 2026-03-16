@@ -45,6 +45,12 @@ class MilvusDownloadRepository(DownloadRepository):
         now = datetime.utcnow().isoformat()
 
         title = self._safe_str(data.get("title"), 1024)
+        status = data.get("status", "pending")
+        progress = data.get("progress", 0)
+        file_path = data.get("file_path", "")
+        file_size = data.get("file_size", 0)
+        created_at = data.get("created_at", now)
+        updated_at = data.get("updated_at", now)
 
         insert_data = [
             [task_id],
@@ -52,13 +58,13 @@ class MilvusDownloadRepository(DownloadRepository):
             [self._safe_str(data.get("arxiv_id"))],
             [title],
             [self._safe_str(data.get("pdf_url"))],
-            ["pending"],
-            [0],
+            [status],
+            [progress],
+            [self._safe_str(file_path) if file_path else ""],
+            [file_size],
             [""],
-            [0],
-            [""],
-            [now],
-            [now],
+            [created_at],
+            [updated_at],
             [[0.0] * 8],
         ]
 
@@ -70,13 +76,13 @@ class MilvusDownloadRepository(DownloadRepository):
             "arxiv_id": self._safe_str(data.get("arxiv_id")),
             "title": title,
             "pdf_url": self._safe_str(data.get("pdf_url")),
-            "status": "pending",
-            "progress": 0,
-            "file_path": "",
-            "file_size": 0,
+            "status": status,
+            "progress": progress,
+            "file_path": self._safe_str(file_path) if file_path else "",
+            "file_size": file_size,
             "error_message": "",
-            "created_at": now,
-            "updated_at": now,
+            "created_at": created_at,
+            "updated_at": updated_at,
         }
 
     def remove(self, id: str) -> bool:
@@ -135,6 +141,32 @@ class MilvusDownloadRepository(DownloadRepository):
             output_fields=["*"]
         )
         return [self._entity_to_response(r) for r in results]
+
+    def get_incomplete(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
+        collection = self._get_collection()
+        collection.load()
+        results = collection.query(
+            expr='status != "completed"',
+            output_fields=["id", "paper_id", "arxiv_id", "title", "pdf_url", 
+                          "status", "progress", "file_path", "file_size", 
+                          "error_message", "created_at", "updated_at"],
+            limit=settings.MILVUS_QUERY_BATCH_SIZE,
+        )
+        total = len(results)
+        return [self._entity_to_response(r) for r in results], total
+
+    def get_completed_paginated(self, limit: int = 100, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
+        collection = self._get_collection()
+        collection.load()
+        results = collection.query(
+            expr='status == "completed"',
+            output_fields=["id", "paper_id", "arxiv_id", "title", "pdf_url", 
+                          "status", "progress", "file_path", "file_size", 
+                          "error_message", "created_at", "updated_at"],
+            limit=settings.MILVUS_QUERY_BATCH_SIZE,
+        )
+        total = len(results)
+        return [self._entity_to_response(r) for r in results], total
 
     def update_status(
         self,
@@ -235,3 +267,23 @@ class MilvusDownloadRepository(DownloadRepository):
             limit=settings.MILVUS_QUERY_BATCH_SIZE,
         )
         return len(results)
+
+    def check_batch(self, paper_ids: List[str]) -> Dict[str, bool]:
+        if not paper_ids:
+            return {}
+        
+        collection = self._get_collection()
+        collection.load()
+        
+        paper_ids_str = ' || '.join([f'paper_id == "{pid}"' for pid in paper_ids])
+        expr = f'({paper_ids_str}) && status == "completed"'
+        
+        results = collection.query(
+            expr=expr,
+            output_fields=["paper_id"],
+            limit=settings.MILVUS_QUERY_BATCH_SIZE,
+        )
+        
+        completed_paper_ids = {r["paper_id"] for r in results}
+        
+        return {paper_id: paper_id in completed_paper_ids for paper_id in paper_ids}
