@@ -19,9 +19,14 @@ export const usePaperStore = defineStore('paper', () => {
   const loading = ref<boolean>(false)
   const error = ref<string | null>(null)
   const currentPage = ref<number>(0)
+  const totalPapers = ref<number>(0)
 
   const setPapers = (data: Paper[]) => {
     papers.value = data
+  }
+
+  const setTotalPapers = (total: number) => {
+    totalPapers.value = total
   }
 
   const addOrUpdatePaper = (paper: Paper) => {
@@ -71,10 +76,11 @@ export const usePaperStore = defineStore('paper', () => {
       const configStore = useConfigStore()
       const { category = 'cs*', maxResults = configStore.maxResults, start = 0 } = options
 
-      const data = await arxivBackendAPI.fetchTodayPapers({ category, maxResults, start })
-      setPapers(data)
+      const result = await arxivBackendAPI.fetchTodayPapers({ category, maxResults, start })
+      setPapers(result.papers)
+      setTotalPapers(result.total)
 
-      return data
+      return result.papers
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
       console.error('Error fetching papers:', err)
@@ -115,11 +121,12 @@ export const usePaperStore = defineStore('paper', () => {
 
       const configStore = useConfigStore()
       const actualMaxResults = maxResults || configStore.maxResults
-      const data = await arxivBackendAPI.fetchPapersByDateRange(startDateStr, endDateStr, category, actualMaxResults, start)
-      setPapers(data)
+      const result = await arxivBackendAPI.fetchPapersByDateRange(startDateStr, endDateStr, category, actualMaxResults, start)
+      setPapers(result.papers)
+      setTotalPapers(result.total)
 
-      console.log('Papers fetched after date range selection:', data.length)
-      return data
+      console.log('Papers fetched after date range selection:', result.papers.length)
+      return result.papers
     } catch (err) {
       console.error('Error fetching papers after date range selection:', err)
       throw err
@@ -180,7 +187,9 @@ export const usePaperStore = defineStore('paper', () => {
     loading,
     error,
     currentPage,
+    totalPapers,
     setPapers,
+    setTotalPapers,
     addOrUpdatePaper,
     addOrUpdatePapers,
     setSearchQuery,

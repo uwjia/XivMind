@@ -124,18 +124,20 @@
           Previous
         </button>
         <div class="pagination-jump">
-          <span class="pagination-info">Page {{ currentPage + 1 }}</span>
+          <span class="pagination-info">Page {{ currentPage + 1 }}/{{ totalPages }}</span>
           <input 
             type="number" 
             v-model.number="jumpPageInput" 
             class="pagination-input" 
             placeholder="num"
             min="1"
+            :max="totalPages"
+            @input="handleJumpPageInput"
             @keyup.enter="handleGoToPage"
           />
           <button class="pagination-btn" @click="handleGoToPage">Go</button>
         </div>
-        <button class="pagination-btn" @click="goToNextPage">
+        <button class="pagination-btn" @click="goToNextPage" :disabled="currentPage >= totalPages - 1">
           Next
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -176,7 +178,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onActivated, ref, watch } from 'vue'
+import { onMounted, onActivated, ref, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConfigStore } from '@/stores/config-store'
 import { useBookmarkStore } from '@/stores/bookmark-store'
@@ -193,7 +195,7 @@ import { useKnowledgeGraph } from '@/composables/useKnowledgeGraph'
 const configStore = useConfigStore()
 const bookmarkStore = useBookmarkStore()
 const downloadStore = useDownloadStore()
-const jumpPageInput = ref<string>('')
+const jumpPageInput = ref<number | null>(null)
 const route = useRoute()
 const router = useRouter()
 
@@ -203,6 +205,7 @@ const {
   selectedDate,
   loading,
   error,
+  totalPapers,
   isDatePickerOpen,
   isCategoryPickerOpen,
   toggleDatePicker,
@@ -241,11 +244,23 @@ const {
   handleGraphReset
 } = useKnowledgeGraph(selectedDate, selectedCategory)
 
+const totalPages = computed(() => {
+  if (totalPapers.value <= 0) return 1
+  return Math.ceil(totalPapers.value / configStore.maxResults)
+})
+
+const handleJumpPageInput = () => {
+  const value = jumpPageInput.value
+  if (typeof value === 'number' && value > totalPages.value) {
+    jumpPageInput.value = totalPages.value
+  }
+}
+
 const handleGoToPage = () => {
-  const targetPage = parseInt(jumpPageInput.value)
-  if (targetPage && targetPage > 0) {
+  const targetPage = jumpPageInput.value
+  if (targetPage && targetPage > 0 && targetPage <= totalPages.value) {
     goToPage(targetPage - 1)
-    jumpPageInput.value = ''
+    jumpPageInput.value = null
   }
 }
 

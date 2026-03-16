@@ -65,6 +65,11 @@ interface QueryResponse {
   max_results: number
 }
 
+interface QueryResult {
+  papers: Paper[]
+  total: number
+}
+
 function transformBackendPaper(bp: BackendPaper): Paper {
   const primaryCategory = bp.primary_category || ''
   const categoryId = primaryCategory.split('.')[0] || 'cs'
@@ -99,7 +104,7 @@ interface FetchOptions {
 }
 
 export const arxivBackendAPI = {
-  async fetchTodayPapers(options: FetchOptions = {}): Promise<Paper[]> {
+  async fetchTodayPapers(options: FetchOptions = {}): Promise<QueryResult> {
     const {
       category,
       maxResults = 50,
@@ -120,7 +125,7 @@ export const arxivBackendAPI = {
     maxResults?: number,
     start: number = 0,
     fetchCategory: string = 'cs*'
-  ): Promise<Paper[]> {
+  ): Promise<QueryResult> {
     const params = new URLSearchParams({
       date: date,
       start: start.toString(),
@@ -144,10 +149,13 @@ export const arxivBackendAPI = {
     const data: QueryResponse = await response.json()
     console.log('Backend response:', data.papers.length, 'papers, total:', data.total)
     
-    return data.papers.map(transformBackendPaper)
+    return {
+      papers: data.papers.map(transformBackendPaper),
+      total: data.total
+    }
   },
 
-  async fetchPapersByDate(category: string = 'all', daysAgo: number = 1, maxResults?: number, fetchCategory: string = 'cs*'): Promise<Paper[]> {
+  async fetchPapersByDate(category: string = 'all', daysAgo: number = 1, maxResults?: number, fetchCategory: string = 'cs*'): Promise<QueryResult> {
     const targetDate = new Date()
     targetDate.setDate(targetDate.getDate() - daysAgo)
     const dateStr = targetDate.toISOString().split('T')[0]
@@ -161,7 +169,7 @@ export const arxivBackendAPI = {
     category: string = 'cs*', 
     maxResults?: number, 
     start: number = 0
-  ): Promise<Paper[]> {
+  ): Promise<QueryResult> {
     if (!startDateStr || !endDateStr) {
       throw new Error('startDateStr and endDateStr are required')
     }
@@ -175,7 +183,7 @@ export const arxivBackendAPI = {
     return this.queryPapers(dateStr, category, maxResults, start)
   },
 
-  async searchPapers(_query: string, category: string = 'cs*', maxResults?: number): Promise<Paper[]> {
+  async searchPapers(_query: string, category: string = 'cs*', maxResults?: number): Promise<QueryResult> {
     console.log('searchPapers: Using backend with today date')
     const today = new Date()
     const dateStr = today.toISOString().split('T')[0]

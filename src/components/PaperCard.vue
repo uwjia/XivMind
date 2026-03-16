@@ -411,14 +411,13 @@ const getVersionFromId = () => {
   padding: 4px 10px;
   border-radius: 8px;
   backdrop-filter: blur(8px);
-  transition: all 0.3s ease;
-  border: 1px solid transparent;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  color: #00BCD4;
+  background-color: rgba(0, 188, 212, 0.1);
+  border: 1px solid rgba(0, 188, 212, 0.3);
 }
 
-.paper-id:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
+
 
 .paper-categories {
   display: flex;
@@ -734,17 +733,10 @@ const getVersionFromId = () => {
   padding: 4px 10px;
   border-radius: 8px;
   backdrop-filter: blur(8px);
-  transition: all 0.3s ease;
-  border: 1px solid transparent;
   color: #9C27B0;
   background-color: rgba(156, 39, 176, 0.1);
-  border-color: rgba(156, 39, 176, 0.3);
+  border: 1px solid rgba(156, 39, 176, 0.3);
   white-space: nowrap;
-}
-
-.paper-published:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .paper-updated {
@@ -754,17 +746,10 @@ const getVersionFromId = () => {
   padding: 4px 10px;
   border-radius: 8px;
   backdrop-filter: blur(8px);
-  transition: all 0.3s ease;
-  border: 1px solid transparent;
   color: #FF9800;
   background-color: rgba(255, 152, 0, 0.1);
-  border-color: rgba(255, 152, 0, 0.3);
+  border: 1px solid rgba(255, 152, 0, 0.3);
   white-space: nowrap;
-}
-
-.paper-updated:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .tag {
@@ -773,12 +758,6 @@ const getVersionFromId = () => {
   font-size: 0.7rem;
   font-weight: 500;
   backdrop-filter: blur(8px);
-  transition: all 0.3s ease;
-}
-
-.tag:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .paper-stats {

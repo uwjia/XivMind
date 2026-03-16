@@ -23,6 +23,7 @@ export function usePaperFilter() {
   const selectedDate = computed(() => paperStore.selectedDate)
   const loading = computed(() => paperStore.loading)
   const error = computed(() => paperStore.error)
+  const totalPapers = computed(() => paperStore.totalPapers)
 
   
 const localFilterCategory = ref<string | null>(null)
@@ -82,6 +83,10 @@ const filterDescription = computed(() => {
   }
   
   parts.push(`Page ${ currentPage.value + 1 } of ${filteredPapers.value.length} papers`)
+  
+  if (totalPapers.value > 0) {
+    parts.push(`Total: ${totalPapers.value}`)
+  }
   
   return parts.join(' · ')
 })
@@ -230,6 +235,7 @@ const filterDescription = computed(() => {
     selectedDate,
     loading,
     error,
+    totalPapers,
     isDatePickerOpen,
     isCategoryPickerOpen,
     toggleDatePicker,
