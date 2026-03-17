@@ -121,7 +121,6 @@ export function useDesktopActions(tasks: () => DownloadTask[]) {
       const tooltipWidth = DESKTOP_CONFIG.TOOLTIP_WIDTH
       const tooltipHeight = DESKTOP_CONFIG.TOOLTIP_HEIGHT
       const iconWidth = DESKTOP_CONFIG.ICON_SIZE
-      const iconHeight = DESKTOP_CONFIG.ICON_SIZE
       const gap = DESKTOP_CONFIG.TOOLTIP_GAP
       const borderSize = DESKTOP_CONFIG.BORDER_SIZE
       

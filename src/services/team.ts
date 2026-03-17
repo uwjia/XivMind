@@ -5,8 +5,9 @@ import type {
   SessionSummary,
   TeamStats,
 } from '@/types/team'
+import { API_BASE_URL } from './config'
 
-const API_BASE = '/api/team'
+const API_BASE = `${API_BASE_URL}/api/team`
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {

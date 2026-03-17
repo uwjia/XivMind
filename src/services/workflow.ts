@@ -6,6 +6,7 @@ import type {
   DynamicEdgeCreatedEvent,
   ExecutionPhaseEvent,
 } from '@/types/workflow'
+import { API_BASE_URL } from './config'
 
 export interface WorkflowExecuteRequest {
   workflow: Workflow
@@ -59,7 +60,7 @@ export interface SubtaskStatusEvent {
 
 export type ProgressEventHandler = (event: string, data: unknown) => void
 
-const API_BASE = '/api/team/workflow'
+const API_BASE = `${API_BASE_URL}/api/team/workflow`
 
 class WorkflowAPI {
   private eventSource: EventSource | null = null

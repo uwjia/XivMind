@@ -1,4 +1,6 @@
-const BACKEND_API_BASE = '/api/arxiv'
+import { API_BASE_URL } from './config'
+
+const BACKEND_API_BASE = `${API_BASE_URL}/api/arxiv`
 
 interface Paper {
   id: string

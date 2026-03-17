@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import DesktopContextMenu from '@/components/desktop/DesktopContextMenu.vue'
-import type { ContextMenuTarget, DesktopItem } from '@/types/desktop'
+import type { DesktopItem } from '@/types/desktop'
 
 const meta: Meta<typeof DesktopContextMenu> = {
   title: 'Components/Desktop/DesktopContextMenu',

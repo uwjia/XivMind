@@ -12,8 +12,9 @@ import type {
   MemoryCategory,
   MemoryContextResult,
 } from '@/types/memory'
+import { API_BASE_URL } from './config'
 
-const API_BASE = '/api/memory'
+const API_BASE = `${API_BASE_URL}/api/memory`
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {

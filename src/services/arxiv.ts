@@ -1,4 +1,6 @@
-const ARXIV_API_BASE = '/api/remote/api/query'
+import { API_BASE_URL } from './config'
+
+const ARXIV_API_BASE = `${API_BASE_URL}/api/remote/api/query`
 
 interface Paper {
   id: string

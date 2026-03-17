@@ -1,14 +1,23 @@
 {
   "name": "xivmind",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.4.0",
+  "description": "XivMind - AI-powered arXiv Paper Management System",
+  "author": "XivMind Team",
+  "main": "dist-electron/main.js",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:electron": "concurrently \"vite\" \"electron .\"",
     "build": "vue-tsc && vite build",
+    "build:frontend": "vue-tsc && vite build",
+    "build:backend": "powershell -ExecutionPolicy Bypass -File scripts/build-backend.ps1",
+    "build:desktop": "powershell -ExecutionPolicy Bypass -File scripts/build-desktop.ps1",
+    "build:all": "npm run build:frontend && npm run build:backend && npm run build:desktop",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "katex": "^0.16.28",
@@ -28,17 +37,84 @@
     "@storybook/addon-vitest": "^10.2.4",
     "@storybook/vue3-vite": "^10.2.4",
     "@types/markdown-it": "^14.1.2",
-    "@types/node": "^25.2.3",
+    "@types/node": "^20.10.0",
     "@vitejs/plugin-vue": "^5.0.0",
     "@vitejs/plugin-vue-jsx": "^5.1.4",
     "@vitest/browser-playwright": "^4.0.18",
     "@vitest/coverage-v8": "^4.0.18",
+    "concurrently": "^8.2.2",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
     "playwright": "^1.58.1",
     "storybook": "^10.2.4",
     "typescript": "^5.9.3",
     "vite": "^5.0.0",
+    "vite-plugin-electron": "^0.28.0",
+    "vite-plugin-electron-renderer": "^0.14.5",
     "vite-plugin-vue-devtools": "^7.0.0",
     "vitest": "^4.0.18",
     "vue-tsc": "^3.2.4"
+  },
+  "build": {
+    "appId": "com.xivmind.desktop",
+    "productName": "XivMind",
+    "copyright": "Copyright © 2026 XivMind Team",
+    "directories": {
+      "output": "release",
+      "buildResources": "electron/resources"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "backend/dist/xivmind-backend",
+        "to": "backend",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "electron/resources/icon.png",
+        "to": ".",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "electron/resources/icon.ico",
+        "to": ".",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] },
+        { "target": "zip", "arch": ["x64"] }
+      ],
+      "icon": "electron/resources/icon.ico",
+      "sign": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "installerLanguages": [
+        "zh_CN",
+        "en_US"
+      ],
+      "language": "2052"
+    },
+    "electronLanguages": [
+      "zh-CN",
+      "en-US"
+    ]
   }
 }

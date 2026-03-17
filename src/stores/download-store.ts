@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiService, type DownloadTask, type DownloadTaskData } from '@/services/api'
+import { API_BASE_URL } from '@/services/config'
 
 type ProgressCallback = (taskId: string, progress: number, status: string) => void
 
@@ -13,8 +14,12 @@ class DownloadWebSocket {
   private baseUrl: string
 
   constructor() {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    this.baseUrl = `${protocol}//localhost:8000/api/downloads/ws`
+    if (API_BASE_URL) {
+      this.baseUrl = `ws://localhost:8000/api/downloads/ws`
+    } else {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      this.baseUrl = `${protocol}//${window.location.host}/api/downloads/ws`
+    }
   }
 
   connect(): Promise<void> {
@@ -39,8 +44,12 @@ class DownloadWebSocket {
           }
         }
 
-        this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error)
+        this.ws.onerror = () => {
+          console.log('WebSocket connection error (backend may not be running)')
+          if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            console.log('WebSocket connection failed, will attempt reconnect...')
+          }
+          reject(new Error('WebSocket connection failed'))
         }
 
         this.ws.onclose = () => {

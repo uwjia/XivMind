@@ -2,8 +2,9 @@ import type { KnowledgeGraphData, SimilarityPair, GraphNode, GraphEdge, GraphSta
 import type { Paper } from '@/types'
 import { getCategoryColor, truncateLabel } from '@/types/graph'
 import { arxivBackendAPI } from '@/services/arxivBackend'
+import { API_BASE_URL } from './config'
 
-const GRAPH_API_BASE = '/api/graph'
+const GRAPH_API_BASE = `${API_BASE_URL}/api/graph`
 const DEFAULT_MAX_PAPERS = 1000
 
 interface GraphResponse {
@@ -213,8 +214,8 @@ export const graphAPI = {
       return graphData
     }
     
-    const papers = await arxivBackendAPI.queryPapers(date, undefined, DEFAULT_MAX_PAPERS, 0, category || 'cs*')
-    return this.buildGraphFromPapers(papers, date, threshold)
+    const result = await arxivBackendAPI.queryPapers(date, undefined, DEFAULT_MAX_PAPERS, 0, category || 'cs*')
+    return this.buildGraphFromPapers(result.papers, date, threshold)
   },
 
   async getOrBuildGraph(

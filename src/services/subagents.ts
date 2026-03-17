@@ -7,6 +7,7 @@ import type {
   SubAgentReloadResponse,
   SubAgentRawResponse,
 } from '@/types/subagent'
+import { API_BASE_URL } from './config'
 
 export type {
   SubAgent,
@@ -18,7 +19,7 @@ export type {
   SubAgentRawResponse,
 }
 
-const SUBAGENTS_API_BASE = '/api/subagents'
+const SUBAGENTS_API_BASE = `${API_BASE_URL}/api/subagents`
 
 export const subagentsAPI = {
   async getSubAgents(): Promise<SubAgentListResponse> {

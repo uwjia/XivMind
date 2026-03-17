@@ -6,6 +6,7 @@ import type {
   SkillReloadResponse,
   RelatedPaper 
 } from '@/types/skill'
+import { API_BASE_URL } from './config'
 
 export type { 
   Skill, 
@@ -16,7 +17,7 @@ export type {
   RelatedPaper 
 }
 
-const SKILLS_API_BASE = '/api/skills'
+const SKILLS_API_BASE = `${API_BASE_URL}/api/skills`
 
 export const skillsAPI = {
   async getSkills(): Promise<SkillsResponse> {

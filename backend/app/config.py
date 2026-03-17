@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 import os
+import platform
 
 
 EMBEDDING_DIMENSIONS = {
@@ -16,18 +17,28 @@ EMBEDDING_DIMENSIONS = {
     "text-embedding-3-large": 3072,
 }
 
+def get_app_data_dir() -> str:
+    if platform.system() == "Windows":
+        app_data = os.environ.get("APPDATA")
+        if app_data:
+            return os.path.join(app_data, "XivMind")
+    return os.path.expanduser("~/.xivmind")
+
+
+APP_DATA_DIR = get_app_data_dir()
+
 
 class Settings(BaseSettings):
     DATABASE_TYPE: str = "sqlite"
     MILVUS_HOST: str = "localhost"
     MILVUS_PORT: int = 19530
     DATABASE_NAME: str = "xivmind"
-    DOWNLOAD_DIR: str = "./downloads"
-    SQLITE_DB_PATH: str = "./data/xivmind.db"
-    LANCEDB_PATH: str = "./data/lancedb"
+    DOWNLOAD_DIR: str = os.path.join(APP_DATA_DIR, "downloads")
+    SQLITE_DB_PATH: str = os.path.join(APP_DATA_DIR, "data", "xivmind.db")
+    LANCEDB_PATH: str = os.path.join(APP_DATA_DIR, "data", "lancedb")
 
     LOG_LEVEL: str = "INFO"
-    LOG_DIR: str = "./logs"
+    LOG_DIR: str = os.path.join(APP_DATA_DIR, "logs")
     LOG_FILE_MAX_SIZE: str = "10 MB"
     LOG_FILE_RETENTION: str = "7 days"
     LOG_CONSOLE_ENABLED: bool = True
@@ -73,12 +84,12 @@ class Settings(BaseSettings):
     
     MILVUS_QUERY_BATCH_SIZE: int = 3000
     
-    SKILLS_DIR: str = "./skills"
+    SKILLS_DIR: str = os.path.join(APP_DATA_DIR, "skills")
     SKILLS_WATCH_ENABLED: bool = True
     SKILLS_WATCH_DEBOUNCE_MS: int = 250
     SKILLS_RELOAD_ON_START: bool = True
     
-    SUBAGENTS_DIR: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "subagents")
+    SUBAGENTS_DIR: str = os.path.join(APP_DATA_DIR, "subagents")
     SUBAGENTS_WATCH_ENABLED: bool = True
     SUBAGENTS_WATCH_DEBOUNCE_MS: int = 250
     SUBAGENTS_RELOAD_ON_START: bool = True

@@ -4,32 +4,20 @@ import CreateFolderDialog from '@/components/desktop/CreateFolderDialog.vue'
 const meta: Meta<typeof CreateFolderDialog> = {
   title: 'Components/Desktop/CreateFolderDialog',
   component: CreateFolderDialog,
-  tags: ['autodocs'],
-  argTypes: {
-    visible: {
-      control: 'boolean',
-      description: 'Whether the dialog is visible'
-    }
-  }
+  tags: ['autodocs']
 }
 
 export default meta
 type Story = StoryObj<typeof CreateFolderDialog>
 
 export const Default: Story = {
-  args: {
-    visible: false
-  }
+  args: {}
 }
 
 export const Visible: Story = {
-  args: {
-    visible: true
-  }
+  args: {}
 }
 
 export const Hidden: Story = {
-  args: {
-    visible: false
-  }
+  args: {}
 }

@@ -1,3 +1,5 @@
+import { API_BASE_URL } from './config'
+
 interface LLMProviderInfo {
   id: string
   name: string
@@ -20,7 +22,7 @@ interface OllamaStatusResponse {
   available_models: string[]
 }
 
-const LLM_API_BASE = '/api/llm'
+const LLM_API_BASE = `${API_BASE_URL}/api/llm`
 
 export const llmAPI = {
   async getProviders(): Promise<LLMProvidersResponse> {

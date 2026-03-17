@@ -12,6 +12,7 @@ import type {
 import { WORKFLOW_TEMPLATES } from '@/types/workflow'
 import { workflowAPI, type NodeStatusEvent, type LogEvent } from '@/services/workflow'
 import { workflowCache } from '@/utils/cache-manager'
+import { API_BASE_URL } from '@/services/config'
 
 export function useWorkflow() {
   const store = useWorkflowStore()
@@ -352,7 +353,7 @@ export function useWorkflow() {
 
   async function getAvailableAgents(): Promise<string[]> {
     try {
-      const response = await fetch('/api/team/stats')
+      const response = await fetch(`${API_BASE_URL}/api/team/stats`)
       const data = await response.json()
       return data.available_agents || []
     } catch (e) {
@@ -362,7 +363,7 @@ export function useWorkflow() {
 
   async function getAvailableSkills(): Promise<string[]> {
     try {
-      const response = await fetch('/api/skills')
+      const response = await fetch(`${API_BASE_URL}/api/skills`)
       const data = await response.json()
       return data.skills?.map((s: any) => s.id) || []
     } catch (e) {

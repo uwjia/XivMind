@@ -155,10 +155,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 import { apiService } from '@/services/api'
 import type { ContextMenuTarget, DesktopItem } from '@/types/desktop'
-import type { DownloadTask } from '@/services/download'
 
 const props = defineProps<{
   position: { x: number; y: number }
@@ -178,8 +177,6 @@ const emit = defineEmits<{
   (e: 'cut'): void
   (e: 'paste'): void
 }>()
-
-const tasks = inject<() => DownloadTask[]>('tasks', () => [])
 
 const hasSelectedItems = computed(() => (props.selectedCount || 0) > 0)
 

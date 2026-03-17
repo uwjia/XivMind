@@ -32,7 +32,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useDesktopStore } from '@/stores/desktop-store'
 import type { DesktopItem } from '@/types/desktop'
 import type { DownloadTask } from '@/services/download'
 import DesktopFile from './DesktopFile.vue'
@@ -45,8 +44,6 @@ const props = defineProps<{
   isRenaming?: boolean
   task?: DownloadTask
 }>()
-
-const store = useDesktopStore()
 
 defineEmits<{
   (e: 'mousedown', event: MouseEvent): void

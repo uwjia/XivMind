@@ -455,9 +455,6 @@ export const useDesktopStore = defineStore('desktop', () => {
       return a.name.localeCompare(b.name)
     })
     
-    let x = 0
-    let y = 0
-    
     const updatedItems = items.value.map(item => {
       if (item.folderId === currentFolderId.value) {
         const sortedIndex = sortedItems.findIndex(i => i.id === item.id)

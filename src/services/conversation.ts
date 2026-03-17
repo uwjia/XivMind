@@ -1,6 +1,7 @@
 import type { ConversationMeta, ConversationCreate, ConversationUpdate, ConversationMessagesResponse, ConversationMessage } from '@/types/conversation'
+import { API_BASE_URL } from './config'
 
-const API_BASE = '/api/conversation'
+const API_BASE = `${API_BASE_URL}/api/conversation`
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {

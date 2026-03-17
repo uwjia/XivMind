@@ -31,6 +31,7 @@ const createDownloadTask = (overrides: Partial<DownloadTask> = {}): DownloadTask
   status: 'completed',
   progress: 100,
   created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
   file_size: 1024 * 1024 * 2.5,
   file_path: '/downloads/papers/2301.07062.pdf',
   pdf_url: 'https://arxiv.org/pdf/2301.07062v1',

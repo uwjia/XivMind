@@ -1,13 +1,57 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import VueDevTools from 'vite-plugin-vue-devtools'
+import electron from 'vite-plugin-electron'
+import renderer from 'vite-plugin-electron-renderer'
 import path from 'path'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
+  base: './',
   plugins: [
     vue(),
-    VueDevTools()
+    VueDevTools(),
+    electron([
+      {
+        entry: 'electron/main.ts',
+        onstart(options) {
+          options.startup()
+        },
+        vite: {
+          build: {
+            outDir: 'dist-electron',
+            sourcemap: true,
+            rollupOptions: {
+              external: ['electron'],
+              output: {
+                format: 'cjs',
+                entryFileNames: '[name].js'
+              }
+            }
+          }
+        }
+      },
+      {
+        entry: 'electron/preload.ts',
+        onstart(options) {
+          options.reload()
+        },
+        vite: {
+          build: {
+            outDir: 'dist-electron',
+            sourcemap: true,
+            rollupOptions: {
+              external: ['electron'],
+              output: {
+                format: 'cjs',
+                entryFileNames: '[name].js'
+              }
+            }
+          }
+        }
+      }
+    ]),
+    renderer(),
   ],
   resolve: {
     alias: {
@@ -28,6 +72,19 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false
+      }
+    }
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor': ['vue', 'vue-router', 'pinia'],
+          'vis': ['vis-network', 'vis-data'],
+          'markdown': ['markdown-it', 'katex', 'markdown-it-katex']
+        }
       }
     }
   }
