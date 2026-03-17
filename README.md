@@ -41,6 +41,18 @@ A modern arXiv paper management application with bookmark, download, and AI assi
   - Core Memory: User profile with research interests and preferences
   - Recall Memory: Semantic search across conversation history
   - Archival Memory: Long-term knowledge storage for notes and insights
+- 👥 Team - Multi-agent collaboration system
+  - Automatic task complexity analysis
+  - Intelligent task decomposition into sub-tasks
+  - Smart agent selection (research, analysis, writer agents)
+  - Parallel execution for improved efficiency
+  - Result synthesis from multiple agents
+- 🔀 Workflow - Visual workflow editor and execution system
+  - Drag-and-drop node-based editor
+  - Multiple node types: input, analyze, decompose, agent, condition, parallel, synthesize, output, tool, skill
+  - Pre-built templates: Quick Summary, Paper Analysis, Multi-Agent Collaboration, Adaptive Workflow
+  - Real-time execution monitoring
+  - Import/Export workflows in JSON format
 - 🌙 Dark/Light theme toggle
 - 📱 Responsive design
 - 🎨 Modern UI with smooth animations
