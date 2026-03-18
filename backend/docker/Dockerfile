@@ -5,7 +5,7 @@ FROM python:3.12-slim
 
 LABEL maintainer="XivMind"
 LABEL description="XivMind - arXiv Paper Management System (CPU)"
-LABEL version="0.3.0"
+LABEL version="0.5.1"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

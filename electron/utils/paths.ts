@@ -35,6 +35,15 @@ export function getUserDataPath(): string {
     }
   })
   
+  const envExampleDest = path.join(userDataPath, 'env.example')
+  if (!fs.existsSync(envExampleDest)) {
+    const envExampleSrc = path.join(getResourcesPath(), 'env.example')
+    if (fs.existsSync(envExampleSrc)) {
+      fs.copyFileSync(envExampleSrc, envExampleDest)
+      console.log('Copied env.example to:', envExampleDest)
+    }
+  }
+  
   return userDataPath
 }
 
@@ -56,4 +65,16 @@ export function getDownloadsPath(): string {
 
 export function getLanceDBPath(): string {
   return path.join(getDataPath(), 'lancedb')
+}
+
+export function getEnvFilePath(): string {
+  return path.join(getUserDataPath(), '.env')
+}
+
+export function getEnvExamplePath(): string {
+  const userDataExample = path.join(getUserDataPath(), 'env.example')
+  if (fs.existsSync(userDataExample)) {
+    return userDataExample
+  }
+  return path.join(getResourcesPath(), 'env.example')
 }

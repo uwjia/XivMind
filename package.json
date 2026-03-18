@@ -1,7 +1,7 @@
 {
   "name": "xivmind",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "XivMind - AI-powered arXiv Paper Management System",
   "author": "XivMind Team",
   "main": "dist-electron/main.js",
@@ -12,7 +12,7 @@
     "build": "vue-tsc && vite build",
     "build:frontend": "vue-tsc && vite build",
     "build:backend": "powershell -ExecutionPolicy Bypass -File scripts/build-backend.ps1",
-    "build:desktop": "powershell -ExecutionPolicy Bypass -File scripts/build-desktop.ps1",
+    "build:desktop": "electron-builder --win nsis",
     "build:all": "npm run build:frontend && npm run build:backend && npm run build:desktop",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
@@ -54,67 +54,5 @@
     "vite-plugin-vue-devtools": "^7.0.0",
     "vitest": "^4.0.18",
     "vue-tsc": "^3.2.4"
-  },
-  "build": {
-    "appId": "com.xivmind.desktop",
-    "productName": "XivMind",
-    "copyright": "Copyright © 2026 XivMind Team",
-    "directories": {
-      "output": "release",
-      "buildResources": "electron/resources"
-    },
-    "files": [
-      "dist/**/*",
-      "dist-electron/**/*"
-    ],
-    "extraResources": [
-      {
-        "from": "backend/dist/xivmind-backend",
-        "to": "backend",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "electron/resources/icon.png",
-        "to": ".",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "electron/resources/icon.ico",
-        "to": ".",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ],
-    "win": {
-      "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] },
-        { "target": "zip", "arch": ["x64"] }
-      ],
-      "icon": "electron/resources/icon.ico",
-      "sign": null
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "deleteAppDataOnUninstall": false,
-      "runAfterFinish": true,
-      "installerLanguages": [
-        "zh_CN",
-        "en_US"
-      ],
-      "language": "2052"
-    },
-    "electronLanguages": [
-      "zh-CN",
-      "en-US"
-    ]
   }
 }

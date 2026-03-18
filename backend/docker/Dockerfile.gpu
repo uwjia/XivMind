@@ -6,7 +6,7 @@ FROM pytorch/pytorch:2.8.0-cuda12.8-cudnn9-runtime
 
 LABEL maintainer="XivMind"
 LABEL description="XivMind - arXiv Paper Management System (GPU)"
-LABEL version="0.3.0"
+LABEL version="0.5.1"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

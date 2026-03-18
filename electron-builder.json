@@ -16,14 +16,28 @@
       "from": "backend/dist/xivmind-backend",
       "to": "backend",
       "filter": ["**/*"]
+    },
+    {
+      "from": "electron/resources/icon.png",
+      "to": ".",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "electron/resources/icon.ico",
+      "to": ".",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "electron/resources/env.example",
+      "to": ".",
+      "filter": ["**/*"]
     }
   ],
   "win": {
     "target": [
-      {
-        "target": "nsis",
-        "arch": ["x64"]
-      }
+      { "target": "nsis", "arch": ["x64"] },
+      { "target": "portable", "arch": ["x64"] },
+      { "target": "zip", "arch": ["x64"] }
     ],
     "icon": "electron/resources/icon.ico"
   },

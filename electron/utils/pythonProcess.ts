@@ -1,7 +1,7 @@
 import { spawn, ChildProcess } from 'child_process'
 import { app } from 'electron'
 import http from 'http'
-import { getBackendExePath, getLogsPath, getUserDataPath } from './paths'
+import { getBackendExePath, getLogsPath, getUserDataPath, getEnvFilePath, getEnvExamplePath } from './paths'
 import fs from 'fs'
 import path from 'path'
 
@@ -12,6 +12,56 @@ let backendPid: number | null = null
 const isDev = !app.isPackaged
 const BACKEND_PORT = 8000
 const BACKEND_HOST = 'localhost'
+
+function parseEnvFile(filePath: string): Record<string, string> {
+  const env: Record<string, string> = {}
+  
+  if (!fs.existsSync(filePath)) {
+    return env
+  }
+  
+  const content = fs.readFileSync(filePath, 'utf-8')
+  const lines = content.split('\n')
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim()
+    if (!trimmedLine || trimmedLine.startsWith('#')) {
+      continue
+    }
+    const equalIndex = trimmedLine.indexOf('=')
+    if (equalIndex > 0) {
+      const key = trimmedLine.substring(0, equalIndex).trim()
+      let value = trimmedLine.substring(equalIndex + 1).trim()
+      if ((value.startsWith('"') && value.endsWith('"')) || 
+          (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1)
+      }
+      if (key) {
+        env[key] = value
+      }
+    }
+  }
+  
+  return env
+}
+
+function loadEnvConfig(): Record<string, string> {
+  const envFilePath = getEnvFilePath()
+  const envExamplePath = getEnvExamplePath()
+  
+  if (fs.existsSync(envFilePath)) {
+    console.log('Loading .env from:', envFilePath)
+    return parseEnvFile(envFilePath)
+  }
+  
+  if (fs.existsSync(envExamplePath)) {
+    console.log('Loading env.example from:', envExamplePath)
+    return parseEnvFile(envExamplePath)
+  }
+  
+  console.log('No .env or env.example found')
+  return {}
+}
 
 export function isBackendRunning(): boolean {
   return backendProcess !== null && !backendProcess.killed
@@ -98,8 +148,12 @@ export async function startPythonBackend(): Promise<void> {
   const logFile = path.join(logsPath, 'backend.log')
   logStream = fs.createWriteStream(logFile, { flags: 'a' })
 
-  const env = {
-    ...process.env,
+  const envConfig = loadEnvConfig()
+
+  const appDataPath = app.getPath('appData')
+
+  const defaultEnv = {
+    APPDATA: appDataPath,
     DATABASE_TYPE: 'lancedb',
     LANCEDB_PATH: path.join(userDataPath, 'data', 'lancedb'),
     DOWNLOAD_DIR: path.join(userDataPath, 'downloads'),
@@ -110,7 +164,29 @@ export async function startPythonBackend(): Promise<void> {
     SUBAGENTS_DIR: path.join(userDataPath, 'subagents'),
   }
 
+  const { ...restEnv } = process.env
+  delete restEnv.DOWNLOAD_DIR
+  delete restEnv.LANCEDB_PATH
+  delete restEnv.LOG_DIR
+  delete restEnv.SKILLS_DIR
+  delete restEnv.SUBAGENTS_DIR
+  delete restEnv.DATABASE_TYPE
+
+  const env = {
+    ...restEnv,
+    ...defaultEnv,
+    ...envConfig,
+    APPDATA: appDataPath,
+    LANCEDB_PATH: defaultEnv.LANCEDB_PATH,
+    DOWNLOAD_DIR: defaultEnv.DOWNLOAD_DIR,
+    LOG_DIR: defaultEnv.LOG_DIR,
+    SKILLS_DIR: defaultEnv.SKILLS_DIR,
+    SUBAGENTS_DIR: defaultEnv.SUBAGENTS_DIR,
+    DATABASE_TYPE: defaultEnv.DATABASE_TYPE,
+  }
+
   console.log('Starting backend with environment:', {
+    APPDATA: env.APPDATA,
     DATABASE_TYPE: env.DATABASE_TYPE,
     LANCEDB_PATH: env.LANCEDB_PATH,
     DOWNLOAD_DIR: env.DOWNLOAD_DIR,

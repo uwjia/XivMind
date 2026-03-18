@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings
 from functools import lru_cache
 import os
 import platform
+import sys
 
 
 EMBEDDING_DIMENSIONS = {
@@ -17,15 +18,41 @@ EMBEDDING_DIMENSIONS = {
     "text-embedding-3-large": 3072,
 }
 
+
 def get_app_data_dir() -> str:
+    print(f"[config.py] get_app_data_dir called")
+    print(f"[config.py] platform.system(): {platform.system()}")
+    print(f"[config.py] sys.frozen: {getattr(sys, 'frozen', False)}")
+    
+    print(f"[config.py] All environment variables:")
+    for key, value in os.environ.items():
+        if key in ['APPDATA', 'LOCALAPPDATA', 'USERPROFILE', 'HOME', 'DOWNLOAD_DIR', 'LANCEDB_PATH']:
+            print(f"  {key} = {value}")
+    
     if platform.system() == "Windows":
         app_data = os.environ.get("APPDATA")
+        print(f"[config.py] APPDATA env: '{app_data}'")
+        
         if app_data:
-            return os.path.join(app_data, "XivMind")
-    return os.path.expanduser("~/.xivmind")
+            result = os.path.join(app_data, "XivMind")
+            print(f"[config.py] get_app_data_dir returning: {result}")
+            return result
+        
+        user_profile = os.environ.get("USERPROFILE")
+        print(f"[config.py] USERPROFILE env: '{user_profile}'")
+        if user_profile:
+            result = os.path.join(user_profile, "AppData", "Roaming", "XivMind")
+            print(f"[config.py] get_app_data_dir from USERPROFILE: {result}")
+            return result
+    
+    fallback = os.path.expanduser("~/.xivmind")
+    print(f"[config.py] expanduser('~') = {os.path.expanduser('~')}")
+    print(f"[config.py] get_app_data_dir fallback returning: {fallback}")
+    return fallback
 
 
 APP_DATA_DIR = get_app_data_dir()
+print(f"[config.py] APP_DATA_DIR computed at module load time: {APP_DATA_DIR}")
 
 
 class Settings(BaseSettings):
