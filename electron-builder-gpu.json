@@ -1,0 +1,59 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.xivmind.desktop",
+  "productName": "XivMind",
+  "copyright": "Copyright © 2026 XivMind Team",
+  "artifactName": "${productName}-${version}-GPU-${arch}.${ext}",
+  "directories": {
+    "output": "release",
+    "buildResources": "electron/resources"
+  },
+  "files": [
+    "dist/**/*",
+    "dist-electron/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "backend/dist/xivmind-backend-gpu",
+      "to": "backend",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "electron/resources/icon.png",
+      "to": ".",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "electron/resources/icon.ico",
+      "to": ".",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "electron/resources/env.example",
+      "to": ".",
+      "filter": ["**/*"]
+    }
+  ],
+  "win": {
+    "target": [
+      { "target": "nsis", "arch": ["x64"] },
+      { "target": "portable", "arch": ["x64"] },
+      { "target": "zip", "arch": ["x64"] }
+    ],
+    "icon": "electron/resources/icon.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "deleteAppDataOnUninstall": false,
+    "runAfterFinish": true,
+    "installerLanguages": ["zh_CN", "en_US"],
+    "language": "2052"
+  },
+  "portable": {
+    "artifactName": "${productName}-${version}-GPU-${arch}-Portable.${ext}"
+  },
+  "electronLanguages": ["zh-CN", "en-US"]
+}

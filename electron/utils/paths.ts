@@ -16,7 +16,22 @@ export function getResourcesPath(): string {
 
 export function getBackendExePath(): string {
   const resourcesPath = getResourcesPath()
-  return path.join(resourcesPath, 'backend', 'xivmind-backend.exe')
+  const backendDir = path.join(resourcesPath, 'backend')
+  
+  const gpuExe = path.join(backendDir, 'xivmind-backend-gpu.exe')
+  const cpuExe = path.join(backendDir, 'xivmind-backend.exe')
+  
+  if (fs.existsSync(gpuExe)) {
+    console.log('Using GPU backend:', gpuExe)
+    return gpuExe
+  }
+  
+  if (fs.existsSync(cpuExe)) {
+    console.log('Using CPU backend:', cpuExe)
+    return cpuExe
+  }
+  
+  return cpuExe
 }
 
 export function getUserDataPath(): string {
