@@ -6,12 +6,14 @@ import renderer from 'vite-plugin-electron-renderer'
 import path from 'path'
 import { fileURLToPath, URL } from 'node:url'
 
+const enableElectron = process.env.ENABLE_ELECTRON === 'true'
+
 export default defineConfig({
   base: './',
   plugins: [
     vue(),
     VueDevTools(),
-    electron([
+    enableElectron ? electron([
       {
         entry: 'electron/main.ts',
         onstart(options) {
@@ -50,9 +52,9 @@ export default defineConfig({
           }
         }
       }
-    ]),
-    renderer(),
-  ],
+    ]) : null,
+    enableElectron ? renderer() : null,
+  ].filter(Boolean),
   resolve: {
     alias: {
       '@': path.resolve(fileURLToPath(new URL('.', import.meta.url)), './src')
@@ -71,7 +73,8 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        ws: true
       }
     }
   },
