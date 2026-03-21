@@ -5,6 +5,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
   const isCollapsed = ref<boolean>(false)
   const isMobileOpen = ref<boolean>(false)
   const forceCollapsed = ref<boolean>(false)
+  const userCollapsed = ref<boolean>(false)
 
   const effectiveCollapsed = computed(() => {
     return forceCollapsed.value || isCollapsed.value
@@ -13,15 +14,28 @@ export const useSidebarStore = defineStore('sidebar', () => {
   const toggleSidebar = () => {
     if (!forceCollapsed.value) {
       isCollapsed.value = !isCollapsed.value
+      userCollapsed.value = isCollapsed.value
     }
   }
 
   const collapseSidebar = () => {
     isCollapsed.value = true
+    userCollapsed.value = true
   }
 
   const expandSidebar = () => {
     isCollapsed.value = false
+    userCollapsed.value = false
+  }
+
+  const autoExpand = () => {
+    if (!userCollapsed.value && !forceCollapsed.value) {
+      isCollapsed.value = false
+    }
+  }
+
+  const autoCollapse = () => {
+    isCollapsed.value = true
   }
 
   const toggleMobileSidebar = () => {
@@ -44,10 +58,13 @@ export const useSidebarStore = defineStore('sidebar', () => {
     isCollapsed,
     isMobileOpen,
     forceCollapsed,
+    userCollapsed,
     effectiveCollapsed,
     toggleSidebar,
     collapseSidebar,
     expandSidebar,
+    autoExpand,
+    autoCollapse,
     toggleMobileSidebar,
     closeMobileSidebar,
     enterForceCollapse,
@@ -57,6 +74,6 @@ export const useSidebarStore = defineStore('sidebar', () => {
   persist: {
     key: 'sidebar-store',
     storage: localStorage,
-    paths: ['isCollapsed']
+    paths: ['isCollapsed', 'userCollapsed']
   }
 })

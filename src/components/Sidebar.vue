@@ -202,20 +202,41 @@ const isCollapsed = computed(() => sidebarStore.effectiveCollapsed)
 const isMobileOpen = computed(() => sidebarStore.isMobileOpen)
 const isDark = computed(() => themeStore.isDark)
 
+const EXPAND_THRESHOLD = 1280
+const COLLAPSE_THRESHOLD = 1024
+
+let resizeTimeout: ReturnType<typeof setTimeout> | null = null
+
 const handleResize = () => {
   windowWidth.value = window.innerWidth
-  if (windowWidth.value < 1024 && !sidebarStore.isCollapsed) {
-    sidebarStore.collapseSidebar()
+
+  if (windowWidth.value < COLLAPSE_THRESHOLD) {
+    sidebarStore.autoCollapse()
+    if (sidebarStore.isMobileOpen) {
+      sidebarStore.closeMobileSidebar()
+    }
+  } else if (windowWidth.value >= EXPAND_THRESHOLD) {
+    sidebarStore.autoExpand()
   }
 }
 
+const debouncedResize = () => {
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout)
+  }
+  resizeTimeout = setTimeout(handleResize, 100)
+}
+
 onMounted(() => {
-  window.addEventListener('resize', handleResize)
+  window.addEventListener('resize', debouncedResize)
   handleResize()
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
+  window.removeEventListener('resize', debouncedResize)
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout)
+  }
 })
 
 const goToHome = () => {

@@ -1,77 +1,65 @@
 import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router'
-import Home from '@/views/Home.vue'
-import Search from '@/views/Search.vue'
-import PaperDetail from '@/views/PaperDetail.vue'
-import Settings from '@/views/Settings.vue'
-import Bookmarks from '@/views/Bookmarks.vue'
-import Downloads from '@/views/Downloads.vue'
-import Assistant from '@/views/Assistant.vue'
-import DataManager from '@/views/DataManager.vue'
-import SkillManager from '@/views/SkillManager.vue'
-import SubAgentManager from '@/views/SubAgentManager.vue'
-import Memory from '@/views/Memory.vue'
-import TeamManager from '@/views/TeamManager.vue'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'Home',
-    component: Home
+    component: () => import('@/views/Home.vue')
   },
   {
     path: '/search',
     name: 'Search',
-    component: Search
+    component: () => import('@/views/Search.vue')
   },
   {
     path: '/paper/:id',
     name: 'PaperDetail',
-    component: PaperDetail
+    component: () => import('@/views/PaperDetail.vue')
   },
   {
     path: '/settings',
     name: 'Settings',
-    component: Settings
+    component: () => import('@/views/Settings.vue')
   },
   {
     path: '/bookmarks',
     name: 'Bookmarks',
-    component: Bookmarks
+    component: () => import('@/views/Bookmarks.vue')
   },
   {
     path: '/downloads',
     name: 'Downloads',
-    component: Downloads
+    component: () => import('@/views/Downloads.vue')
   },
   {
     path: '/assistant',
     name: 'Assistant',
-    component: Assistant
+    component: () => import('@/views/Assistant.vue')
   },
   {
     path: '/data-manager',
     name: 'DataManager',
-    component: DataManager
+    component: () => import('@/views/DataManager.vue')
   },
   {
     path: '/skills',
     name: 'SkillManager',
-    component: SkillManager
+    component: () => import('@/views/SkillManager.vue')
   },
   {
     path: '/subagents',
     name: 'SubAgentManager',
-    component: SubAgentManager
+    component: () => import('@/views/SubAgentManager.vue')
   },
   {
     path: '/memory',
     name: 'Memory',
-    component: Memory
+    component: () => import('@/views/Memory.vue')
   },
   {
     path: '/team',
     name: 'TeamManager',
-    component: TeamManager
+    component: () => import('@/views/TeamManager.vue')
   }
 ]
 
