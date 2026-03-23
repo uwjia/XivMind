@@ -258,7 +258,7 @@ export const arxivAPI = {
           const categoryId = primaryCategory.split('.')[0] || 'cs'
 
           const arxivId = parseArxivId(id)
-          const fullId = getFullId(id)
+          // const fullId = getFullId(id)
           const pdfUrl = entry.querySelector('link[title="pdf"]')?.getAttribute('href') || ''
           const absUrl = id ? `https://arxiv.org/abs/${arxivId}` : ''
 
@@ -268,7 +268,7 @@ export const arxivAPI = {
           }
 
           papers.push({
-            id: fullId,
+            id: arxivId,
             arxivId,
             title: title.trim(),
             abstract: summary.trim(),
