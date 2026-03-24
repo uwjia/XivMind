@@ -22,6 +22,15 @@ A modern arXiv paper management application with bookmark, download, and AI assi
 - 🔍 Advanced search and filtering by category and date
 - 🔖 Bookmark papers for later reading
 - 📥 Download PDFs with progress tracking
+- 📖 PDF Reader with rich annotation features
+  - Multiple annotation types: Highlight, Underline, Strikethrough, Comment, Drawing
+  - Customizable annotation colors (Yellow, Green, Blue, Pink, Purple)
+  - Adjustable stroke width for drawing annotations
+  - Edit and delete annotations with intuitive UI
+  - Reading progress auto-save (page, zoom, view mode)
+  - Single page and continuous scroll view modes
+  - Zoom controls with quick presets
+  - Sidebar with thumbnails and outline navigation
 - 🕸️ Knowledge Graph visualization for daily papers
   - Discover relationships between papers
   - Identify research clusters and trends
