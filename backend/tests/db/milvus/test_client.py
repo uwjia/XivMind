@@ -261,6 +261,7 @@ class TestMilvusClientInitCollection:
                 mock_schema.embedding_dim = 1536
                 mock_schema.schema_version = 1
                 mock_schema.get_schema_version_collection_name = Mock(return_value="bookmarks_version")
+                mock_schema.get_fields = Mock(return_value=[mock_field])
                 
                 MilvusClient._instance = None
                 MilvusClient._initialized = False
@@ -311,6 +312,7 @@ class TestMilvusClientInitCollection:
                         mock_schema.get_index_params = Mock(return_value={})
                         mock_schema.get_schema_version_collection_name = Mock(return_value="bookmarks_version")
                         mock_schema.get_schema_version_fields = Mock(return_value=[])
+                        mock_schema.get_fields = Mock(return_value=[mock_field])
                         
                         MilvusClient._instance = None
                         MilvusClient._initialized = False

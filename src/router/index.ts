@@ -65,6 +65,12 @@ const routes: RouteRecordRaw[] = [
     path: '/reader/:paperId',
     name: 'PdfReader',
     component: () => import('@/components/pdf-reader/PdfReader.vue')
+  },
+  {
+    path: '/author/:authorName',
+    name: 'AuthorPapers',
+    component: () => import('@/views/AuthorPapers.vue'),
+    props: true
   }
 ]
 

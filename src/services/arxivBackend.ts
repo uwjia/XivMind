@@ -416,6 +416,34 @@ export const arxivBackendAPI = {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     return response.json()
+  },
+
+  async fetchPapersByAuthor(
+    authorName: string,
+    maxResults: number = 50,
+    start: number = 0
+  ): Promise<QueryResult> {
+    const encodedAuthor = encodeURIComponent(authorName)
+    const params = new URLSearchParams({
+      start: start.toString(),
+      max_results: maxResults.toString()
+    })
+    
+    const url = `${BACKEND_API_BASE}/author/${encodedAuthor}?${params}`
+    console.log('Fetching papers by author:', url)
+    
+    const response = await fetch(url)
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    
+    return {
+      papers: (data.papers || []).map(transformBackendPaper),
+      total: data.total || 0
+    }
   }
 }
 

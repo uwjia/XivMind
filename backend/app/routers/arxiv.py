@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Query, HTTPException, Body, BackgroundTasks
 from typing import Optional
+from urllib.parse import unquote
 import logging
 
 from app.services.paper_service import PaperService
@@ -70,6 +71,38 @@ async def get_paper(paper_id: str):
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
     return paper
+
+
+@router.get("/author/{author_name:path}")
+async def get_papers_by_author(
+    author_name: str,
+    start: int = Query(0, ge=0, description="Start index for pagination"),
+    max_results: int = Query(50, ge=1, le=500, description="Maximum papers to return"),
+):
+    """
+    Get papers by author name, sorted by published date (newest first).
+    
+    The author name should be URL-encoded. For example:
+    - "John Smith" -> "/author/John%20Smith"
+    - "Hans Raj Tiwary" -> "/author/Hans%20Raj%20Tiwary"
+    """
+    try:
+        author = unquote(author_name)
+        result = _paper_service.query_papers_by_author(
+            author=author,
+            start=start,
+            max_results=max_results,
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error querying papers by author: {e}")
+        return {
+            "papers": [],
+            "total": 0,
+            "start": start,
+            "max_results": max_results,
+            "author": author_name,
+        }
 
 
 @router.delete("/cache/date/{date}")

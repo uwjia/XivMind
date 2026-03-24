@@ -60,7 +60,12 @@
             <circle cx="12" cy="7" r="4" fill="#0b8db4ff"/>
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="#0b8db4ff" stroke-width="2"/>
           </svg>
-          <span>{{ bookmark.authors?.join(', ') || 'Unknown Authors' }}</span>
+          <span class="author-list">
+            <template v-for="(author, idx) in bookmark.authors" :key="idx">
+              <span class="author-name" @click.stop="goToAuthorPapers(author)">{{ author }}</span><span v-if="idx < (bookmark.authors?.length || 0) - 1">, </span>
+            </template>
+            <span v-if="!bookmark.authors?.length">Unknown Authors</span>
+          </span>
         </p>
         
         <div class="bookmark-abstract">
@@ -273,6 +278,10 @@ const {
 
 const openReader = (paperId: string) => {
   router.push({ name: 'PdfReader', params: { paperId } })
+}
+
+const goToAuthorPapers = (author: string) => {
+  router.push({ name: 'AuthorPapers', params: { authorName: encodeURIComponent(author) } })
 }
 
 onMounted(() => {
@@ -497,6 +506,22 @@ watch(filteredBookmarks, async (papers) => {
   margin: 0 0 16px 0;
 }
 
+.author-list {
+  display: inline;
+  cursor: default;
+}
+
+.author-name {
+  display: inline;
+  cursor: pointer;
+  transition: color 0.2s, text-decoration 0.2s;
+}
+
+.author-name:hover {
+  color: var(--accent-color);
+  text-decoration: underline;
+}
+
 .author-icon {
   width: 16px;
   height: 16px;
@@ -507,7 +532,7 @@ watch(filteredBookmarks, async (papers) => {
 }
 
 .bookmark-authors span {
-  display: block;
+  display: inline;
 }
 
 .bookmark-abstract {

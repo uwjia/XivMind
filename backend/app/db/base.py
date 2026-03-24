@@ -222,6 +222,16 @@ class PaperRepository(BaseRepository):
         """Delete embedding index by date."""
         pass
 
+    @abstractmethod
+    def get_papers_by_author(
+        self,
+        author: str,
+        start: int = 0,
+        max_results: int = 50,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Get papers by author name, sorted by published date DESC."""
+        pass
+
 
 class PaperEmbeddingRepository(ABC):
     """Abstract repository for paper embeddings."""

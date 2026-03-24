@@ -548,3 +548,34 @@ class MilvusPaperRepository(PaperRepository):
         collection.load()
         collection.delete(f'date == "{date}"')
         collection.flush()
+
+    def get_papers_by_author(
+        self,
+        author: str,
+        start: int = 0,
+        max_results: int = 50,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Get papers by author name, sorted by published date DESC."""
+        collection = self._get_papers_collection()
+        collection.load()
+        
+        expr = f'authors like "%\\"{author}\\"%"'
+        
+        results = collection.query(
+            expr=expr,
+            output_fields=["id", "title", "abstract", "authors", "primary_category",
+                          "categories", "published", "updated", "pdf_url", "abs_url",
+                          "comment", "journal_ref", "doi", "fetched_at"],
+            limit=settings.MILVUS_QUERY_BATCH_SIZE,
+        )
+        
+        sorted_results = sorted(
+            results,
+            key=lambda x: x.get("published", ""),
+            reverse=True
+        )
+        
+        total = len(sorted_results)
+        paginated = sorted_results[start:start + max_results]
+        
+        return [self._entity_to_response(r) for r in paginated], total

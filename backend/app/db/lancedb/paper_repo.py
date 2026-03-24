@@ -590,3 +590,61 @@ class LanceDBPaperRepository(PaperRepository):
     def delete_embedding_index(self, date: str) -> None:
         table = self._get_embedding_index_table()
         table.delete(f"date = '{date}'")
+
+    def get_papers_by_author(
+        self,
+        author: str,
+        start: int = 0,
+        max_results: int = 50,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Get papers by author name, sorted by published date DESC."""
+        table = self._get_papers_table()
+        
+        if table.count_rows() == 0:
+            return [], 0
+        
+        escaped_author = author.replace("'", "''")
+        filter_str = f'authors LIKE \'%"{escaped_author}"%\''
+        
+        try:
+            lance_ds = table.to_lance()
+            
+            total = lance_ds.scanner(columns=["id"], filter=filter_str).to_table().num_rows
+            
+            if total == 0:
+                return [], 0
+            
+            scanner = lance_ds.scanner(
+                columns=[
+                    "id", "title", "abstract", "authors", "primary_category",
+                    "categories", "published", "updated", "pdf_url", "abs_url",
+                    "comment", "journal_ref", "doi", "fetched_at"
+                ],
+                filter=filter_str,
+                limit=max_results,
+                offset=start,
+                order_by=[ColumnOrdering("published", ascending=False)],
+            )
+            df = scanner.to_table().to_pandas()
+            
+            results = [self._entity_to_response(row) for _, row in df.iterrows()]
+            return results, total
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for get_papers_by_author, falling back to pandas: {e}")
+            df = table.to_pandas()
+            
+            if len(df) == 0:
+                return [], 0
+            
+            mask = df["authors"].str.contains(f'"{author}"', na=False, regex=False)
+            filtered = df[mask]
+            total = len(filtered)
+            
+            if total == 0:
+                return [], 0
+            
+            sorted_df = filtered.sort_values(by="published", ascending=False)
+            paginated = sorted_df.iloc[start:start + max_results]
+            
+            results = [self._entity_to_response(row) for _, row in paginated.iterrows()]
+            return results, total

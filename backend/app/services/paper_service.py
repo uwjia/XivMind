@@ -493,3 +493,34 @@ class PaperService:
     def get_embedding_index(self, date: str) -> Optional[Dict[str, Any]]:
         """Get embedding index for a specific date."""
         return self.paper_repo.get_embedding_index(date)
+
+    def query_papers_by_author(
+        self,
+        author: str,
+        start: int = 0,
+        max_results: int = 50,
+    ) -> Dict[str, Any]:
+        """
+        Query papers by author name.
+        
+        Args:
+            author: Author name to search for
+            start: Pagination start index
+            max_results: Maximum number of results to return
+        
+        Returns:
+            Dict with papers and metadata
+        """
+        papers, total = self.paper_repo.get_papers_by_author(
+            author=author,
+            start=start,
+            max_results=max_results,
+        )
+        
+        return {
+            "papers": papers,
+            "total": total,
+            "start": start,
+            "max_results": max_results,
+            "author": author,
+        }

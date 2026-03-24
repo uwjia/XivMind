@@ -531,3 +531,261 @@ class TestMilvusPaperRepositoryUpsertPapersBatch:
             result = repo.upsert_papers_batch(papers)
             
             assert result == 1
+
+
+class TestMilvusPaperRepositoryGetPapersByAuthor:
+    @pytest.fixture
+    def repo(self):
+        return MilvusPaperRepository()
+
+    def test_get_papers_by_author_single_author(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=[{
+            "id": "2301.00001",
+            "title": "Paper 1",
+            "abstract": "Abstract 1",
+            "authors": json.dumps(["John Smith"]),
+            "primary_category": "cs.AI",
+            "categories": json.dumps(["cs.AI"]),
+            "published": "2024-01-01T00:00:00",
+            "updated": "2024-01-01T00:00:00",
+            "pdf_url": "url1",
+            "abs_url": "url1",
+            "comment": "",
+            "journal_ref": "",
+            "doi": "",
+            "fetched_at": "2024-01-01T00:00:00",
+        }])
+        
+        with patch.object(repo, '_get_papers_collection', return_value=mock_collection):
+            with patch('app.db.milvus.paper_repo.settings') as mock_settings:
+                mock_settings.MILVUS_QUERY_BATCH_SIZE = 1000
+                papers, total = repo.get_papers_by_author("John Smith")
+                
+                assert total == 1
+                assert len(papers) == 1
+                assert papers[0]["id"] == "2301.00001"
+                assert "John Smith" in papers[0]["authors"]
+
+    def test_get_papers_by_author_multiple_papers(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=[
+            {
+                "id": "2301.00001",
+                "title": "Paper 1",
+                "abstract": "Abstract 1",
+                "authors": json.dumps(["John Smith", "Jane Doe"]),
+                "primary_category": "cs.AI",
+                "categories": json.dumps(["cs.AI"]),
+                "published": "2024-01-01T00:00:00",
+                "updated": "2024-01-01T00:00:00",
+                "pdf_url": "url1",
+                "abs_url": "url1",
+                "comment": "",
+                "journal_ref": "",
+                "doi": "",
+                "fetched_at": "2024-01-01T00:00:00",
+            },
+            {
+                "id": "2301.00002",
+                "title": "Paper 2",
+                "abstract": "Abstract 2",
+                "authors": json.dumps(["John Smith"]),
+                "primary_category": "cs.LG",
+                "categories": json.dumps(["cs.LG"]),
+                "published": "2024-01-02T00:00:00",
+                "updated": "2024-01-02T00:00:00",
+                "pdf_url": "url2",
+                "abs_url": "url2",
+                "comment": "",
+                "journal_ref": "",
+                "doi": "",
+                "fetched_at": "2024-01-02T00:00:00",
+            },
+        ])
+        
+        with patch.object(repo, '_get_papers_collection', return_value=mock_collection):
+            with patch('app.db.milvus.paper_repo.settings') as mock_settings:
+                mock_settings.MILVUS_QUERY_BATCH_SIZE = 1000
+                papers, total = repo.get_papers_by_author("John Smith")
+                
+                assert total == 2
+                assert len(papers) == 2
+                paper_ids = [p["id"] for p in papers]
+                assert "2301.00001" in paper_ids
+                assert "2301.00002" in paper_ids
+
+    def test_get_papers_by_author_sorted_by_date(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=[
+            {
+                "id": "2301.00001",
+                "title": "Older Paper",
+                "abstract": "Abstract 1",
+                "authors": json.dumps(["John Smith"]),
+                "primary_category": "cs.AI",
+                "categories": json.dumps(["cs.AI"]),
+                "published": "2024-01-01T00:00:00",
+                "updated": "2024-01-01T00:00:00",
+                "pdf_url": "url1",
+                "abs_url": "url1",
+                "comment": "",
+                "journal_ref": "",
+                "doi": "",
+                "fetched_at": "2024-01-01T00:00:00",
+            },
+            {
+                "id": "2301.00002",
+                "title": "Newer Paper",
+                "abstract": "Abstract 2",
+                "authors": json.dumps(["John Smith"]),
+                "primary_category": "cs.LG",
+                "categories": json.dumps(["cs.LG"]),
+                "published": "2024-06-01T00:00:00",
+                "updated": "2024-06-01T00:00:00",
+                "pdf_url": "url2",
+                "abs_url": "url2",
+                "comment": "",
+                "journal_ref": "",
+                "doi": "",
+                "fetched_at": "2024-06-01T00:00:00",
+            },
+            {
+                "id": "2301.00003",
+                "title": "Middle Paper",
+                "abstract": "Abstract 3",
+                "authors": json.dumps(["John Smith"]),
+                "primary_category": "cs.CV",
+                "categories": json.dumps(["cs.CV"]),
+                "published": "2024-03-01T00:00:00",
+                "updated": "2024-03-01T00:00:00",
+                "pdf_url": "url3",
+                "abs_url": "url3",
+                "comment": "",
+                "journal_ref": "",
+                "doi": "",
+                "fetched_at": "2024-03-01T00:00:00",
+            },
+        ])
+        
+        with patch.object(repo, '_get_papers_collection', return_value=mock_collection):
+            with patch('app.db.milvus.paper_repo.settings') as mock_settings:
+                mock_settings.MILVUS_QUERY_BATCH_SIZE = 1000
+                papers, total = repo.get_papers_by_author("John Smith")
+                
+                assert total == 3
+                assert papers[0]["id"] == "2301.00002"
+                assert papers[1]["id"] == "2301.00003"
+                assert papers[2]["id"] == "2301.00001"
+
+    def test_get_papers_by_author_not_found(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=[])
+        
+        with patch.object(repo, '_get_papers_collection', return_value=mock_collection):
+            with patch('app.db.milvus.paper_repo.settings') as mock_settings:
+                mock_settings.MILVUS_QUERY_BATCH_SIZE = 1000
+                papers, total = repo.get_papers_by_author("Unknown Author")
+                
+                assert total == 0
+                assert len(papers) == 0
+
+    def test_get_papers_by_author_pagination(self, repo):
+        papers_data = []
+        for i in range(10):
+            papers_data.append({
+                "id": f"2301.0000{i}",
+                "title": f"Paper {i}",
+                "abstract": f"Abstract {i}",
+                "authors": json.dumps(["John Smith"]),
+                "primary_category": "cs.AI",
+                "categories": json.dumps(["cs.AI"]),
+                "published": f"2024-01-{i+1:02d}T00:00:00",
+                "updated": f"2024-01-{i+1:02d}T00:00:00",
+                "pdf_url": f"url{i}",
+                "abs_url": f"url{i}",
+                "comment": "",
+                "journal_ref": "",
+                "doi": "",
+                "fetched_at": f"2024-01-{i+1:02d}T00:00:00",
+            })
+        
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=papers_data)
+        
+        with patch.object(repo, '_get_papers_collection', return_value=mock_collection):
+            with patch('app.db.milvus.paper_repo.settings') as mock_settings:
+                mock_settings.MILVUS_QUERY_BATCH_SIZE = 1000
+                papers, total = repo.get_papers_by_author("John Smith", start=0, max_results=5)
+                
+                assert total == 10
+                assert len(papers) == 5
+                
+                papers2, total2 = repo.get_papers_by_author("John Smith", start=5, max_results=5)
+                
+                assert total2 == 10
+                assert len(papers2) == 5
+
+    def test_get_papers_by_author_coauthor(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=[
+            {
+                "id": "2301.00001",
+                "title": "Paper 1",
+                "abstract": "Abstract 1",
+                "authors": json.dumps(["John Smith", "Jane Doe", "Bob Wilson"]),
+                "primary_category": "cs.AI",
+                "categories": json.dumps(["cs.AI"]),
+                "published": "2024-01-01T00:00:00",
+                "updated": "2024-01-01T00:00:00",
+                "pdf_url": "url1",
+                "abs_url": "url1",
+                "comment": "",
+                "journal_ref": "",
+                "doi": "",
+                "fetched_at": "2024-01-01T00:00:00",
+            },
+            {
+                "id": "2301.00002",
+                "title": "Paper 2",
+                "abstract": "Abstract 2",
+                "authors": json.dumps(["Jane Doe", "Alice Brown"]),
+                "primary_category": "cs.LG",
+                "categories": json.dumps(["cs.LG"]),
+                "published": "2024-01-02T00:00:00",
+                "updated": "2024-01-02T00:00:00",
+                "pdf_url": "url2",
+                "abs_url": "url2",
+                "comment": "",
+                "journal_ref": "",
+                "doi": "",
+                "fetched_at": "2024-01-02T00:00:00",
+            },
+        ])
+        
+        with patch.object(repo, '_get_papers_collection', return_value=mock_collection):
+            with patch('app.db.milvus.paper_repo.settings') as mock_settings:
+                mock_settings.MILVUS_QUERY_BATCH_SIZE = 1000
+                papers, total = repo.get_papers_by_author("Jane Doe")
+                
+                assert total == 2
+                assert len(papers) == 2
+
+    def test_get_papers_by_author_empty_database(self, repo):
+        mock_collection = Mock()
+        mock_collection.load = Mock()
+        mock_collection.query = Mock(return_value=[])
+        
+        with patch.object(repo, '_get_papers_collection', return_value=mock_collection):
+            with patch('app.db.milvus.paper_repo.settings') as mock_settings:
+                mock_settings.MILVUS_QUERY_BATCH_SIZE = 1000
+                papers, total = repo.get_papers_by_author("John Smith")
+                
+                assert total == 0
+                assert len(papers) == 0

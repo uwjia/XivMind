@@ -39,7 +39,12 @@
         <h1 class="paper-title">{{ paper.title }}</h1>
 
         <div class="paper-authors">
-          <span v-for="(author, index) in paper.authors" :key="index" class="author">
+          <span 
+            v-for="(author, index) in paper.authors" 
+            :key="index" 
+            class="author"
+            @click="goToAuthorPapers(author)"
+          >
             {{ author }}{{ index < paper.authors.length - 1 ? ', ' : '' }}
           </span>
         </div>
@@ -313,6 +318,10 @@ watch(() => route.params.id, async (newId) => {
 
 const goToPaper = (id: string) => {
   router.push({ name: 'PaperDetail', params: { id } })
+}
+
+const goToAuthorPapers = (author: string) => {
+  router.push({ name: 'AuthorPapers', params: { authorName: encodeURIComponent(author) } })
 }
 
 const openReader = () => {

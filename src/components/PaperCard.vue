@@ -11,7 +11,15 @@
           <circle cx="12" cy="7" r="4" fill="#0b8db4ff"/>
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="#0b8db4ff" stroke-width="2"/>
         </svg>
-        <span>{{ paper.authors?.join(', ') || 'Unknown Authors' }}</span>
+        <span class="author-list">
+          <template v-for="(author, idx) in paper.authors" :key="idx">
+            <span 
+              class="author-name" 
+              :class="{ 'highlighted': highlightAuthor && author === highlightAuthor }"
+              @click.stop="goToAuthorPapers(author)"
+            >{{ author }}</span><span v-if="idx < (paper.authors?.length || 0) - 1">, </span>
+          </template>
+        </span>
       </p>
       <div class="paper-abstract">
         <p>
@@ -149,6 +157,7 @@ import type { Paper } from '@/types'
 const props = defineProps<{
   paper: Paper
   index?: number
+  highlightAuthor?: string
 }>()
 
 const router = useRouter()
@@ -299,6 +308,10 @@ const openReader = () => {
   if (props.paper?.id) {
     router.push({ name: 'PdfReader', params: { paperId: props.paper.id } })
   }
+}
+
+const goToAuthorPapers = (author: string) => {
+  router.push({ name: 'AuthorPapers', params: { authorName: encodeURIComponent(author) } })
 }
 
 const formatDate = (dateStr: string | Date) => {
@@ -506,6 +519,27 @@ const getVersionFromId = () => {
   overflow-wrap: break-word;
 }
 
+.author-list {
+  display: inline;
+  cursor: default;
+}
+
+.author-name {
+  display: inline;
+  cursor: pointer;
+  transition: color 0.2s, text-decoration 0.2s;
+}
+
+.author-name.highlighted {
+  font-weight: bold;
+  color: var(--accent-color);
+}
+
+.author-name:hover {
+  color: var(--accent-color);
+  text-decoration: underline;
+}
+
 .author-icon {
   width: 16px;
   height: 16px;
@@ -538,7 +572,7 @@ const getVersionFromId = () => {
 }
 
 .paper-authors span {
-  display: block;
+  display: inline;
 }
 .abstract-icon {
   width: 16px;

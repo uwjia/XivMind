@@ -479,3 +479,34 @@ class SQLitePaperRepository(PaperRepository):
             cursor = conn.cursor()
             cursor.execute('DELETE FROM embedding_index WHERE date = ?', (date,))
             conn.commit()
+
+    def get_papers_by_author(
+        self,
+        author: str,
+        start: int = 0,
+        max_results: int = 50,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Get papers by author name, sorted by published date DESC."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute(
+                'SELECT COUNT(*) FROM papers WHERE authors LIKE ?',
+                (f'%"{author}"%',)
+            )
+            total = cursor.fetchone()[0]
+            
+            if total == 0:
+                return [], 0
+            
+            cursor.execute(
+                '''
+                SELECT * FROM papers 
+                WHERE authors LIKE ?
+                ORDER BY published DESC
+                LIMIT ? OFFSET ?
+                ''',
+                (f'%"{author}"%', max_results, start)
+            )
+            rows = cursor.fetchall()
+            return [self._row_to_response(row) for row in rows], total
