@@ -60,6 +60,11 @@ const routes: RouteRecordRaw[] = [
     path: '/team',
     name: 'TeamManager',
     component: () => import('@/views/TeamManager.vue')
+  },
+  {
+    path: '/reader/:paperId',
+    name: 'PdfReader',
+    component: () => import('@/components/pdf-reader/PdfReader.vue')
   }
 ]
 

@@ -161,6 +161,10 @@ export function useDownloadActions() {
     router.push({ name: 'PaperDetail', params: { id: paperId } })
   }
 
+  const openReader = (paperId: string) => {
+    router.push({ name: 'PdfReader', params: { paperId } })
+  }
+
   const syncLocalFiles = async () => {
     try {
       const result = await downloadStore.syncLocalFiles()
@@ -209,6 +213,7 @@ export function useDownloadActions() {
     cancelDelete,
     openFile,
     goToDetail,
+    openReader,
     goToFirstPage,
     goToPreviousPage,
     goToNextPage,

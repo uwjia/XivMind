@@ -23,9 +23,11 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "fabric": "^7.2.0",
     "katex": "^0.16.28",
     "markdown-it": "^14.1.0",
     "markdown-it-katex": "^2.0.3",
+    "pdfjs-dist": "^5.5.207",
     "pinia": "^2.1.0",
     "pinia-plugin-persistedstate": "^3.2.3",
     "vis-data": "^8.0.3",

@@ -2,6 +2,16 @@ from .common import MessageResponse
 from .paper import PaperBase, Paper
 from .bookmark import BookmarkCreate, BookmarkResponse, BookmarkListResponse, BookmarkCheckBatchRequest, BookmarkCheckBatchResponse
 from .download import DownloadStatus, DownloadTaskCreate, DownloadTaskResponse, DownloadTaskListResponse, DownloadCheckBatchRequest, DownloadCheckBatchResponse, DownloadCheckResponse, SyncResultDetail, SyncLocalFilesResponse
+from .pdf_annotation import (
+    AnnotationType,
+    AnnotationPosition,
+    PdfAnnotationCreate,
+    PdfAnnotationUpdate,
+    PdfAnnotationResponse,
+    PdfReadingProgressCreate,
+    PdfReadingProgressResponse,
+    PdfOutlineItemResponse,
+)
 from .search import (
     SearchResult,
     SemanticSearchRequest,
@@ -101,4 +111,12 @@ __all__ = [
     "SubAgentReloadResponse",
     "SyncResultDetail",
     "SyncLocalFilesResponse",
+    "AnnotationType",
+    "AnnotationPosition",
+    "PdfAnnotationCreate",
+    "PdfAnnotationUpdate",
+    "PdfAnnotationResponse",
+    "PdfReadingProgressCreate",
+    "PdfReadingProgressResponse",
+    "PdfOutlineItemResponse",
 ]

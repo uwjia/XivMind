@@ -416,3 +416,49 @@ class ConversationRepository(ABC):
     @abstractmethod
     async def search_conversations(self, query: str, user_id: str) -> List[Any]:
         pass
+
+
+class PdfAnnotationRepository(ABC):
+    """Abstract repository for PDF annotations and reading progress."""
+
+    @abstractmethod
+    def get_annotations(self, paper_id: str) -> List[Dict[str, Any]]:
+        """Get all annotations for a paper."""
+        pass
+
+    @abstractmethod
+    def create_annotation(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new annotation."""
+        pass
+
+    @abstractmethod
+    def get_annotation(self, annotation_id: str) -> Optional[Dict[str, Any]]:
+        """Get a single annotation by ID."""
+        pass
+
+    @abstractmethod
+    def update_annotation(self, annotation_id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Update an annotation."""
+        pass
+
+    @abstractmethod
+    def delete_annotation(self, annotation_id: str) -> bool:
+        """Delete an annotation."""
+        pass
+
+    @abstractmethod
+    def get_reading_progress(self, paper_id: str) -> Optional[Dict[str, Any]]:
+        """Get reading progress for a paper."""
+        pass
+
+    @abstractmethod
+    def save_reading_progress(
+        self,
+        paper_id: str,
+        current_page: int,
+        total_pages: int,
+        zoom_level: float,
+        view_mode: str,
+    ) -> Dict[str, Any]:
+        """Save reading progress for a paper."""
+        pass

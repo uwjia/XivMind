@@ -174,3 +174,27 @@ def sample_archival_memory_data():
         "created_at": datetime.utcnow(),
         "last_accessed": datetime.utcnow(),
     }
+
+
+@pytest.fixture
+def sample_annotation_data():
+    return {
+        "paper_id": "2301.12345",
+        "type": "highlight",
+        "page_number": 1,
+        "position": {"x": 100, "y": 200, "width": 300, "height": 20},
+        "content": "This is highlighted text",
+        "color": "rgba(255, 235, 59, 0.4)",
+        "stroke_width": 2,
+    }
+
+
+@pytest.fixture
+def sample_reading_progress_data():
+    return {
+        "paper_id": "2301.12345",
+        "current_page": 5,
+        "total_pages": 20,
+        "zoom_level": 1.5,
+        "view_mode": "continuous",
+    }

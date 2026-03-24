@@ -69,21 +69,96 @@ class LanceDBClient:
             logger.error(f"Failed to connect to LanceDB: {e}")
             raise ConnectionError(f"Failed to connect to LanceDB: {e}")
 
+    def _get_missing_fields(self, table_name: str, expected_schema) -> list:
+        try:
+            table = self._db.open_table(table_name)
+            current_schema = table.schema
+            expected = expected_schema.get_pyarrow_schema()
+            
+            current_field_names = {field.name for field in current_schema}
+            missing_fields = []
+            
+            for field in expected:
+                if field.name not in current_field_names:
+                    missing_fields.append(field)
+            
+            return missing_fields
+        except Exception as e:
+            logger.warning(f"Failed to get missing fields for {table_name}: {e}")
+            return []
+
+    def _migrate_table(self, table_name: str, schema, missing_fields: list) -> bool:
+        try:
+            import pandas as pd
+            logger.info(f"Migrating {table_name} table, adding fields: {[f.name for f in missing_fields]}")
+            
+            old_table = self._db.open_table(table_name)
+            df = old_table.to_pandas()
+            
+            for field in missing_fields:
+                if field.name not in df.columns:
+                    if pa.types.is_integer(field.type):
+                        df[field.name] = pd.NA
+                    elif pa.types.is_float(field.type):
+                        df[field.name] = None
+                    elif pa.types.is_string(field.type):
+                        df[field.name] = None
+                    elif pa.types.is_list(field.type):
+                        df[field.name] = None
+                    else:
+                        df[field.name] = None
+            
+            df = df.replace({float('nan'): None})
+            df = df.where(pd.notnull(df), None)
+            
+            self._db.drop_table(table_name)
+            
+            new_table = self._db.create_table(
+                table_name,
+                data=df,
+                schema=schema.get_pyarrow_schema()
+            )
+            
+            if schema.primary_key:
+                try:
+                    new_table.create_scalar_index(schema.primary_key)
+                except Exception as e:
+                    logger.warning(f"Failed to create index on {schema.primary_key}: {e}")
+            
+            self._tables[table_name] = new_table
+            logger.info(f"Migration completed for {table_name}, preserved {len(df)} records")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to migrate {table_name}: {e}")
+            return False
+
     def _schema_matches(self, table_name: str, expected_schema) -> bool:
         try:
             table = self._db.open_table(table_name)
             current_schema = table.schema
             expected = expected_schema.get_pyarrow_schema()
             
+            current_field_names = {field.name for field in current_schema}
+            expected_field_names = {field.name for field in expected}
+            
+            if current_field_names != expected_field_names:
+                logger.info(f"Schema mismatch for {table_name}: current fields={current_field_names}, expected fields={expected_field_names}")
+                return False
+            
             if len(current_schema) != len(expected):
+                logger.info(f"Schema field count mismatch for {table_name}: current={len(current_schema)}, expected={len(expected)}")
                 return False
             
             for field1, field2 in zip(current_schema, expected):
                 if field1.name != field2.name:
+                    logger.info(f"Field name mismatch: {field1.name} vs {field2.name}")
                     return False
                 if field1.type != field2.type:
+                    logger.info(f"Field type mismatch for {field1.name}: {field1.type} vs {field2.type}")
                     return False
             
+            logger.info(f"Schema matches for {table_name}")
             return True
         except Exception as e:
             logger.warning(f"Schema comparison failed for {table_name}: {e}")
@@ -117,13 +192,19 @@ class LanceDBClient:
                         self._tables[table_name] = self._db.open_table(table_name)
                         logger.info(f"Using existing {table_name} table")
                         continue
-                    else:
-                        logger.warning(f"Schema mismatch for {table_name}, recreating table...")
-                        try:
-                            self._db.drop_table(table_name)
-                        except Exception as e:
-                            logger.warning(f"Failed to drop table {table_name}: {e}")
-                        table_exists = False
+                    
+                    missing_fields = self._get_missing_fields(table_name, schema)
+                    if missing_fields:
+                        if self._migrate_table(table_name, schema, missing_fields):
+                            continue
+                        else:
+                            logger.warning(f"Migration failed for {table_name}, recreating table...")
+                    
+                    try:
+                        self._db.drop_table(table_name)
+                    except Exception as e:
+                        logger.warning(f"Failed to drop table {table_name}: {e}")
+                    table_exists = False
                 
                 if not table_exists or force_recreate:
                     try:
@@ -140,6 +221,11 @@ class LanceDBClient:
                         logger.info(f"{table_name} table created")
                     except Exception as e:
                         if "already exists" in str(e).lower():
+                            logger.info(f"Table {table_name} already exists, checking schema...")
+                            if not self._schema_matches(table_name, schema):
+                                missing_fields = self._get_missing_fields(table_name, schema)
+                                if missing_fields and self._migrate_table(table_name, schema, missing_fields):
+                                    continue
                             self._tables[table_name] = self._db.open_table(table_name)
                             logger.info(f"Using existing {table_name} table (race condition)")
                         else:
@@ -171,6 +257,20 @@ class LanceDBClient:
             return self._tables[table_name]
         
         if table_name in self._db.table_names():
+            from app.db.lancedb.schemas import SchemaRegistry
+            
+            try:
+                schema = SchemaRegistry.get(table_name)
+                if not self._schema_matches(table_name, schema):
+                    missing_fields = self._get_missing_fields(table_name, schema)
+                    if missing_fields:
+                        if self._migrate_table(table_name, schema, missing_fields):
+                            return self._tables[table_name]
+                        else:
+                            logger.warning(f"Migration failed for {table_name}")
+            except Exception as e:
+                logger.warning(f"Schema check failed for {table_name}: {e}")
+            
             self._tables[table_name] = self._db.open_table(table_name)
             return self._tables[table_name]
         

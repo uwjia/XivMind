@@ -8,6 +8,7 @@ from .embedding_index import EmbeddingIndexSchema
 from .paper_embeddings import PaperEmbeddingSchema
 from .memorys import RecallMemorySchema, ArchivalMemorySchema, CoreMemorySchema, MemoryConfigSchema
 from .conversation import ConversationMetaSchema
+from .pdf_annotations import PdfAnnotationSchema, PdfReadingProgressSchema
 
 
 class SchemaRegistry:
@@ -49,3 +50,5 @@ SchemaRegistry.register(ArchivalMemorySchema())
 SchemaRegistry.register(CoreMemorySchema())
 SchemaRegistry.register(MemoryConfigSchema())
 SchemaRegistry.register(ConversationMetaSchema())
+SchemaRegistry.register(PdfAnnotationSchema())
+SchemaRegistry.register(PdfReadingProgressSchema())

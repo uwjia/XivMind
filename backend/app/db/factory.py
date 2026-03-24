@@ -7,6 +7,7 @@ _paper_repo = None
 _paper_embedding_repo = None
 _conversation_repo = None
 _memory_repo = None
+_pdf_annotation_repo = None
 
 
 def get_bookmark_repository():
@@ -135,11 +136,33 @@ def get_memory_repository():
     return _memory_repo
 
 
+def get_pdf_annotation_repository():
+    global _pdf_annotation_repo
+    if _pdf_annotation_repo is None:
+        settings = get_settings()
+        db_type = settings.DATABASE_TYPE.lower()
+        
+        if db_type == "sqlite":
+            from app.db.sqlite.pdf_annotation_repo import SQLitePdfAnnotationRepository
+            _pdf_annotation_repo = SQLitePdfAnnotationRepository(settings.SQLITE_DB_PATH)
+        elif db_type == "milvus":
+            from app.db.milvus.pdf_annotation_repo import MilvusPdfAnnotationRepository
+            _pdf_annotation_repo = MilvusPdfAnnotationRepository()
+        elif db_type == "lancedb":
+            from app.db.lancedb.pdf_annotation_repo import LanceDBPdfAnnotationRepository
+            _pdf_annotation_repo = LanceDBPdfAnnotationRepository()
+        else:
+            raise ValueError(f"Unsupported database type: {db_type}")
+    
+    return _pdf_annotation_repo
+
+
 def reset_repositories():
-    global _bookmark_repo, _download_repo, _paper_repo, _paper_embedding_repo, _conversation_repo, _memory_repo
+    global _bookmark_repo, _download_repo, _paper_repo, _paper_embedding_repo, _conversation_repo, _memory_repo, _pdf_annotation_repo
     _bookmark_repo = None
     _download_repo = None
     _paper_repo = None
     _paper_embedding_repo = None
     _conversation_repo = None
     _memory_repo = None
+    _pdf_annotation_repo = None

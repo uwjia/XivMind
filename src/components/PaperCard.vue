@@ -106,6 +106,17 @@
               <line x1="12" y1="15" x2="12" y2="3" :stroke="downloadStatus === 'pending' ? '#FF9800' : '#2196F3'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </span>
+          <span 
+            v-if="downloadStatus === 'completed' || isDownloaded" 
+            class="stat-link read-btn" 
+            @click.stop="openReader" 
+            title="Read PDF"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" stroke-width="2"/>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" stroke-width="2"/>
+            </svg>
+          </span>
           <span class="stat-link bookmark-btn" @click.stop="toggleBookmark" :title="isBookmarked ? 'Remove bookmark' : 'Add bookmark'" :class="{ bookmarked: isBookmarked }">
             <svg viewBox="0 0 24 24" fill="none">
               <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" 
@@ -281,6 +292,12 @@ const toggleBookmark = async () => {
   } catch (error) {
     console.error('Failed to toggle bookmark:', error)
     toastStore.showError('Failed to update bookmark')
+  }
+}
+
+const openReader = () => {
+  if (props.paper?.id) {
+    router.push({ name: 'PdfReader', params: { paperId: props.paper.id } })
   }
 }
 

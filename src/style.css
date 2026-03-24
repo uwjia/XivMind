@@ -21,6 +21,8 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   --transition: all 0.2s ease;
+  --pdf-bg: #f5f5f5;
+  --pdf-page-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .dark {
@@ -33,6 +35,8 @@
   --border-color: #495057;
   --accent-color: #00BCD4;
   --accent-hover: #26C6DA;
+  --pdf-bg: #323232;
+  --pdf-page-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 body {

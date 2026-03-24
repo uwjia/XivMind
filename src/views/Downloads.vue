@@ -148,6 +148,17 @@
               Open File
             </button>
             <button
+              v-if="task.status === 'completed' && task.file_path"
+              @click="openReader(task.paper_id)"
+              class="action-btn read"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" stroke-width="2"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" stroke-width="2"/>
+              </svg>
+              Read
+            </button>
+            <button
               @click="retryTask(task.id)"
               class="action-btn retry"
             >
@@ -265,6 +276,7 @@ const {
   cancelDelete,
   openFile,
   goToDetail,
+  openReader,
   goToFirstPage,
   goToPreviousPage,
   goToNextPage,

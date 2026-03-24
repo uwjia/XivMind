@@ -134,6 +134,59 @@ class MilvusClient:
         except Exception as e:
             logger.error(f"Failed to set schema version for {collection_name}: {e}")
 
+    def _migrate_collection(self, schema: BaseCollectionSchema, old_collection: Collection) -> Collection:
+        """Migrate collection data to new schema."""
+        collection_name = schema.collection_name
+        logger.info(f"Migrating {collection_name} collection...")
+        
+        try:
+            old_collection.load()
+            results = old_collection.query(
+                expr='',
+                output_fields=[field.name for field in old_collection.schema.fields if field.name != 'embedding'],
+                limit=10000
+            )
+            logger.info(f"Backed up {len(results)} records from {collection_name}")
+        except Exception as e:
+            logger.warning(f"Failed to backup data from {collection_name}: {e}")
+            results = []
+        
+        logger.info(f"Dropping old {collection_name} collection...")
+        utility.drop_collection(collection_name)
+        version_collection_name = schema.get_schema_version_collection_name()
+        if utility.has_collection(version_collection_name):
+            utility.drop_collection(version_collection_name)
+        
+        logger.info(f"Creating {collection_name} collection with new schema...")
+        collection_schema = schema.get_collection_schema()
+        collection = Collection(name=collection_name, schema=collection_schema)
+        collection.create_index(field_name="embedding", index_params=schema.get_index_params())
+        
+        if results:
+            new_fields = [field.name for field in schema.get_fields()]
+            insert_data = []
+            for field_name in new_fields:
+                if field_name == 'embedding':
+                    insert_data.append([[0.0] * schema.embedding_dim] * len(results))
+                else:
+                    field_data = []
+                    for row in results:
+                        if field_name in row:
+                            field_data.append(row[field_name])
+                        else:
+                            field_data.append(None)
+                    insert_data.append(field_data)
+            
+            try:
+                collection.insert(insert_data)
+                collection.flush()
+                logger.info(f"Migrated {len(results)} records to new {collection_name} collection")
+            except Exception as e:
+                logger.error(f"Failed to insert migrated data: {e}")
+        
+        self._set_schema_version(collection_name, schema.schema_version)
+        return collection
+
     def _init_collection(self, schema: BaseCollectionSchema) -> Collection:
         """Initialize a single collection based on schema."""
         collection_name = schema.collection_name
@@ -141,38 +194,41 @@ class MilvusClient:
         
         current_version = self._get_schema_version(collection_name)
         
-        need_recreate = False
+        need_migrate = False
         
         if current_version == 0 and utility.has_collection(collection_name):
             existing_collection = Collection(collection_name)
-            for field in existing_collection.schema.fields:
-                if field.name == "embedding" and field.dtype == DataType.FLOAT_VECTOR:
-                    existing_dim = field.params.get("dim", 0)
-                    if existing_dim != schema.embedding_dim:
-                        logger.info(
-                            f"Dimension mismatch for {collection_name}: "
-                            f"existing={existing_dim}, expected={schema.embedding_dim}, "
-                            f"will recreate collection"
-                        )
-                        need_recreate = True
-                    break
-            if not need_recreate:
-                current_version = schema.schema_version
-                self._set_schema_version(collection_name, schema.schema_version)
-                logger.info(f"Existing {collection_name} collection found, setting schema version")
+            existing_fields = {field.name for field in existing_collection.schema.fields}
+            expected_fields = {field.name for field in schema.get_fields()}
+            
+            if existing_fields != expected_fields:
+                logger.info(f"Field mismatch for {collection_name}: missing {expected_fields - existing_fields}")
+                need_migrate = True
+            else:
+                for field in existing_collection.schema.fields:
+                    if field.name == "embedding" and field.dtype == DataType.FLOAT_VECTOR:
+                        existing_dim = field.params.get("dim", 0)
+                        if existing_dim != schema.embedding_dim:
+                            logger.info(
+                                f"Dimension mismatch for {collection_name}: "
+                                f"existing={existing_dim}, expected={schema.embedding_dim}"
+                            )
+                            need_migrate = True
+                        break
+                
+                if not need_migrate:
+                    current_version = schema.schema_version
+                    self._set_schema_version(collection_name, schema.schema_version)
+                    logger.info(f"Existing {collection_name} collection found, setting schema version")
         elif current_version > 0 and current_version < schema.schema_version:
-            need_recreate = True
+            need_migrate = True
             logger.info(
                 f"Upgrading {collection_name} schema from v{current_version} "
-                f"to v{schema.schema_version}, will recreate collection..."
+                f"to v{schema.schema_version}"
             )
         
-        if need_recreate and utility.has_collection(collection_name):
-            logger.info(f"Dropping old {collection_name} collection...")
-            utility.drop_collection(collection_name)
-            version_collection_name = schema.get_schema_version_collection_name()
-            if utility.has_collection(version_collection_name):
-                utility.drop_collection(version_collection_name)
+        if need_migrate and utility.has_collection(collection_name):
+            return self._migrate_collection(schema, Collection(collection_name))
 
         if not utility.has_collection(collection_name):
             logger.info(f"Creating {collection_name} collection with dim={schema.embedding_dim}...")

@@ -190,6 +190,17 @@
               <span v-else-if="downloadStatus === 'pending'">Queued</span>
               <span v-else>Download</span>
             </button>
+            <button 
+              v-if="isDownloaded || downloadStatus === 'completed'" 
+              class="sidebar-action read" 
+              @click="openReader"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" stroke-width="2"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" stroke-width="2"/>
+              </svg>
+              Read PDF
+            </button>
             <button class="sidebar-action">
               <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -302,6 +313,12 @@ watch(() => route.params.id, async (newId) => {
 
 const goToPaper = (id: string) => {
   router.push({ name: 'PaperDetail', params: { id } })
+}
+
+const openReader = () => {
+  if (paper.value?.id) {
+    router.push({ name: 'PdfReader', params: { paperId: paper.value.id } })
+  }
 }
 
 const goBack = () => {
