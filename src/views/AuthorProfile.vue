@@ -94,7 +94,7 @@
           </div>
           <div class="stat-content">
             <span class="stat-value">{{ profile.categories?.length || 0 }}</span>
-            <span class="stat-label">Research Areas</span>
+            <span class="stat-label">Top Research Areas</span>
           </div>
         </div>
         <div class="stat-card">

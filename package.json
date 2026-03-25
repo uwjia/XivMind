@@ -23,7 +23,6 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
-    "fabric": "^7.2.0",
     "katex": "^0.16.28",
     "markdown-it": "^14.1.0",
     "markdown-it-katex": "^2.0.3",
