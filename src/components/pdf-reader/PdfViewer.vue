@@ -167,7 +167,6 @@ async function renderPage(pageNumber: number) {
     const renderTask = page.render({
       canvasContext: context,
       viewport,
-      canvas,
     })
     pendingRenders.set(pageNumber, renderTask)
 

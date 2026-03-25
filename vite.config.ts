@@ -60,6 +60,9 @@ export default defineConfig({
       '@': path.resolve(fileURLToPath(new URL('.', import.meta.url)), './src')
     }
   },
+  optimizeDeps: {
+    include: ['pdfjs-dist']
+  },
   server: {
     port: 5173,
     open: true,

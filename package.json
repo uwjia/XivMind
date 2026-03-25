@@ -1,7 +1,7 @@
 {
   "name": "xivmind",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "XivMind - AI-powered arXiv Paper Management System",
   "author": "XivMind Team",
   "main": "dist-electron/main.js",
@@ -26,7 +26,7 @@
     "katex": "^0.16.28",
     "markdown-it": "^14.1.0",
     "markdown-it-katex": "^2.0.3",
-    "pdfjs-dist": "^5.5.207",
+    "pdfjs-dist": "^4.4.168",
     "pinia": "^2.1.0",
     "pinia-plugin-persistedstate": "^3.2.3",
     "vis-data": "^8.0.3",

@@ -195,7 +195,7 @@
           <div class="settings-item">
             <div class="item-info">
               <h3 class="item-title">XivMind</h3>
-              <p class="item-description">Version 0.6.0</p>
+              <p class="item-description">Version 0.6.1</p>
             </div>
             <div class="about-links">
               <a href="https://github.com/uwjia/XivMind" target="_blank" class="link-btn">

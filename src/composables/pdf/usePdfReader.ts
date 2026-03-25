@@ -5,7 +5,7 @@ import type { PdfOutlineItem, PdfThumbnail } from '@/types/pdf'
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.mjs',
   import.meta.url
-).toString()
+).href
 
 export function usePdfReader() {
   const pdfDoc = shallowRef<pdfjsLib.PDFDocumentProxy | null>(null)
@@ -36,7 +36,7 @@ export function usePdfReader() {
       const loadingTask = pdfjsLib.getDocument({
         data,
         url,
-        cMapUrl: 'https://unpkg.com/pdfjs-dist@4.0.379/cmaps/',
+        cMapUrl: 'https://unpkg.com/pdfjs-dist@4.4.168/cmaps/',
         cMapPacked: true,
       })
 
@@ -173,7 +173,6 @@ export function usePdfReader() {
         await page.render({
           canvasContext: context,
           viewport: scaledViewport,
-          canvas,
         }).promise
 
         thumbnails.value.push({

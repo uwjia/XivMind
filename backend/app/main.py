@@ -64,7 +64,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="XivMind API",
     description="Backend API for XivMind - Paper Management System",
-    version="0.6.0",
+    version="0.6.1",
     lifespan=lifespan,
     redoc_url=None,
 )
@@ -97,7 +97,7 @@ app.include_router(followed_authors.router, prefix="/api")
 
 @app.get("/")
 async def root():
-    return {"message": "XivMind API is running", "version": "0.6.0"}
+    return {"message": "XivMind API is running", "version": "0.6.1"}
 
 
 @app.get("/health")
