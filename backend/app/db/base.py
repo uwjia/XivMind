@@ -472,3 +472,27 @@ class PdfAnnotationRepository(ABC):
     ) -> Dict[str, Any]:
         """Save reading progress for a paper."""
         pass
+
+
+class FollowedAuthorRepository(BaseRepository):
+    """Abstract repository for followed authors."""
+
+    @abstractmethod
+    def get_by_author_name(self, author_name: str) -> Optional[Dict[str, Any]]:
+        """Get followed author by name."""
+        pass
+
+    @abstractmethod
+    def is_followed(self, author_name: str) -> bool:
+        """Check if author is followed."""
+        pass
+
+    @abstractmethod
+    def update_notes(self, author_name: str, notes: str) -> bool:
+        """Update notes for a followed author."""
+        pass
+
+    @abstractmethod
+    def update_paper_info(self, author_name: str, paper_count: int, latest_published: str) -> bool:
+        """Update paper count and latest published date."""
+        pass

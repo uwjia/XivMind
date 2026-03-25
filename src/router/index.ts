@@ -27,6 +27,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/Bookmarks.vue')
   },
   {
+    path: '/followed-authors',
+    name: 'FollowedAuthors',
+    component: () => import('@/views/FollowedAuthors.vue')
+  },
+  {
     path: '/downloads',
     name: 'Downloads',
     component: () => import('@/views/Downloads.vue')
@@ -70,6 +75,12 @@ const routes: RouteRecordRaw[] = [
     path: '/author/:authorName',
     name: 'AuthorPapers',
     component: () => import('@/views/AuthorPapers.vue'),
+    props: true
+  },
+  {
+    path: '/author/:authorName/profile',
+    name: 'AuthorProfile',
+    component: () => import('@/views/AuthorProfile.vue'),
     props: true
   }
 ]

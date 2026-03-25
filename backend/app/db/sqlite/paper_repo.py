@@ -5,6 +5,7 @@ import sqlite3
 import os
 from contextlib import contextmanager
 from app.db.base import PaperRepository
+from app.core.utils import normalize_author_name
 
 
 class SQLitePaperRepository(PaperRepository):
@@ -490,11 +491,26 @@ class SQLitePaperRepository(PaperRepository):
         with self._get_connection() as conn:
             cursor = conn.cursor()
             
-            cursor.execute(
-                'SELECT COUNT(*) FROM papers WHERE authors LIKE ?',
-                (f'%"{author}"%',)
-            )
-            total = cursor.fetchone()[0]
+            unique_authors = normalize_author_name(author)
+            
+            patterns = []
+            for a in unique_authors:
+                patterns.append(f'%"{a}"%')
+            
+            patterns = list(dict.fromkeys(patterns))
+            
+            total = 0
+            matched_pattern = None
+            for pattern in patterns:
+                cursor.execute(
+                    'SELECT COUNT(*) FROM papers WHERE authors LIKE ?',
+                    (pattern,)
+                )
+                count = cursor.fetchone()[0]
+                if count > 0:
+                    total = count
+                    matched_pattern = pattern
+                    break
             
             if total == 0:
                 return [], 0
@@ -506,7 +522,8 @@ class SQLitePaperRepository(PaperRepository):
                 ORDER BY published DESC
                 LIMIT ? OFFSET ?
                 ''',
-                (f'%"{author}"%', max_results, start)
+                (matched_pattern, max_results, start)
             )
             rows = cursor.fetchall()
+            
             return [self._row_to_response(row) for row in rows], total

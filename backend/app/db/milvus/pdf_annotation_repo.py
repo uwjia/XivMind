@@ -72,7 +72,7 @@ class MilvusPdfAnnotationRepository(PdfAnnotationRepository):
             [data.get("stroke_width")],
             [now],
             [now],
-            [[0.0] * 1536],
+            [[0.0] * 8],
         ]
 
         collection.insert(insert_data)
@@ -134,7 +134,7 @@ class MilvusPdfAnnotationRepository(PdfAnnotationRepository):
             [stroke_width],
             [annotation["created_at"]],
             [now],
-            [[0.0] * 1536],
+            [[0.0] * 8],
         ]
 
         collection.insert(insert_data)
@@ -209,7 +209,7 @@ class MilvusPdfAnnotationRepository(PdfAnnotationRepository):
             [zoom_level],
             [view_mode],
             [now],
-            [[0.0] * 1536],
+            [[0.0] * 8],
         ]
 
         collection.insert(insert_data)

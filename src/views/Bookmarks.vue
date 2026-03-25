@@ -3,7 +3,7 @@
     <div class="page-header">
       <div class="header-title">
         <h1>My Bookmarks</h1>
-        <span class="total-count" v-if="total > 0">(total {{ total }} bookmarks)</span>
+        <span class="total-count" v-if="total > 0">(total {{ total }})</span>
       </div>
       <div class="header-actions">
         <div class="search-box">

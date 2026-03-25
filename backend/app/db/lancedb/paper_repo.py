@@ -9,6 +9,7 @@ from lance.dataset import ColumnOrdering
 
 from app.db.base import PaperRepository
 from app.db.lancedb.client import lancedb_client
+from app.core.utils import normalize_author_name
 
 logger = logging.getLogger(__name__)
 
@@ -603,48 +604,54 @@ class LanceDBPaperRepository(PaperRepository):
         if table.count_rows() == 0:
             return [], 0
         
-        escaped_author = author.replace("'", "''")
-        filter_str = f'authors LIKE \'%"{escaped_author}"%\''
+        unique_authors = normalize_author_name(author)
+        
+        for author_name in unique_authors:
+            escaped_author = author_name.replace("'", "''")
+            filter_str = f'authors LIKE \'%"{escaped_author}"%\''
+            
+            try:
+                lance_ds = table.to_lance()
+                
+                total = lance_ds.scanner(columns=["id"], filter=filter_str).to_table().num_rows
+                
+                if total > 0:
+                    scanner = lance_ds.scanner(
+                        columns=[
+                            "id", "title", "abstract", "authors", "primary_category",
+                            "categories", "published", "updated", "pdf_url", "abs_url",
+                            "comment", "journal_ref", "doi", "fetched_at"
+                        ],
+                        filter=filter_str,
+                        limit=max_results,
+                        offset=start,
+                        order_by=[ColumnOrdering("published", ascending=False)],
+                    )
+                    df = scanner.to_table().to_pandas()
+                    
+                    results = [self._entity_to_response(row) for _, row in df.iterrows()]
+                    return results, total
+            except Exception as e:
+                logger.warning(f"Failed to use Lance scanner for get_papers_by_author: {e}")
         
         try:
-            lance_ds = table.to_lance()
-            
-            total = lance_ds.scanner(columns=["id"], filter=filter_str).to_table().num_rows
-            
-            if total == 0:
-                return [], 0
-            
-            scanner = lance_ds.scanner(
-                columns=[
-                    "id", "title", "abstract", "authors", "primary_category",
-                    "categories", "published", "updated", "pdf_url", "abs_url",
-                    "comment", "journal_ref", "doi", "fetched_at"
-                ],
-                filter=filter_str,
-                limit=max_results,
-                offset=start,
-                order_by=[ColumnOrdering("published", ascending=False)],
-            )
-            df = scanner.to_table().to_pandas()
-            
-            results = [self._entity_to_response(row) for _, row in df.iterrows()]
-            return results, total
-        except Exception as e:
-            logger.warning(f"Failed to use Lance scanner for get_papers_by_author, falling back to pandas: {e}")
             df = table.to_pandas()
             
             if len(df) == 0:
                 return [], 0
             
-            mask = df["authors"].str.contains(f'"{author}"', na=False, regex=False)
-            filtered = df[mask]
-            total = len(filtered)
-            
-            if total == 0:
-                return [], 0
-            
-            sorted_df = filtered.sort_values(by="published", ascending=False)
-            paginated = sorted_df.iloc[start:start + max_results]
-            
-            results = [self._entity_to_response(row) for _, row in paginated.iterrows()]
-            return results, total
+            for author_name in unique_authors:
+                mask = df["authors"].str.contains(f'"{author_name}"', na=False, regex=False)
+                filtered = df[mask]
+                total = len(filtered)
+                
+                if total > 0:
+                    sorted_df = filtered.sort_values(by="published", ascending=False)
+                    paginated = sorted_df.iloc[start:start + max_results]
+                    
+                    results = [self._entity_to_response(row) for _, row in paginated.iterrows()]
+                    return results, total
+        except Exception as e:
+            logger.error(f"Failed to get papers by author in LanceDB fallback: {e}")
+        
+        return [], 0

@@ -36,6 +36,22 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          @click="goToFollowedAuthors"
+          :title="isCollapsed ? 'Followed Authors' : ''"
+        >
+          <span class="picker-trigger-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#00BCD4">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </span>
+          <span class="picker-label">Authors</span>
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        <button
+          class="picker-trigger-btn"
           @click="goToDownloads"
           :title="isCollapsed ? 'Downloads' : ''"
         >
@@ -259,6 +275,13 @@ const goToSettings = () => {
 
 const goToBookmarks = () => {
   router.push('/bookmarks')
+  if (isMobileOpen.value) {
+    sidebarStore.closeMobileSidebar()
+  }
+}
+
+const goToFollowedAuthors = () => {
+  router.push('/followed-authors')
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }

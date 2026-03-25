@@ -20,7 +20,7 @@ class PdfAnnotationSchema(BaseCollectionSchema):
 
     @property
     def embedding_dim(self) -> int:
-        return 1536
+        return 8
 
     @property
     def index_nlist(self) -> int:
@@ -59,7 +59,7 @@ class PdfReadingProgressSchema(BaseCollectionSchema):
 
     @property
     def embedding_dim(self) -> int:
-        return 1536
+        return 8
 
     @property
     def index_nlist(self) -> int:

@@ -4,6 +4,7 @@ from urllib.parse import unquote
 import logging
 
 from app.services.paper_service import PaperService
+from app.services.author_profile_service import AuthorProfileService
 from app.services.llm_service import llm_service
 from app.services.memory.service import memory_service
 from app.services.memory.auto_capture import AutoCaptureService
@@ -27,6 +28,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/arxiv", tags=["arxiv"])
 
 _paper_service = PaperService()
+_author_profile_service = AuthorProfileService(_paper_service)
 auto_capture_service = AutoCaptureService()
 auto_recall_service = AutoRecallService()
 
@@ -71,6 +73,39 @@ async def get_paper(paper_id: str):
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
     return paper
+
+
+@router.get("/author/{author_name:path}/profile")
+async def get_author_profile(author_name: str):
+    """
+    Get author profile with statistics and visualization data.
+    
+    Returns:
+    - Total papers count
+    - Active years range
+    - Category distribution
+    - Yearly paper counts
+    - Top collaborators
+    - Top keywords
+    """
+    try:
+        author = unquote(author_name)
+        profile = _author_profile_service.get_author_profile(author)
+        return profile
+    except Exception as e:
+        logger.error(f"Error getting author profile: {e}")
+        return {
+            "name": author_name,
+            "total_papers": 0,
+            "first_paper_year": None,
+            "latest_paper_year": None,
+            "active_years": 0,
+            "categories": [],
+            "yearly_papers": [],
+            "collaborators": [],
+            "keywords": [],
+            "error": str(e),
+        }
 
 
 @router.get("/author/{author_name:path}")

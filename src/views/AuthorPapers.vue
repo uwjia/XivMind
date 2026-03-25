@@ -10,6 +10,32 @@
         <h1 class="author-name">{{ decodedAuthorName }}</h1>
         <p class="paper-count">{{ total }} papers found</p>
       </div>
+      <router-link 
+        :to="{ name: 'AuthorProfile', params: { authorName: authorName } }" 
+        class="profile-btn"
+        title="View Author Profile"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        Profile
+      </router-link>
+      <button 
+        class="follow-btn" 
+        :class="{ followed: isFollowed }"
+        @click="toggleFollow"
+        :disabled="followLoading"
+        title="Follow author"
+      >
+        <svg v-if="isFollowed" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        {{ isFollowed ? 'Followed' : 'Follow' }}
+      </button>
     </div>
 
     <div v-if="loading" class="loading-state">
@@ -87,12 +113,14 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConfigStore } from '@/stores/config-store'
+import { useFollowedAuthorStore } from '@/stores/followed-author-store'
 import { arxivBackendAPI } from '@/services/arxivBackend'
 import PaperCard from '@/components/PaperCard.vue'
 import type { Paper } from '@/services/arxivBackend'
 
 const configStore = useConfigStore()
 const router = useRouter()
+const store = useFollowedAuthorStore()
 
 const props = defineProps<{
   authorName: string
@@ -105,6 +133,8 @@ const error = ref<string | null>(null)
 const currentPage = ref(0)
 const pageSize = configStore.maxResults
 const jumpPageInput = ref<number | null>(null)
+const isFollowed = ref(false)
+const followLoading = ref(false)
 
 const decodedAuthorName = computed(() => {
   return decodeURIComponent(props.authorName)
@@ -180,7 +210,29 @@ watch(() => props.authorName, () => {
   currentPage.value = 0
   total.value = 0
   fetchPapers()
+  checkFollowStatus()
 }, { immediate: true })
+
+async function checkFollowStatus() {
+  isFollowed.value = await store.checkIfFollowed(decodedAuthorName.value)
+}
+
+async function toggleFollow() {
+  if (followLoading.value) return
+  
+  followLoading.value = true
+  try {
+    if (isFollowed.value) {
+      await store.unfollowAuthor(decodedAuthorName.value)
+      isFollowed.value = false
+    } else {
+      await store.followAuthor(decodedAuthorName.value)
+      isFollowed.value = true
+    }
+  } finally {
+    followLoading.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -225,6 +277,70 @@ watch(() => props.authorName, () => {
 
 .author-info {
   flex: 1;
+}
+
+.profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--accent-color);
+  background: rgba(59, 130, 246, 0.1);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.profile-btn:hover {
+  background: var(--accent-color);
+  color: white;
+}
+
+.profile-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.follow-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--accent-color);
+  background: rgba(59, 130, 246, 0.1);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.follow-btn:hover:not(:disabled) {
+  background: var(--accent-color);
+  color: white;
+}
+
+.follow-btn.followed {
+  color: var(--accent-color);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.follow-btn.followed:hover:not(:disabled) {
+  background: var(--accent-color);
+  color: white;
+}
+
+.follow-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.follow-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .author-name {

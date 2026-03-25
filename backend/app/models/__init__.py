@@ -1,6 +1,7 @@
 from .common import MessageResponse
 from .paper import PaperBase, Paper
 from .bookmark import BookmarkCreate, BookmarkResponse, BookmarkListResponse, BookmarkCheckBatchRequest, BookmarkCheckBatchResponse
+from .followed_author import FollowedAuthorCreate, FollowedAuthorUpdate, FollowedAuthorResponse, FollowedAuthorListResponse, FollowedAuthorCheckResponse
 from .download import DownloadStatus, DownloadTaskCreate, DownloadTaskResponse, DownloadTaskListResponse, DownloadCheckBatchRequest, DownloadCheckBatchResponse, DownloadCheckResponse, SyncResultDetail, SyncLocalFilesResponse
 from .pdf_annotation import (
     AnnotationType,
@@ -72,6 +73,11 @@ __all__ = [
     "BookmarkListResponse",
     "BookmarkCheckBatchRequest",
     "BookmarkCheckBatchResponse",
+    "FollowedAuthorCreate",
+    "FollowedAuthorUpdate",
+    "FollowedAuthorResponse",
+    "FollowedAuthorListResponse",
+    "FollowedAuthorCheckResponse",
     "DownloadTaskCreate",
     "DownloadTaskResponse",
     "DownloadTaskListResponse",

@@ -89,7 +89,7 @@ class LanceDBPdfAnnotationRepository(PdfAnnotationRepository):
             "stroke_width": data.get("stroke_width"),
             "created_at": now,
             "updated_at": now,
-            "embedding": [0.0] * 1536,
+            "embedding": [0.0] * 8,
         }
         
         table.add([record])
@@ -142,7 +142,7 @@ class LanceDBPdfAnnotationRepository(PdfAnnotationRepository):
             "stroke_width": stroke_width,
             "created_at": annotation["created_at"],
             "updated_at": now,
-            "embedding": [0.0] * 1536,
+            "embedding": [0.0] * 8,
         }
         
         table.merge_insert("id") \
@@ -206,7 +206,7 @@ class LanceDBPdfAnnotationRepository(PdfAnnotationRepository):
             "zoom_level": zoom_level,
             "view_mode": view_mode,
             "last_read_at": now,
-            "embedding": [0.0] * 1536,
+            "embedding": [0.0] * 8,
         }
         
         table.merge_insert("paper_id") \

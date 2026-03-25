@@ -9,6 +9,7 @@ from .paper_embeddings import PaperEmbeddingSchema
 from .memorys import RecallMemorySchema, ArchivalMemorySchema, CoreMemorySchema, MemoryConfigSchema
 from .conversation import ConversationMetaSchema
 from .pdf_annotations import PdfAnnotationSchema, PdfReadingProgressSchema
+from .followed_authors import FollowedAuthorSchema
 
 
 class SchemaRegistry:
@@ -52,3 +53,4 @@ SchemaRegistry.register(MemoryConfigSchema())
 SchemaRegistry.register(ConversationMetaSchema())
 SchemaRegistry.register(PdfAnnotationSchema())
 SchemaRegistry.register(PdfReadingProgressSchema())
+SchemaRegistry.register(FollowedAuthorSchema())

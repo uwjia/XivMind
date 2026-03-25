@@ -8,6 +8,7 @@ _paper_embedding_repo = None
 _conversation_repo = None
 _memory_repo = None
 _pdf_annotation_repo = None
+_followed_author_repo = None
 
 
 def get_bookmark_repository():
@@ -157,8 +158,29 @@ def get_pdf_annotation_repository():
     return _pdf_annotation_repo
 
 
+def get_followed_author_repository():
+    global _followed_author_repo
+    if _followed_author_repo is None:
+        settings = get_settings()
+        db_type = settings.DATABASE_TYPE.lower()
+        
+        if db_type == "sqlite":
+            from app.db.sqlite.followed_author_repo import SQLiteFollowedAuthorRepository
+            _followed_author_repo = SQLiteFollowedAuthorRepository(settings.SQLITE_DB_PATH)
+        elif db_type == "milvus":
+            from app.db.milvus.followed_author_repo import MilvusFollowedAuthorRepository
+            _followed_author_repo = MilvusFollowedAuthorRepository()
+        elif db_type == "lancedb":
+            from app.db.lancedb.followed_author_repo import LanceDBFollowedAuthorRepository
+            _followed_author_repo = LanceDBFollowedAuthorRepository()
+        else:
+            raise ValueError(f"Unsupported database type: {db_type}")
+    
+    return _followed_author_repo
+
+
 def reset_repositories():
-    global _bookmark_repo, _download_repo, _paper_repo, _paper_embedding_repo, _conversation_repo, _memory_repo, _pdf_annotation_repo
+    global _bookmark_repo, _download_repo, _paper_repo, _paper_embedding_repo, _conversation_repo, _memory_repo, _pdf_annotation_repo, _followed_author_repo
     _bookmark_repo = None
     _download_repo = None
     _paper_repo = None
@@ -166,3 +188,4 @@ def reset_repositories():
     _conversation_repo = None
     _memory_repo = None
     _pdf_annotation_repo = None
+    _followed_author_repo = None

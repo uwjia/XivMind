@@ -1,6 +1,7 @@
 from app.db.base import PaperRepository
 from app.db.milvus.client import milvus_client, Collection
 from app.config import get_settings
+from app.core.utils import normalize_author_name
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 import json
@@ -559,15 +560,28 @@ class MilvusPaperRepository(PaperRepository):
         collection = self._get_papers_collection()
         collection.load()
         
-        expr = f'authors like "%\\"{author}\\"%"'
+        unique_authors = normalize_author_name(author)
         
-        results = collection.query(
-            expr=expr,
-            output_fields=["id", "title", "abstract", "authors", "primary_category",
-                          "categories", "published", "updated", "pdf_url", "abs_url",
-                          "comment", "journal_ref", "doi", "fetched_at"],
-            limit=settings.MILVUS_QUERY_BATCH_SIZE,
-        )
+        patterns = []
+        for a in unique_authors:
+            patterns.append(f'authors like "%\\"{a}\\"%"')
+        
+        results = []
+        for expr in patterns:
+            try:
+                query_results = collection.query(
+                    expr=expr,
+                    output_fields=["id", "title", "abstract", "authors", "primary_category",
+                                  "categories", "published", "updated", "pdf_url", "abs_url",
+                                  "comment", "journal_ref", "doi", "fetched_at"],
+                    limit=settings.MILVUS_QUERY_BATCH_SIZE,
+                )
+                
+                if query_results:
+                    results = query_results
+                    break
+            except Exception:
+                continue
         
         sorted_results = sorted(
             results,

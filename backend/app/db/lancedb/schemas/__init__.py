@@ -13,6 +13,8 @@ from .memorys import (
     MemoryConfigSchema,
 )
 from .conversation import ConversationMetaSchema
+from .pdf_annotations import PdfAnnotationSchema, PdfReadingProgressSchema
+from .followed_authors import FollowedAuthorSchema
 
 __all__ = [
     "BaseTableSchema",
@@ -28,4 +30,7 @@ __all__ = [
     "CoreMemorySchema",
     "MemoryConfigSchema",
     "ConversationMetaSchema",
+    "PdfAnnotationSchema",
+    "PdfReadingProgressSchema",
+    "FollowedAuthorSchema",
 ]
