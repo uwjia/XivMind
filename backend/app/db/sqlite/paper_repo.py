@@ -5,7 +5,7 @@ import sqlite3
 import os
 from contextlib import contextmanager
 from app.db.base import PaperRepository
-from app.core.utils import normalize_author_name
+from app.core.utils import normalize_author_name, safe_json_loads
 
 
 class SQLitePaperRepository(PaperRepository):
@@ -90,9 +90,9 @@ class SQLitePaperRepository(PaperRepository):
             "id": row["id"],
             "title": row["title"] or "",
             "abstract": row["abstract"] or "",
-            "authors": json.loads(row["authors"]) if row["authors"] else [],
+            "authors": safe_json_loads(row["authors"], []),
             "primary_category": row["primary_category"] or "",
-            "categories": json.loads(row["categories"]) if row["categories"] else [],
+            "categories": safe_json_loads(row["categories"], []),
             "published": row["published"] or "",
             "updated": row["updated"] or "",
             "pdf_url": row["pdf_url"] or "",

@@ -9,6 +9,7 @@ from lance.dataset import ColumnOrdering
 
 from app.db.base import BookmarkRepository
 from app.db.lancedb.client import lancedb_client
+from app.core.utils import safe_json_loads
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +38,13 @@ class LanceDBBookmarkRepository(BookmarkRepository):
             "paper_id": row.get("paper_id", ""),
             "arxiv_id": row.get("arxiv_id", ""),
             "title": row.get("title", ""),
-            "authors": json.loads(row.get("authors", "[]")) if row.get("authors") else [],
+            "authors": safe_json_loads(row.get("authors"), []),
             "abstract": row.get("abstract", ""),
             "comment": row.get("comment", ""),
             "journal_ref": row.get("journal_ref", ""),
             "doi": row.get("doi", ""),
             "primary_category": row.get("primary_category", ""),
-            "categories": json.loads(row.get("categories", "[]")) if row.get("categories") else [],
+            "categories": safe_json_loads(row.get("categories"), []),
             "pdf_url": row.get("pdf_url", ""),
             "abs_url": row.get("abs_url", ""),
             "published": row.get("published", ""),

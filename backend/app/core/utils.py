@@ -1,5 +1,27 @@
+import json
 import unicodedata
-from typing import List
+from typing import Any, List, Optional, TypeVar
+
+T = TypeVar('T')
+
+
+def safe_json_loads(value: Optional[str], default: Optional[T] = None) -> Any:
+    """
+    Safely parse JSON string with error handling.
+    
+    Args:
+        value: JSON string to parse
+        default: Default value to return on error (defaults to empty list)
+    
+    Returns:
+        Parsed JSON value or default on error
+    """
+    if not value:
+        return default if default is not None else []
+    try:
+        return json.loads(value)
+    except (json.JSONDecodeError, TypeError):
+        return default if default is not None else []
 
 
 def normalize_author_name(author: str) -> List[str]:

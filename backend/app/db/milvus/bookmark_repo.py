@@ -1,5 +1,6 @@
 from app.db.base import BookmarkRepository
 from app.db.milvus.client import milvus_client, Collection
+from app.core.utils import safe_json_loads
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 import uuid
@@ -28,13 +29,13 @@ class MilvusBookmarkRepository(BookmarkRepository):
             "paper_id": entity.get("paper_id", ""),
             "arxiv_id": entity.get("arxiv_id", ""),
             "title": entity.get("title", ""),
-            "authors": json.loads(entity.get("authors", "[]")),
+            "authors": safe_json_loads(entity.get("authors"), []),
             "abstract": entity.get("abstract", ""),
             "comment": entity.get("comment", ""),
             "journal_ref": entity.get("journal_ref", ""),
             "doi": entity.get("doi", ""),
             "primary_category": entity.get("primary_category", ""),
-            "categories": json.loads(entity.get("categories", "[]")),
+            "categories": safe_json_loads(entity.get("categories"), []),
             "pdf_url": entity.get("pdf_url", ""),
             "abs_url": entity.get("abs_url", ""),
             "published": entity.get("published", ""),

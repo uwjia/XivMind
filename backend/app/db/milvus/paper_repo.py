@@ -1,7 +1,7 @@
 from app.db.base import PaperRepository
 from app.db.milvus.client import milvus_client, Collection
 from app.config import get_settings
-from app.core.utils import normalize_author_name
+from app.core.utils import normalize_author_name, safe_json_loads
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 import json
@@ -42,9 +42,9 @@ class MilvusPaperRepository(PaperRepository):
             "id": entity.get("id", ""),
             "title": entity.get("title", ""),
             "abstract": entity.get("abstract", ""),
-            "authors": json.loads(entity.get("authors", "[]")),
+            "authors": safe_json_loads(entity.get("authors"), []),
             "primary_category": entity.get("primary_category", ""),
-            "categories": json.loads(entity.get("categories", "[]")),
+            "categories": safe_json_loads(entity.get("categories"), []),
             "published": entity.get("published", ""),
             "updated": entity.get("updated", ""),
             "pdf_url": entity.get("pdf_url", ""),

@@ -9,7 +9,7 @@ from lance.dataset import ColumnOrdering
 
 from app.db.base import PaperRepository
 from app.db.lancedb.client import lancedb_client
-from app.core.utils import normalize_author_name
+from app.core.utils import normalize_author_name, safe_json_loads
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +49,9 @@ class LanceDBPaperRepository(PaperRepository):
             "id": row.get("id", ""),
             "title": row.get("title", ""),
             "abstract": row.get("abstract", ""),
-            "authors": json.loads(row.get("authors", "[]")) if row.get("authors") else [],
+            "authors": safe_json_loads(row.get("authors"), []),
             "primary_category": row.get("primary_category", ""),
-            "categories": json.loads(row.get("categories", "[]")) if row.get("categories") else [],
+            "categories": safe_json_loads(row.get("categories"), []),
             "published": row.get("published", ""),
             "updated": row.get("updated", ""),
             "pdf_url": row.get("pdf_url", ""),

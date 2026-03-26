@@ -1,4 +1,5 @@
 from app.db.base import BookmarkRepository
+from app.core.utils import safe_json_loads
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 import uuid
@@ -76,13 +77,13 @@ class SQLiteBookmarkRepository(BookmarkRepository):
             "paper_id": row["paper_id"],
             "arxiv_id": row["arxiv_id"] or "",
             "title": row["title"] or "",
-            "authors": json.loads(row["authors"]) if row["authors"] else [],
+            "authors": safe_json_loads(row["authors"], []),
             "abstract": row["abstract"] or "",
             "comment": row["comment"] or "",
             "journal_ref": row["journal_ref"] or "",
             "doi": row["doi"] or "",
             "primary_category": row["primary_category"] or "",
-            "categories": json.loads(row["categories"]) if row["categories"] else [],
+            "categories": safe_json_loads(row["categories"], []),
             "pdf_url": row["pdf_url"] or "",
             "abs_url": row["abs_url"] or "",
             "published": row["published"] or "",
