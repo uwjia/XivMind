@@ -9,6 +9,30 @@ _conversation_repo = None
 _memory_repo = None
 _pdf_annotation_repo = None
 _followed_author_repo = None
+_author_rank_repo = None
+_paper_reader = None
+
+
+def get_paper_reader():
+    """Get paper reader instance based on database type."""
+    global _paper_reader
+    if _paper_reader is None:
+        settings = get_settings()
+        db_type = settings.DATABASE_TYPE.lower()
+        
+        if db_type == "sqlite":
+            from app.db.sqlite.paper_reader import SQLitePaperReader
+            _paper_reader = SQLitePaperReader()
+        elif db_type == "milvus":
+            from app.db.milvus.paper_reader import MilvusPaperReader
+            _paper_reader = MilvusPaperReader()
+        elif db_type == "lancedb":
+            from app.db.lancedb.paper_reader import LanceDBPaperReader
+            _paper_reader = LanceDBPaperReader()
+        else:
+            raise ValueError(f"Unsupported database type: {db_type}")
+    
+    return _paper_reader
 
 
 def get_bookmark_repository():
@@ -179,8 +203,29 @@ def get_followed_author_repository():
     return _followed_author_repo
 
 
+def get_author_rank_repository():
+    global _author_rank_repo
+    if _author_rank_repo is None:
+        settings = get_settings()
+        db_type = settings.DATABASE_TYPE.lower()
+        
+        if db_type == "sqlite":
+            from app.db.sqlite.author_rank_repo import SQLiteAuthorRankRepository
+            _author_rank_repo = SQLiteAuthorRankRepository()
+        elif db_type == "milvus":
+            from app.db.milvus.author_rank_repo import MilvusAuthorRankRepository
+            _author_rank_repo = MilvusAuthorRankRepository()
+        elif db_type == "lancedb":
+            from app.db.lancedb.author_rank_repo import LanceDBAuthorRankRepository
+            _author_rank_repo = LanceDBAuthorRankRepository()
+        else:
+            raise ValueError(f"Unsupported database type: {db_type}")
+    
+    return _author_rank_repo
+
+
 def reset_repositories():
-    global _bookmark_repo, _download_repo, _paper_repo, _paper_embedding_repo, _conversation_repo, _memory_repo, _pdf_annotation_repo, _followed_author_repo
+    global _bookmark_repo, _download_repo, _paper_repo, _paper_embedding_repo, _conversation_repo, _memory_repo, _pdf_annotation_repo, _followed_author_repo, _author_rank_repo, _paper_reader
     _bookmark_repo = None
     _download_repo = None
     _paper_repo = None
@@ -189,3 +234,5 @@ def reset_repositories():
     _memory_repo = None
     _pdf_annotation_repo = None
     _followed_author_repo = None
+    _author_rank_repo = None
+    _paper_reader = None

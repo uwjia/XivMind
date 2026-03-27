@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html
 from fastapi.staticfiles import StaticFiles
-from app.routers import arxiv, bookmarks, downloads, skills, llm, graph, subagents, memory, conversation, team, pdf_annotations, followed_authors
+from app.routers import arxiv, bookmarks, downloads, skills, llm, graph, subagents, memory, conversation, team, pdf_annotations, followed_authors, author_analysis
 from app.services import download_service
 from app.config import get_settings
 from contextlib import asynccontextmanager
@@ -93,6 +93,7 @@ app.include_router(conversation.router, prefix="/api")
 app.include_router(team.router, prefix="/api")
 app.include_router(pdf_annotations.router, prefix="/api")
 app.include_router(followed_authors.router, prefix="/api")
+app.include_router(author_analysis.router, prefix="/api")
 
 
 @app.get("/")

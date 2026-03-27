@@ -9,6 +9,7 @@ export type { DownloadTaskData, DownloadTask, DownloadTaskListResponse, SyncLoca
 
 import { bookmarkAPI } from '@/services/bookmark'
 import { downloadAPI } from '@/services/download'
+import { authorAnalysisAPI } from '@/services/authorAnalysis'
 
 export const apiService = {
   addBookmark: bookmarkAPI.add,
@@ -32,4 +33,11 @@ export const apiService = {
   syncLocalFiles: downloadAPI.syncLocalFiles,
   getMissingFiles: downloadAPI.getMissingFiles,
   getIncomplete: downloadAPI.getIncomplete,
+  
+  getTopAuthors: authorAnalysisAPI.getTopAuthors,
+  getAuthorDetail: authorAnalysisAPI.getAuthorDetail,
+  rebuildAnalysis: authorAnalysisAPI.rebuildAnalysis,
+  getAnalysisStatus: authorAnalysisAPI.getAnalysisStatus,
+  getAnalysisStatistics: authorAnalysisAPI.getStatistics,
+  clearAnalysisData: authorAnalysisAPI.clearAnalysisData,
 }

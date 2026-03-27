@@ -3,16 +3,24 @@ export interface Category {
   name: string
 }
 
+export const CATEGORY_IDS: string[] = [
+  'cs.AI', 'cs.LG', 'cs.CV', 'cs.AR', 'cs.CL', 'cs.CC', 'cs.CE', 'cs.CG', 'cs.CR', 'cs.CY',
+  'cs.DB', 'cs.DC', 'cs.DL', 'cs.DM', 'cs.DS', 'cs.ET', 'cs.FL', 'cs.GL', 'cs.GR', 'cs.GT',
+  'cs.HC', 'cs.IR', 'cs.IT', 'cs.LO', 'cs.MA', 'cs.MM', 'cs.MS', 'cs.NA', 'cs.NE', 'cs.NI',
+  'cs.OH', 'cs.OS', 'cs.PL', 'cs.PF', 'cs.RO', 'cs.SC', 'cs.SD', 'cs.SE', 'cs.SI', 'cs.SY',
+]
+
 export const categories: Category[] = [
   { id: 'cs*', name: 'All Computer Science' },
   { id: 'cs.AI', name: 'Artificial Intelligence' },
+  { id: 'cs.LG', name: 'Machine Learning' },
+  { id: 'cs.CV', name: 'Computer Vision and Pattern Recognition' },
   { id: 'cs.AR', name: 'Hardware Architecture' },
   { id: 'cs.CL', name: 'Computation and Language' },
   { id: 'cs.CC', name: 'Computational Complexity' },
   { id: 'cs.CE', name: 'Computational Engineering, Finance, and Science' },
   { id: 'cs.CG', name: 'Computational Geometry' },
   { id: 'cs.GT', name: 'Computer Science and Game Theory' },
-  { id: 'cs.CV', name: 'Computer Vision and Pattern Recognition' },
   { id: 'cs.CY', name: 'Computers and Society' },
   { id: 'cs.CR', name: 'Cryptography and Security' },
   { id: 'cs.DS', name: 'Data Structures and Algorithms' },
@@ -28,7 +36,6 @@ export const categories: Category[] = [
   { id: 'cs.IR', name: 'Information Retrieval' },
   { id: 'cs.IT', name: 'Information Theory' },
   { id: 'cs.LO', name: 'Logic in Computer Science' },
-  { id: 'cs.LG', name: 'Machine Learning' },
   { id: 'cs.MA', name: 'Multiagent Systems' },
   { id: 'cs.MM', name: 'Multimedia' },
   { id: 'cs.MS', name: 'Mathematical Software' },
@@ -43,7 +50,7 @@ export const categories: Category[] = [
   { id: 'cs.SD', name: 'Sound and Music Computing' },
   { id: 'cs.SE', name: 'Software Engineering' },
   { id: 'cs.SI', name: 'Social and Information Networks' },
-  { id: 'cs.SY', name: 'Systems and Control' }
+  { id: 'cs.SY', name: 'Systems and Control' },
 ]
 
 export const categoryColors: Record<string, string> = {
@@ -86,30 +93,31 @@ export const categoryColors: Record<string, string> = {
   'cs.MA': '#B2EB2B',
   'cs.NA': '#FF8A65',
   'cs.SI': '#BA68C8',
-  'cs.SY': '#4DD0E1'
+  'cs.SY': '#4DD0E1',
 }
 
-export const getCategoryColor = (category: string): string => {
+export const getCategoryColor = (category: string | null): string => {
+  if (!category) return '#9E9E9E'
   return categoryColors[category] || '#9E9E9E'
 }
 
 export const getTagStyle = (category: string): Record<string, string> => {
   const color = getCategoryColor(category)
-  return {
-    backgroundColor: color + '15',
-    color: color,
-    border: `1px solid ${color}30`
-  }
+    return {
+        backgroundColor: color + '15',
+        color: color,
+        border: `1px solid ${color}30`
+    }
 }
 
 export const getCategoryFullName = (category: string): string => {
-  if (!category) return 'Unknown Category'
-  const categoryData = categories.find(cat => cat.id === category)
-  return categoryData?.name || category
+    if (!category) return 'Unknown Category'
+    const categoryData = categories.find(cat => cat.id === category)
+    return categoryData?.name || category
 }
 
 export const getCategoryShortName = (category: string): string => {
-  if (!category) return 'CS'
-  const parts = category.split('.')
-  return parts[parts.length - 1]?.toUpperCase() || category.toUpperCase()
+    if (!category) return 'CS'
+    const parts = category.split('.')
+    return parts[parts.length - 1]?.toUpperCase() || category.toUpperCase()
 }

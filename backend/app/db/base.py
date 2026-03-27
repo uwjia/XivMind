@@ -1,5 +1,40 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, Iterator, List, Optional, Tuple, Any
+
+
+class PaperReader(ABC):
+    """Abstract paper reader for batch reading papers from database."""
+
+    @abstractmethod
+    def get_total_count(self) -> int:
+        """Get total paper count."""
+        pass
+
+    @abstractmethod
+    def iter_papers_batch(
+        self,
+        batch_size: int = 10000,
+        columns: Optional[List[str]] = None,
+    ) -> Iterator[List[Dict[str, Any]]]:
+        """
+        Stream paper data in batches.
+        
+        Args:
+            batch_size: Number of papers per batch
+            columns: List of columns to retrieve, None for default columns
+            
+        Yields:
+            List of paper dictionaries
+        """
+        pass
+
+    @abstractmethod
+    def iter_all_papers(
+        self,
+        columns: Optional[List[str]] = None,
+    ) -> Iterator[Dict[str, Any]]:
+        """Iterate all papers one by one."""
+        pass
 
 
 class BaseRepository(ABC):
@@ -495,4 +530,54 @@ class FollowedAuthorRepository(BaseRepository):
     @abstractmethod
     def update_paper_info(self, author_name: str, paper_count: int, latest_published: str) -> bool:
         """Update paper count and latest published date."""
+        pass
+
+
+class AuthorRankRepository(ABC):
+    """Abstract repository for author ranking data."""
+
+    @abstractmethod
+    def save_rankings(
+        self,
+        authors: Dict[str, Any],
+        metrics: Dict[str, Dict[str, float]],
+    ) -> int:
+        """Save author ranking data. Returns count of saved records."""
+        pass
+
+    @abstractmethod
+    def get_top_authors(
+        self,
+        metric: str = "pagerank",
+        limit: int = 100,
+        offset: int = 0,
+        category: Optional[str] = None,
+        name_search: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get top-ranked authors with pagination and optional name search."""
+        pass
+
+    @abstractmethod
+    def get_author_by_id(self, author_id: str) -> Optional[Dict[str, Any]]:
+        """Get author by ID."""
+        pass
+
+    @abstractmethod
+    def count_authors(self, category: Optional[str] = None, name_search: Optional[str] = None) -> int:
+        """Get total author count, optionally filtered by category and/or name."""
+        pass
+
+    @abstractmethod
+    def clear_all(self) -> None:
+        """Clear all ranking data."""
+        pass
+
+    @abstractmethod
+    def get_disambiguation_stats(self) -> Dict[str, Any]:
+        """Get disambiguation statistics."""
+        pass
+
+    @abstractmethod
+    def save_disambiguation_stats(self, stats: Dict[str, Any]) -> None:
+        """Save disambiguation statistics."""
         pass

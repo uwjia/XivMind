@@ -45,7 +45,7 @@
               <circle cx="12" cy="7" r="4"/>
             </svg>
           </span>
-          <span class="picker-label">Authors</span>
+          <span class="picker-label">Followed</span>
         </button>
       </div>
 
@@ -147,6 +147,23 @@
             </svg>
           </span>
           <span class="picker-label">Memory</span>
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        <button
+          class="picker-trigger-btn"
+          @click="goToAuthorRanking"
+          :title="isCollapsed ? 'Author Ranking' : ''"
+        >
+          <span class="picker-trigger-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+          </span>
+          <span class="picker-label">Ranking</span>
         </button>
       </div>
 
@@ -289,6 +306,13 @@ const goToFollowedAuthors = () => {
 
 const goToDownloads = () => {
   router.push('/downloads')
+  if (isMobileOpen.value) {
+    sidebarStore.closeMobileSidebar()
+  }
+}
+
+const goToAuthorRanking = () => {
+  router.push('/author-ranking')
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }
