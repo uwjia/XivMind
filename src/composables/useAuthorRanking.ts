@@ -1,8 +1,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { apiService } from '@/services/api'
-import { CATEGORY_IDS, categoryColors, getCategoryColor } from '@/utils/categoryColors'
-import type { AuthorRank, AnalysisStatus, AuthorMetricType } from '@/types/authorAnalysis'
+import { CATEGORY_IDS, getCategoryColor } from '@/utils/categoryColors'
+import type { AuthorRank, AnalysisStatus, AuthorMetricType, PageRankAlgorithm } from '@/types/authorAnalysis'
 
 export function useAuthorRanking() {
   const router = useRouter()
@@ -23,6 +23,7 @@ export function useAuthorRanking() {
     total: 0,
     result: null,
     error: null,
+    algorithm: null,
   })
 
   const showRebuildOptions = ref(false)
@@ -33,6 +34,7 @@ export function useAuthorRanking() {
     alpha: 0.85,
     useDisambiguation: true,
     similarityThreshold: 0.1,
+    algorithm: 'networkx' as PageRankAlgorithm,
   })
 
   const jumpPageInput = ref<number | null>(null)
@@ -85,7 +87,8 @@ export function useAuthorRanking() {
         rebuildOptions.value.minPapers,
         rebuildOptions.value.alpha,
         rebuildOptions.value.useDisambiguation,
-        rebuildOptions.value.similarityThreshold
+        rebuildOptions.value.similarityThreshold,
+        rebuildOptions.value.algorithm
       )
       showRebuildOptions.value = false
       await fetchAnalysisStatus()

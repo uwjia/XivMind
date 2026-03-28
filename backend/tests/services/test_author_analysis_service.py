@@ -5,13 +5,13 @@ import json
 
 from app.services.author_analysis_service import (
     CollaborationNetworkBuilder,
-    PageRankCalculator,
     AuthorRankService,
     AuthorCluster,
     AuthorDisambiguator,
     AuthorStats,
     CollaborationGraph,
 )
+from app.services.pagerank_calculator import NetworkXPageRankCalculator
 
 
 class TestAuthorDisambiguator:
@@ -260,20 +260,20 @@ class TestPageRankCalculator:
         return CollaborationGraph(authors=authors, edges=edges, author_papers=author_papers)
 
     def test_build_networkx_graph(self, sample_graph):
-        calculator = PageRankCalculator(sample_graph)
+        calculator = NetworkXPageRankCalculator(sample_graph)
         
         assert calculator.nx_graph.number_of_nodes() == 3
         assert calculator.nx_graph.number_of_edges() == 3
 
     def test_calculate_pagerank(self, sample_graph):
-        calculator = PageRankCalculator(sample_graph)
+        calculator = NetworkXPageRankCalculator(sample_graph)
         pagerank = calculator.calculate_pagerank(alpha=0.85)
         
         assert len(pagerank) == 3
         assert all(0 <= v <= 1 for v in pagerank.values())
 
     def test_calculate_all_metrics(self, sample_graph):
-        calculator = PageRankCalculator(sample_graph)
+        calculator = NetworkXPageRankCalculator(sample_graph)
         
         with patch('networkx.betweenness_centrality') as mock_betweenness:
             mock_betweenness.return_value = {
@@ -292,7 +292,7 @@ class TestPageRankCalculator:
         assert len(metrics["degree"]) == 3
 
     def test_get_top_authors(self, sample_graph):
-        calculator = PageRankCalculator(sample_graph)
+        calculator = NetworkXPageRankCalculator(sample_graph)
         pagerank = calculator.calculate_pagerank()
         
         top_authors = calculator.get_top_authors(pagerank, top_n=2)

@@ -122,6 +122,8 @@ class Settings(BaseSettings):
     SUBAGENTS_RELOAD_ON_START: bool = True
     SUBAGENTS_MAX_TURNS: int = 10
     SUBAGENTS_DEFAULT_MODEL: str = "glm-4"
+    
+    PAGERANK_BETWEENNESS_THRESHOLD: int = 50000
 
     class Config:
         env_file = ".env"

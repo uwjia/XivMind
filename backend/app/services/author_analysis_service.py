@@ -15,6 +15,7 @@ from app.models.author_analysis import (
     AuthorStats,
     CollaborationGraph,
 )
+from app.services.pagerank_calculator import get_pagerank_calculator
 
 logger = logging.getLogger(__name__)
 
@@ -401,109 +402,24 @@ class CollaborationNetworkBuilder:
                 self.authors[a2].collaborator_count += 1
 
 
-class PageRankCalculator:
-    """PageRank calculator"""
-    
-    def __init__(self, graph: CollaborationGraph):
-        self.graph = graph
-        self.nx_graph = self._build_networkx_graph()
-    
-    def _build_networkx_graph(self) -> nx.Graph:
-        """Build NetworkX graph"""
-        G = nx.Graph()
-        
-        for author_id, stats in self.graph.authors.items():
-            primary_cat = None
-            if stats.categories:
-                primary_cat = max(stats.categories.items(), key=lambda x: x[1])[0]
-            
-            G.add_node(
-                author_id,
-                name=stats.display_name,
-                paper_count=stats.paper_count,
-                primary_category=primary_cat,
-                first_year=stats.first_paper_year,
-                latest_year=stats.latest_paper_year,
-                collaborator_count=stats.collaborator_count,
-            )
-        
-        for (a1, a2), weight in self.graph.edges.items():
-            G.add_edge(a1, a2, weight=weight)
-        
-        return G
-    
-    def calculate_pagerank(
-        self,
-        alpha: float = 0.85,
-        max_iter: int = 100,
-        tol: float = 1e-6,
-    ) -> Dict[str, float]:
-        """Calculate PageRank values"""
-        logger.info(f"Calculating PageRank (alpha={alpha}, max_iter={max_iter})...")
-        
-        pagerank = nx.pagerank(
-            self.nx_graph,
-            alpha=alpha,
-            max_iter=max_iter,
-            tol=tol,
-            weight='weight',
-        )
-        
-        logger.info(f"PageRank calculation complete, {len(pagerank)} nodes")
-        return pagerank
-    
-    def calculate_all_metrics(self, alpha: float = 0.85) -> Dict[str, Dict[str, float]]:
-        """Calculate all network metrics"""
-        logger.info("Calculating network metrics...")
-        
-        metrics: Dict[str, Dict[str, float]] = {
-            'pagerank': self.calculate_pagerank(alpha=alpha),
-            'degree': dict(nx.degree_centrality(self.nx_graph)),
-            'clustering': dict(nx.clustering(self.nx_graph)),
-        }
-        
-        logger.info("Calculating betweenness centrality (sampling)...")
-        metrics['betweenness'] = dict(nx.betweenness_centrality(self.nx_graph, k=1000))
-        
-        logger.info("Network metrics calculation complete")
-        return metrics
-    
-    def get_top_authors(
-        self,
-        pagerank: Dict[str, float],
-        top_n: int = 100,
-    ) -> List[Dict[str, Any]]:
-        """Get authors with highest PageRank"""
-        sorted_authors = sorted(
-            pagerank.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:top_n]
-        
-        result = []
-        for rank, (author_id, score) in enumerate(sorted_authors, 1):
-            node_data = self.nx_graph.nodes.get(author_id, {})
-            result.append({
-                'rank': rank,
-                'author_id': author_id,
-                'name': node_data.get('name', author_id),
-                'pagerank': score,
-                'paper_count': node_data.get('paper_count', 0),
-                'primary_category': node_data.get('primary_category'),
-                'collaborator_count': node_data.get('collaborator_count', 0),
-            })
-        
-        return result
-
-
 def run_pagerank_analysis(
     min_papers: int = 3,
     alpha: float = 0.85,
     use_disambiguation: bool = True,
     similarity_threshold: float = 0.1,
+    algorithm: str = "networkx",
     progress_callback: Optional[Callable[[int, int], None]] = None,
 ) -> AuthorAnalysisResult:
-    """Run complete PageRank analysis with optional author disambiguation"""
+    """Run complete PageRank analysis with optional author disambiguation
+    
+    Args:
+        min_papers: Minimum paper count threshold
+        alpha: PageRank damping factor
+        use_disambiguation: Enable author name disambiguation
+        similarity_threshold: Jaccard similarity threshold for clustering
+        algorithm: PageRank algorithm to use ("networkx" or "igraph")
+        progress_callback: Callback function for progress updates
+    """
     
     logger.info("=" * 60)
     logger.info("Step 1: Initialize paper reader")
@@ -551,9 +467,9 @@ def run_pagerank_analysis(
         )
     
     logger.info("\n" + "=" * 60)
-    logger.info("Step 3: Calculate PageRank and network metrics")
+    logger.info(f"Step 3: Calculate PageRank and network metrics (algorithm: {algorithm})")
     logger.info("=" * 60)
-    calculator = PageRankCalculator(graph)
+    calculator = get_pagerank_calculator(graph, algorithm=algorithm)
     metrics = calculator.calculate_all_metrics(alpha=alpha)
     
     logger.info("\n" + "=" * 60)

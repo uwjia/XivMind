@@ -98,6 +98,13 @@
           <label>Similarity Threshold:</label>
           <input type="number" v-model.number="rebuildOptions.similarityThreshold" min="0" max="1" step="0.05" />
         </div>
+        <div class="option-group">
+          <label>Algorithm:</label>
+          <select v-model="rebuildOptions.algorithm">
+            <option value="networkx">NetworkX</option>
+            <option value="igraph">IGraph</option>
+          </select>
+        </div>
         <div class="modal-actions">
           <button class="cancel-btn" @click="showRebuildOptions = false">Cancel</button>
           <button class="start-analysis-btn" @click="confirmRebuild" :disabled="rebuilding">
@@ -371,12 +378,19 @@ const {
 
 .metric-selector select,
 .category-filter select {
-  padding: 8px 12px;
+  padding: 8px 32px 8px 12px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
   background: var(--bg-primary);
   color: var(--text-primary);
   font-size: 0.9rem;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
 }
 
 .refresh-btn {
@@ -468,6 +482,28 @@ const {
 .option-group input[type="checkbox"] {
   width: 18px;
   height: 18px;
+}
+
+.option-group select {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.option-group select:focus {
+  outline: none;
+  border-color: var(--accent-color);
 }
 
 .modal-actions {

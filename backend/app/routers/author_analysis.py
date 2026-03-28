@@ -18,6 +18,7 @@ _analysis_status = {
     "total": 0,
     "result": None,
     "error": None,
+    "algorithm": None,
 }
 
 
@@ -33,6 +34,7 @@ def _run_analysis_task(
     alpha: float = 0.85, 
     use_disambiguation: bool = True,
     similarity_threshold: float = 0.1,
+    algorithm: str = "networkx",
 ):
     """Background analysis task"""
     global _analysis_status
@@ -41,6 +43,7 @@ def _run_analysis_task(
     _analysis_status["total"] = 0
     _analysis_status["result"] = None
     _analysis_status["error"] = None
+    _analysis_status["algorithm"] = algorithm
     
     try:
         result = run_pagerank_analysis(
@@ -48,6 +51,7 @@ def _run_analysis_task(
             alpha=alpha,
             use_disambiguation=use_disambiguation,
             similarity_threshold=similarity_threshold,
+            algorithm=algorithm,
             progress_callback=_progress_callback,
         )
         _analysis_status["result"] = result.to_dict()
@@ -112,6 +116,7 @@ async def rebuild_analysis(
     alpha: float = Query(0.85, ge=0.1, le=0.99, description="PageRank damping factor"),
     use_disambiguation: bool = Query(True, description="Enable author disambiguation"),
     similarity_threshold: float = Query(0.1, ge=0.0, le=1.0, description="Collaborator similarity threshold for disambiguation"),
+    algorithm: str = Query("networkx", regex="^(networkx|igraph)$", description="PageRank algorithm (networkx or igraph)"),
 ) -> Dict[str, Any]:
     """
     Rebuild analysis data in background
@@ -123,6 +128,7 @@ async def rebuild_analysis(
     - **alpha**: PageRank damping factor (0.1-0.99)
     - **use_disambiguation**: Enable author name disambiguation to separate different authors with the same name
     - **similarity_threshold**: Jaccard similarity threshold for clustering papers (0.0-1.0)
+    - **algorithm**: PageRank algorithm to use (networkx or igraph, igraph is faster for large graphs)
     """
     global _analysis_status
     
@@ -140,12 +146,14 @@ async def rebuild_analysis(
         alpha=alpha,
         use_disambiguation=use_disambiguation,
         similarity_threshold=similarity_threshold,
+        algorithm=algorithm,
     )
     
     return {
         "status": "started",
         "message": "Analysis task started",
         "disambiguation_enabled": use_disambiguation,
+        "algorithm": algorithm,
     }
 
 
@@ -164,6 +172,7 @@ async def get_analysis_status() -> Dict[str, Any]:
         "total": _analysis_status["total"],
         "result": _analysis_status["result"],
         "error": _analysis_status["error"],
+        "algorithm": _analysis_status["algorithm"],
     }
 
 

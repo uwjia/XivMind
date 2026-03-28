@@ -1,4 +1,4 @@
-import type { AuthorRank, AnalysisStatus, AuthorAnalysisStatistics, AuthorMetricType } from '@/types/authorAnalysis'
+import type { AuthorRank, AnalysisStatus, AuthorAnalysisStatistics, AuthorMetricType, PageRankAlgorithm } from '@/types/authorAnalysis'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
@@ -56,12 +56,14 @@ export const authorAnalysisAPI = {
     alpha: number = 0.85,
     useDisambiguation: boolean = true,
     similarityThreshold: number = 0.1,
-  ): Promise<{ status: string; message: string; progress?: number; total?: number; disambiguation_enabled?: boolean }> => {
+    algorithm: PageRankAlgorithm = 'networkx',
+  ): Promise<{ status: string; message: string; progress?: number; total?: number; disambiguation_enabled?: boolean; algorithm?: string }> => {
     const params = new URLSearchParams({
       min_papers: minPapers.toString(),
       alpha: alpha.toString(),
       use_disambiguation: useDisambiguation.toString(),
       similarity_threshold: similarityThreshold.toString(),
+      algorithm: algorithm,
     })
     return request(`/api/author-analysis/rebuild?${params}`, {
       method: 'POST',

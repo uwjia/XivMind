@@ -29,6 +29,7 @@ export interface AnalysisStatus {
   total: number
   result: AuthorAnalysisResult | null
   error: string | null
+  algorithm: string | null
 }
 
 export interface AuthorAnalysisStatistics {
@@ -42,3 +43,5 @@ export type AuthorMetricType =
   | 'betweenness_centrality' 
   | 'paper_count' 
   | 'clustering_coeff'
+
+export type PageRankAlgorithm = 'networkx' | 'igraph'
