@@ -4,12 +4,12 @@
       <div class="paper-title-section">
         <h3 class="paper-title" @click="goToDetail">{{ paper.title || 'Untitled' }}</h3>
         <span class="paper-primary-category" :style="categoryStyle">{{ paper.primaryCategory || paper.category || 'CS' }}</span>
-        <span class="paper-index" :style="indexStyle">{{ index || 'N/A' }}</span>
+        <span class="paper-index">{{ index || 'N/A' }}</span>
       </div>
       <p class="paper-authors">
         <svg class="author-icon" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="7" r="4" fill="#0b8db4ff"/>
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="#0b8db4ff" stroke-width="2"/>
+          <circle cx="12" cy="7" r="4" fill="var(--icon-author)"/>
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="var(--icon-author)" stroke-width="2"/>
         </svg>
         <span class="author-list">
           <template v-for="(author, idx) in paper.authors" :key="idx">
@@ -24,12 +24,12 @@
       <div class="paper-abstract">
         <p>
           <svg class="abstract-icon" viewBox="0 0 24 24" fill="none">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#2196F3" stroke-width="2"/>
-            <path d="M2 6h2" stroke="#2196F3" stroke-width="2"/>
-            <path d="M2 10h2" stroke="#2196F3" stroke-width="2"/>
-            <path d="M2 14h2" stroke="#2196F3" stroke-width="2"/>
-            <path d="M2 18h2" stroke="#2196F3" stroke-width="2"/>
-            <text x="8" y="16" font-size="6" fill="#2196F3" font-weight="bold">ABS</text>
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="var(--icon-abstract)" stroke-width="2"/>
+            <path d="M2 6h2" stroke="var(--icon-abstract)" stroke-width="2"/>
+            <path d="M2 10h2" stroke="var(--icon-abstract)" stroke-width="2"/>
+            <path d="M2 14h2" stroke="var(--icon-abstract)" stroke-width="2"/>
+            <path d="M2 18h2" stroke="var(--icon-abstract)" stroke-width="2"/>
+            <text x="8" y="16" font-size="6" fill="var(--icon-abstract)" font-weight="bold">ABS</text>
           </svg>
           <span v-html="renderedAbstract"></span>
         </p>
@@ -37,11 +37,11 @@
       <div v-if="paper.comment" class="paper-comments">
         <p>
           <svg class="comments-icon" viewBox="0 0 24 24" fill="none">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="#FF9800" stroke-width="2"/>
-            <path d="M8 6h.01" stroke="#FF9800" stroke-width="2"/>
-            <path d="M12 6h.01" stroke="#FF9800" stroke-width="2"/>
-            <path d="M16 6h.01" stroke="#FF9800" stroke-width="2"/>
-            <text x="8" y="16" font-size="6" fill="#FF9800" font-weight="bold">COM</text>
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="var(--icon-comments)" stroke-width="2"/>
+            <path d="M8 6h.01" stroke="var(--icon-comments)" stroke-width="2"/>
+            <path d="M12 6h.01" stroke="var(--icon-comments)" stroke-width="2"/>
+            <path d="M16 6h.01" stroke="var(--icon-comments)" stroke-width="2"/>
+            <text x="8" y="16" font-size="6" fill="var(--icon-comments)" font-weight="bold">COM</text>
           </svg>
           <span v-html="renderedComments"></span>
         </p>
@@ -49,9 +49,9 @@
       <div v-if="paper.journalRef" class="paper-journal-ref">
         <p>
           <svg class="journal-icon" viewBox="0 0 24 24" fill="none">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="#9C27B0" stroke-width="2"/>
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="#9C27B0" stroke-width="2"/>
-            <text x="7" y="14" font-size="5" fill="#9C27B0" font-weight="bold">JOU</text>
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="var(--icon-journal)" stroke-width="2"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="var(--icon-journal)" stroke-width="2"/>
+            <text x="7" y="14" font-size="5" fill="var(--icon-journal)" font-weight="bold">JOU</text>
           </svg>
           <span>{{ paper.journalRef }}</span>
         </p>
@@ -59,10 +59,10 @@
       <div class="paper-footer">
         <div class="paper-tags">
           <div class="paper-id-section">
-            <span class="paper-id" :style="idStyle">{{ paper.id || 'N/A' }}</span>
+            <span class="paper-id">{{ paper.id || 'N/A' }}</span>
           </div>
           <div class="paper-categories-section">
-            <span v-for="cat in (paper.categories || []).slice(0, 3)" :key="cat" class="tag" :style="getTagStyle(cat)" :title="getCategoryFullName(cat)">{{ getCategoryShortName(cat) }}</span>
+            <span v-for="cat in (paper.categories || []).slice(0, 3)" :key="cat" class="tag" :style="tagStyle(cat)" :title="getCategoryFullName(cat)">{{ getCategoryShortName(cat) }}</span>
           </div>
           <div class="paper-published-section">
             <div class="paper-published">v1 {{ formatDate(paper.published) }}</div>
@@ -72,46 +72,46 @@
         <div class="paper-stats">
           <span v-if="paper.doi" class="stat-link" @click.stop="openDoiUrl" :title="'Open DOI'">
             <svg viewBox="0 0 24 24" fill="none">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-3 3a5 5 0 0 0 .54 7.54z" stroke="#9C27B0" stroke-width="2"/>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l3-3a5 5 0 0 0-.54-7.54z" stroke="#9C27B0" stroke-width="2"/>
-              <text x="8" y="15" font-size="5" fill="#9C27B0" font-weight="bold">DOI</text>
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-3 3a5 5 0 0 0 .54 7.54z" stroke="var(--icon-doi)" stroke-width="2"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l3-3a5 5 0 0 0-.54-7.54z" stroke="var(--icon-doi)" stroke-width="2"/>
+              <text x="8" y="15" font-size="5" fill="var(--icon-doi)" font-weight="bold">DOI</text>
             </svg>
           </span>
           <span class="stat-link" @click.stop="openAbsUrl" :title="'Open arXiv page'">
             <svg viewBox="0 0 24 24" fill="none">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-3 3a5 5 0 0 0 .54 7.54z" stroke="#4CAF50" stroke-width="2"/>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l3-3a5 5 0 0 0-.54-7.54z" stroke="#4CAF50" stroke-width="2"/>
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-3 3a5 5 0 0 0 .54 7.54z" stroke="var(--icon-link)" stroke-width="2"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l3-3a5 5 0 0 0-.54-7.54z" stroke="var(--icon-link)" stroke-width="2"/>
             </svg>
           </span>
           <span class="stat-link" @click.stop="openPdfUrl" :title="'Open PDF'">
             <svg viewBox="0 0 24 24" fill="none">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#F44336" stroke-width="2"/>
-              <path d="M2 6h2" stroke="#F44336" stroke-width="2"/>
-              <path d="M2 10h2" stroke="#F44336" stroke-width="2"/>
-              <path d="M2 14h2" stroke="#F44336" stroke-width="2"/>
-              <path d="M2 18h2" stroke="#F44336" stroke-width="2"/>
-              <text x="8" y="16" font-size="6" fill="#F44336" font-weight="bold">PDF</text>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="var(--icon-pdf)" stroke-width="2"/>
+              <path d="M2 6h2" stroke="var(--icon-pdf)" stroke-width="2"/>
+              <path d="M2 10h2" stroke="var(--icon-pdf)" stroke-width="2"/>
+              <path d="M2 14h2" stroke="var(--icon-pdf)" stroke-width="2"/>
+              <path d="M2 18h2" stroke="var(--icon-pdf)" stroke-width="2"/>
+              <text x="8" y="16" font-size="6" fill="var(--icon-pdf)" font-weight="bold">PDF</text>
             </svg>
           </span>
           <span class="stat-link download-btn" @click.stop="downloadPdf" :title="downloadTitle" :class="downloadStatus">
             <svg v-if="downloadStatus === 'downloading'" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="#2196F3" stroke-width="2" fill="none"/>
-              <circle cx="12" cy="12" r="10" stroke="#64B5F6" stroke-width="2" fill="none" stroke-dasharray="62.83" :stroke-dashoffset="62.83 - (62.83 * downloadProgress / 100)" style="transform: rotate(-90deg); transform-origin: center;"/>
-              <text x="12" y="16" font-size="8" fill="#2196F3" text-anchor="middle" font-weight="bold">{{ downloadProgress }}%</text>
+              <circle cx="12" cy="12" r="10" stroke="var(--icon-downloads)" stroke-width="2" fill="none"/>
+              <circle cx="12" cy="12" r="10" stroke="var(--icon-downloads-light)" stroke-width="2" fill="none" stroke-dasharray="62.83" :stroke-dashoffset="62.83 - (62.83 * downloadProgress / 100)" style="transform: rotate(-90deg); transform-origin: center;"/>
+              <text x="12" y="16" font-size="8" fill="var(--icon-downloads)" text-anchor="middle" font-weight="bold">{{ downloadProgress }}%</text>
             </svg>
             <svg v-else-if="downloadStatus === 'completed' || isDownloaded" viewBox="0 0 24 24" fill="none">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <polyline points="22 4 12 14.01 9 11.01" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="var(--icon-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="22 4 12 14.01 9 11.01" stroke="var(--icon-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             <svg v-else-if="downloadStatus === 'failed'" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="#F44336" stroke-width="2"/>
-              <line x1="15" y1="9" x2="9" y2="15" stroke="#F44336" stroke-width="2" stroke-linecap="round"/>
-              <line x1="9" y1="9" x2="15" y2="15" stroke="#F44336" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="12" cy="12" r="10" stroke="var(--icon-error)" stroke-width="2"/>
+              <line x1="15" y1="9" x2="9" y2="15" stroke="var(--icon-error)" stroke-width="2" stroke-linecap="round"/>
+              <line x1="9" y1="9" x2="15" y2="15" stroke="var(--icon-error)" stroke-width="2" stroke-linecap="round"/>
             </svg>
             <svg v-else viewBox="0 0 24 24" fill="none">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" :stroke="downloadStatus === 'pending' ? '#FF9800' : '#2196F3'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <polyline points="7,10 12,15 17,10" :stroke="downloadStatus === 'pending' ? '#FF9800' : '#2196F3'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <line x1="12" y1="15" x2="12" y2="3" :stroke="downloadStatus === 'pending' ? '#FF9800' : '#2196F3'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="var(--icon-downloads)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="7,10 12,15 17,10" stroke="var(--icon-downloads)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="12" y1="15" x2="12" y2="3" stroke="var(--icon-downloads)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </span>
           <span 
@@ -120,7 +120,7 @@
             @click.stop="openReader" 
             title="Read PDF"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-read)">
               <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" stroke-width="2"/>
               <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" stroke-width="2"/>
             </svg>
@@ -128,11 +128,11 @@
           <span class="stat-link bookmark-btn" @click.stop="toggleBookmark" :title="isBookmarked ? 'Remove bookmark' : 'Add bookmark'" :class="{ bookmarked: isBookmarked }">
             <svg viewBox="0 0 24 24" fill="none">
               <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" 
-                    :stroke="isBookmarked ? '#FFD700' : '#FF9800'" 
+                    stroke="var(--icon-bookmarks)" 
                     stroke-width="2" 
                     stroke-linecap="round" 
                     stroke-linejoin="round"
-                    :fill="isBookmarked ? '#FFD700' : 'none'"/>
+                    :fill="isBookmarked ? 'var(--icon-bookmarks-active)' : 'none'"/>
             </svg>
           </span>
         </div>
@@ -151,6 +151,7 @@ import { getCategoryColor, getTagStyle, categories } from '@/utils/categoryColor
 import { useBookmarkStore } from '@/stores/bookmark-store'
 import { useDownloadStore } from '@/stores/download-store'
 import { useToastStore } from '@/stores/toast-store'
+import { useThemeStore } from '@/stores/theme-store'
 import { useDownloadHandler } from '@/composables/useDownloadHandler'
 import type { Paper } from '@/types'
 
@@ -164,6 +165,7 @@ const router = useRouter()
 const bookmarkStore = useBookmarkStore()
 const downloadStore = useDownloadStore()
 const toastStore = useToastStore()
+const themeStore = useThemeStore()
 const { getStatus, getProgress, handleDownload, getStatusTitle } = useDownloadHandler()
 
 const isBookmarked = computed(() => bookmarkStore.isBookmarked(props.paper?.id || ''))
@@ -195,16 +197,6 @@ const renderedComments = computed(() => {
   return md.render(props.paper.comment)
 })
 
-const idStyle = computed(() => {
-  // const color = getIdColor(props.paper?.id)
-  const color = '#00BCD4'
-  return {
-    backgroundColor: color + '15',
-    color: color,
-    border: `1px solid ${color}30`
-  }
-})
-
 const cardStyle = computed(() => {
   return {
     transformStyle: 'preserve-3d' as const,
@@ -212,7 +204,16 @@ const cardStyle = computed(() => {
   }
 })
 
+const isMinimal = computed(() => themeStore.iconStyle === 'minimal')
+
 const categoryStyle = computed(() => {
+  if (isMinimal.value) {
+    return {
+      backgroundColor: 'var(--tag-primary-category-bg)',
+      color: 'var(--tag-primary-category)',
+      border: '1px solid var(--tag-primary-category-border)'
+    }
+  }
   const color = getCategoryColor(props.paper?.primaryCategory || props.paper?.category || 'cs.AI')
   return {
     backgroundColor: color + '20',
@@ -221,13 +222,8 @@ const categoryStyle = computed(() => {
   }
 })
 
-const indexStyle = computed(() => {
-  const color = '#2dadf7'
-  return {
-    backgroundColor: color + '20',
-    color: color,
-    border: `1px solid ${color}40`
-  }
+const tagStyle = computed(() => {
+  return (category: string) => getTagStyle(category, isMinimal.value)
 })
 
 const goToDetail = () => {
@@ -432,6 +428,9 @@ const getVersionFromId = () => {
   font-weight: 600;
   backdrop-filter: blur(10px);
   white-space: nowrap;
+  color: var(--tag-index);
+  background-color: color-mix(in srgb, var(--tag-index) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-index) 30%, transparent);
 }
 
 .paper-id {
@@ -442,9 +441,9 @@ const getVersionFromId = () => {
   border-radius: 8px;
   backdrop-filter: blur(8px);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  color: #00BCD4;
-  background-color: rgba(0, 188, 212, 0.1);
-  border: 1px solid rgba(0, 188, 212, 0.3);
+  color: var(--tag-id);
+  background-color: color-mix(in srgb, var(--tag-id) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-id) 30%, transparent);
 }
 
 
@@ -784,9 +783,9 @@ const getVersionFromId = () => {
   padding: 4px 10px;
   border-radius: 8px;
   backdrop-filter: blur(8px);
-  color: #9C27B0;
-  background-color: rgba(156, 39, 176, 0.1);
-  border: 1px solid rgba(156, 39, 176, 0.3);
+  color: var(--tag-published);
+  background-color: color-mix(in srgb, var(--tag-published) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-published) 30%, transparent);
   white-space: nowrap;
 }
 
@@ -797,9 +796,9 @@ const getVersionFromId = () => {
   padding: 4px 10px;
   border-radius: 8px;
   backdrop-filter: blur(8px);
-  color: #FF9800;
-  background-color: rgba(255, 152, 0, 0.1);
-  border: 1px solid rgba(255, 152, 0, 0.3);
+  color: var(--tag-updated);
+  background-color: color-mix(in srgb, var(--tag-updated) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-updated) 30%, transparent);
   white-space: nowrap;
 }
 

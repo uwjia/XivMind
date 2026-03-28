@@ -34,7 +34,7 @@
     </div>
 
     <div v-else-if="filteredBookmarks.length === 0" class="empty-state">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#9E9E9E">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-empty)">
         <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
       </svg>
       <p>{{ selectedCategory ? 'No bookmarks in this category' : 'No bookmarks yet' }}</p>
@@ -48,8 +48,8 @@
           <div class="header-badges">
             <span class="primary-category" :style="getCategoryStyle(bookmark.primary_category)">{{ bookmark.primary_category || 'CS' }}</span>
             <button class="remove-btn" @click="removeBookmark(bookmark.paper_id)" title="Remove bookmark">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#F44336">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="#FFD700" stroke="#FFD700"/>
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-bookmarks)">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="var(--icon-bookmarks-active)" stroke="var(--icon-bookmarks-active)"/>
               </svg>
             </button>
           </div>
@@ -57,8 +57,8 @@
         
         <p class="bookmark-authors">
           <svg class="author-icon" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="7" r="4" fill="#0b8db4ff"/>
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="#0b8db4ff" stroke-width="2"/>
+            <circle cx="12" cy="7" r="4" fill="var(--icon-author)"/>
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="var(--icon-author)" stroke-width="2"/>
           </svg>
           <span class="author-list">
             <template v-for="(author, idx) in bookmark.authors" :key="idx">
@@ -71,12 +71,12 @@
         <div class="bookmark-abstract">
           <p>
             <svg class="abstract-icon" viewBox="0 0 24 24" fill="none">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#2196F3" stroke-width="2"/>
-              <path d="M2 6h2" stroke="#2196F3" stroke-width="2"/>
-              <path d="M2 10h2" stroke="#2196F3" stroke-width="2"/>
-              <path d="M2 14h2" stroke="#2196F3" stroke-width="2"/>
-              <path d="M2 18h2" stroke="#2196F3" stroke-width="2"/>
-              <text x="8" y="16" font-size="6" fill="#2196F3" font-weight="bold">ABS</text>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="var(--icon-abstract)" stroke-width="2"/>
+              <path d="M2 6h2" stroke="var(--icon-abstract)" stroke-width="2"/>
+              <path d="M2 10h2" stroke="var(--icon-abstract)" stroke-width="2"/>
+              <path d="M2 14h2" stroke="var(--icon-abstract)" stroke-width="2"/>
+              <path d="M2 18h2" stroke="var(--icon-abstract)" stroke-width="2"/>
+              <text x="8" y="16" font-size="6" fill="var(--icon-abstract)" font-weight="bold">ABS</text>
             </svg>
             <span v-html="getRenderedAbstract(bookmark.abstract)"></span>
           </p>
@@ -85,11 +85,11 @@
         <div v-if="bookmark.comment" class="bookmark-comments">
           <p>
             <svg class="comments-icon" viewBox="0 0 24 24" fill="none">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="#FF9800" stroke-width="2"/>
-              <path d="M8 6h.01" stroke="#FF9800" stroke-width="2"/>
-              <path d="M12 6h.01" stroke="#FF9800" stroke-width="2"/>
-              <path d="M16 6h.01" stroke="#FF9800" stroke-width="2"/>
-              <text x="8" y="16" font-size="6" fill="#FF9800" font-weight="bold">COM</text>
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="var(--icon-comments)" stroke-width="2"/>
+              <path d="M8 6h.01" stroke="var(--icon-comments)" stroke-width="2"/>
+              <path d="M12 6h.01" stroke="var(--icon-comments)" stroke-width="2"/>
+              <path d="M16 6h.01" stroke="var(--icon-comments)" stroke-width="2"/>
+              <text x="8" y="16" font-size="6" fill="var(--icon-comments)" font-weight="bold">COM</text>
             </svg>
             <span v-html="getRenderedComment(bookmark.comment)"></span>
           </p>
@@ -98,9 +98,9 @@
         <div v-if="bookmark.journal_ref" class="bookmark-journal-ref">
           <p>
             <svg class="journal-icon" viewBox="0 0 24 24" fill="none">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="#9C27B0" stroke-width="2"/>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="#9C27B0" stroke-width="2"/>
-              <text x="7" y="14" font-size="5" fill="#9C27B0" font-weight="bold">JOU</text>
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="var(--icon-journal)" stroke-width="2"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="var(--icon-journal)" stroke-width="2"/>
+              <text x="7" y="14" font-size="5" fill="var(--icon-journal)" font-weight="bold">JOU</text>
             </svg>
             <span>{{ bookmark.journal_ref }}</span>
           </p>
@@ -124,46 +124,46 @@
           <div class="bookmark-actions">
             <span v-if="bookmark.doi" class="stat-link" @click="openDoiUrl(bookmark.doi)" title="Open DOI">
               <svg viewBox="0 0 24 24" fill="none">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-3 3a5 5 0 0 0 .54 7.54z" stroke="#9C27B0" stroke-width="2"/>
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l3-3a5 5 0 0 0-.54-7.54z" stroke="#9C27B0" stroke-width="2"/>
-                <text x="8" y="15" font-size="5" fill="#9C27B0" font-weight="bold">DOI</text>
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-3 3a5 5 0 0 0 .54 7.54z" stroke="var(--icon-doi)" stroke-width="2"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l3-3a5 5 0 0 0-.54-7.54z" stroke="var(--icon-doi)" stroke-width="2"/>
+                <text x="8" y="15" font-size="5" fill="var(--icon-doi)" font-weight="bold">DOI</text>
               </svg>
             </span>
             <span class="stat-link" @click="openAbsUrl(bookmark.abs_url)" title="Open arXiv page">
               <svg viewBox="0 0 24 24" fill="none">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-3 3a5 5 0 0 0 .54 7.54z" stroke="#4CAF50" stroke-width="2"/>
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l3-3a5 5 0 0 0-.54-7.54z" stroke="#4CAF50" stroke-width="2"/>
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-3 3a5 5 0 0 0 .54 7.54z" stroke="var(--icon-link)" stroke-width="2"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l3-3a5 5 0 0 0-.54-7.54z" stroke="var(--icon-link)" stroke-width="2"/>
               </svg>
             </span>
             <span class="stat-link" @click="openPdfUrl(bookmark.pdf_url)" title="Open PDF">
               <svg viewBox="0 0 24 24" fill="none">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#F44336" stroke-width="2"/>
-                <path d="M2 6h2" stroke="#F44336" stroke-width="2"/>
-                <path d="M2 10h2" stroke="#F44336" stroke-width="2"/>
-                <path d="M2 14h2" stroke="#F44336" stroke-width="2"/>
-                <path d="M2 18h2" stroke="#F44336" stroke-width="2"/>
-                <text x="8" y="16" font-size="6" fill="#F44336" font-weight="bold">PDF</text>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="var(--icon-pdf)" stroke-width="2"/>
+                <path d="M2 6h2" stroke="var(--icon-pdf)" stroke-width="2"/>
+                <path d="M2 10h2" stroke="var(--icon-pdf)" stroke-width="2"/>
+                <path d="M2 14h2" stroke="var(--icon-pdf)" stroke-width="2"/>
+                <path d="M2 18h2" stroke="var(--icon-pdf)" stroke-width="2"/>
+                <text x="8" y="16" font-size="6" fill="var(--icon-pdf)" font-weight="bold">PDF</text>
               </svg>
             </span>
             <span class="stat-link download-btn" :class="getDownloadStatus(bookmark.paper_id)" @click.stop="handleDownloadClick(bookmark)" :title="getDownloadTitle(bookmark.paper_id)">
               <svg v-if="getDownloadStatus(bookmark.paper_id) === 'downloading'" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="#2196F3" stroke-width="2" fill="none"/>
-                <circle cx="12" cy="12" r="10" stroke="#64B5F6" stroke-width="2" fill="none" stroke-dasharray="62.83" :stroke-dashoffset="62.83 - (62.83 * getDownloadProgress(bookmark.paper_id) / 100)" style="transform: rotate(-90deg); transform-origin: center;"/>
-                <text x="12" y="16" font-size="8" fill="#2196F3" text-anchor="middle" font-weight="bold">{{ getDownloadProgress(bookmark.paper_id) }}%</text>
+                <circle cx="12" cy="12" r="10" stroke="var(--icon-downloads)" stroke-width="2" fill="none"/>
+                <circle cx="12" cy="12" r="10" stroke="var(--icon-downloads-light)" stroke-width="2" fill="none" stroke-dasharray="62.83" :stroke-dashoffset="62.83 - (62.83 * getDownloadProgress(bookmark.paper_id) / 100)" style="transform: rotate(-90deg); transform-origin: center;"/>
+                <text x="12" y="16" font-size="8" fill="var(--icon-downloads)" text-anchor="middle" font-weight="bold">{{ getDownloadProgress(bookmark.paper_id) }}%</text>
               </svg>
               <svg v-else-if="getDownloadStatus(bookmark.paper_id) === 'completed' || isDownloaded(bookmark.paper_id)" viewBox="0 0 24 24" fill="none">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <polyline points="22 4 12 14.01 9 11.01" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="var(--icon-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="22 4 12 14.01 9 11.01" stroke="var(--icon-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
               <svg v-else-if="getDownloadStatus(bookmark.paper_id) === 'failed'" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="#F44336" stroke-width="2"/>
-                <line x1="15" y1="9" x2="9" y2="15" stroke="#F44336" stroke-width="2" stroke-linecap="round"/>
-                <line x1="9" y1="9" x2="15" y2="15" stroke="#F44336" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="12" cy="12" r="10" stroke="var(--icon-error)" stroke-width="2"/>
+                <line x1="15" y1="9" x2="9" y2="15" stroke="var(--icon-error)" stroke-width="2" stroke-linecap="round"/>
+                <line x1="9" y1="9" x2="15" y2="15" stroke="var(--icon-error)" stroke-width="2" stroke-linecap="round"/>
               </svg>
               <svg v-else viewBox="0 0 24 24" fill="none">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" :stroke="getDownloadStatus(bookmark.paper_id) === 'pending' ? '#FF9800' : '#2196F3'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <polyline points="7,10 12,15 17,10" :stroke="getDownloadStatus(bookmark.paper_id) === 'pending' ? '#FF9800' : '#2196F3'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <line x1="12" y1="15" x2="12" y2="3" :stroke="getDownloadStatus(bookmark.paper_id) === 'pending' ? '#FF9800' : '#2196F3'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="var(--icon-downloads)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="7,10 12,15 17,10" stroke="var(--icon-downloads)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <line x1="12" y1="15" x2="12" y2="3" stroke="var(--icon-downloads)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </span>
             <span 
@@ -172,7 +172,7 @@
               @click.stop="openReader(bookmark.paper_id)" 
               title="Read PDF"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-read)">
                 <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" stroke-width="2"/>
                 <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" stroke-width="2"/>
               </svg>
@@ -233,7 +233,7 @@
 import { onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useBookmarkActions } from '@/composables/useBookmarkActions'
-import { getTagStyle, getCategoryFullName, getCategoryShortName } from '@/utils/categoryColors'
+import { getCategoryFullName, getCategoryShortName } from '@/utils/categoryColors'
 import { useDateFormatter } from '@/composables/useDateFormatter'
 import CategoryDrawer from '@/components/CategoryDrawer.vue'
 import { useDownloadStore } from '@/stores/download-store'
@@ -266,6 +266,7 @@ const {
   getRenderedAbstract,
   getRenderedComment,
   getCategoryStyle,
+  getTagStyle,
   handleDownloadClick,
   goToFirstPage,
   goToPreviousPage,
@@ -361,18 +362,18 @@ watch(filteredBookmarks, async (papers) => {
   justify-content: center;
   width: 40px;
   height: 40px;
-  border: none;
+  border: 1px solid color-mix(in srgb, var(--icon-search) 30%, transparent);
   border-radius: 8px;
-  background: linear-gradient(135deg, #00BCD4 0%, #0097A7 100%);
-  color: white;
+  background: color-mix(in srgb, var(--icon-search) 10%, transparent);
+  color: var(--icon-search);
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 0 20px rgba(0, 188, 212, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .search-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 30px rgba(0, 188, 212, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border-color: color-mix(in srgb, var(--icon-search) 60%, transparent);
+  background: color-mix(in srgb, var(--icon-search) 20%, transparent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--icon-search) 30%, transparent), inset 0 0 20px color-mix(in srgb, var(--icon-search) 10%, transparent);
 }
 
 .search-btn svg {
@@ -719,10 +720,9 @@ watch(filteredBookmarks, async (papers) => {
   border-radius: 8px;
   backdrop-filter: blur(8px);
   transition: all 0.3s ease;
-  border: 1px solid transparent;
-  color: #00BCD4;
-  background-color: rgba(0, 188, 212, 0.1);
-  border-color: rgba(0, 188, 212, 0.3);
+  color: var(--tag-id);
+  background-color: color-mix(in srgb, var(--tag-id) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-id) 30%, transparent);
 }
 
 .paper-id:hover {
@@ -752,10 +752,9 @@ watch(filteredBookmarks, async (papers) => {
   border-radius: 8px;
   backdrop-filter: blur(8px);
   transition: all 0.3s ease;
-  border: 1px solid transparent;
-  color: #9C27B0;
-  background-color: rgba(156, 39, 176, 0.1);
-  border-color: rgba(156, 39, 176, 0.3);
+  color: var(--tag-published);
+  background-color: color-mix(in srgb, var(--tag-published) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-published) 30%, transparent);
   white-space: nowrap;
 }
 
@@ -772,10 +771,9 @@ watch(filteredBookmarks, async (papers) => {
   border-radius: 8px;
   backdrop-filter: blur(8px);
   transition: all 0.3s ease;
-  border: 1px solid transparent;
-  color: #FF9800;
-  background-color: rgba(255, 152, 0, 0.1);
-  border-color: rgba(255, 152, 0, 0.3);
+  color: var(--tag-updated);
+  background-color: color-mix(in srgb, var(--tag-updated) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-updated) 30%, transparent);
   white-space: nowrap;
 }
 
@@ -837,15 +835,15 @@ watch(filteredBookmarks, async (papers) => {
 }
 
 .download-btn.completed svg {
-  color: #4CAF50;
+  color: var(--icon-success);
 }
 
 .download-btn.failed svg {
-  color: #F44336;
+  color: var(--icon-error);
 }
 
 .download-btn.pending svg {
-  color: #FF9800;
+  color: var(--icon-comments);
 }
 
 @keyframes pulse {
@@ -894,23 +892,23 @@ watch(filteredBookmarks, async (papers) => {
   justify-content: center;
   width: 40px;
   height: 40px;
-  border: 1px solid rgba(156, 39, 176, 0.3);
+  border: 1px solid color-mix(in srgb, var(--icon-filter) 30%, transparent);
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(156, 39, 176, 0.1) 0%, rgba(103, 58, 183, 0.1) 100%);
+  background: color-mix(in srgb, var(--icon-filter) 10%, transparent);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .drawer-toggle:hover {
-  border-color: rgba(156, 39, 176, 0.6);
-  background: linear-gradient(135deg, rgba(156, 39, 176, 0.2) 0%, rgba(103, 58, 183, 0.2) 100%);
-  box-shadow: 0 0 20px rgba(156, 39, 176, 0.3), inset 0 0 20px rgba(156, 39, 176, 0.1);
+  border-color: color-mix(in srgb, var(--icon-filter) 60%, transparent);
+  background: color-mix(in srgb, var(--icon-filter) 20%, transparent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--icon-filter) 30%, transparent), inset 0 0 20px color-mix(in srgb, var(--icon-filter) 10%, transparent);
 }
 
 .drawer-toggle svg {
   width: 20px;
   height: 20px;
-  color: #9C27B0;
+  color: var(--icon-filter);
 }
 
 .header-title {

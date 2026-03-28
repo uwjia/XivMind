@@ -41,21 +41,21 @@
           </button>
           <button class="icon-btn view-toggle-btn" @click="toggleGraphView" :title="isGraphView ? 'Switch to list view' : 'Switch to graph view'">
             <svg v-if="isGraphView" viewBox="0 0 24 24" fill="none" stroke-width="2">
-              <rect x="3" y="3" width="7" height="7" fill="#00BCD4" stroke="#00BCD4"/>
-              <rect x="14" y="3" width="7" height="7" fill="#3B82F6" stroke="#3B82F6"/>
-              <rect x="3" y="14" width="7" height="7" fill="#F59E0B" stroke="#F59E0B"/>
-              <rect x="14" y="14" width="7" height="7" fill="#EF4444" stroke="#EF4444"/>
+              <rect x="3" y="3" width="7" height="7" fill="var(--icon-graph-node-1)" stroke="var(--icon-graph-node-1)"/>
+              <rect x="14" y="3" width="7" height="7" fill="var(--icon-graph-node-2)" stroke="var(--icon-graph-node-2)"/>
+              <rect x="3" y="14" width="7" height="7" fill="var(--icon-graph-node-3)" stroke="var(--icon-graph-node-3)"/>
+              <rect x="14" y="14" width="7" height="7" fill="var(--icon-graph-node-4)" stroke="var(--icon-graph-node-4)"/>
             </svg>
             <svg v-else viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="4" fill="#00BCD4"/>
-              <circle cx="5" cy="5" r="3" fill="#3B82F6"/>
-              <circle cx="19" cy="5" r="3" fill="#F59E0B"/>
-              <circle cx="5" cy="19" r="3" fill="#EF4444"/>
-              <circle cx="19" cy="19" r="3" fill="#8B5CF6"/>
-              <line x1="7.5" y1="7.5" x2="9" y2="9" stroke="#6B7280" stroke-width="1.5"/>
-              <line x1="15" y1="9" x2="16.5" y2="7.5" stroke="#6B7280" stroke-width="1.5"/>
-              <line x1="7.5" y1="16.5" x2="9" y2="15" stroke="#6B7280" stroke-width="1.5"/>
-              <line x1="15" y1="15" x2="16.5" y2="16.5" stroke="#6B7280" stroke-width="1.5"/>
+              <circle cx="12" cy="12" r="4" fill="var(--icon-graph-node-1)"/>
+              <circle cx="5" cy="5" r="3" fill="var(--icon-graph-node-2)"/>
+              <circle cx="19" cy="5" r="3" fill="var(--icon-graph-node-3)"/>
+              <circle cx="5" cy="19" r="3" fill="var(--icon-graph-node-4)"/>
+              <circle cx="19" cy="19" r="3" fill="var(--icon-graph-node-5)"/>
+              <line x1="7.5" y1="7.5" x2="9" y2="9" stroke="var(--icon-graph-line)" stroke-width="1.5"/>
+              <line x1="15" y1="9" x2="16.5" y2="7.5" stroke="var(--icon-graph-line)" stroke-width="1.5"/>
+              <line x1="7.5" y1="16.5" x2="9" y2="15" stroke="var(--icon-graph-line)" stroke-width="1.5"/>
+              <line x1="15" y1="15" x2="16.5" y2="16.5" stroke="var(--icon-graph-line)" stroke-width="1.5"/>
             </svg>
           </button>
           <button v-if="!isGraphView" class="icon-btn refresh-btn" @click="refreshPapers" :disabled="loading" title="Refresh papers">
@@ -376,62 +376,63 @@ onActivated(() => {
 }
 
 .date-btn {
-  color: #FF9800;
-  border-color: rgba(255, 152, 0, 0.2);
+  color: var(--icon-date);
+  border-color: color-mix(in srgb, var(--icon-date) 20%, transparent);
 }
 
 .date-btn:hover {
-  background: rgba(255, 152, 0, 0.1);
-  border-color: rgba(255, 152, 0, 0.4);
+  background: color-mix(in srgb, var(--icon-date) 10%, transparent);
+  border-color: color-mix(in srgb, var(--icon-date) 40%, transparent);
 }
 
 .category-btn {
-  color: #9C27B0;
-  border-color: rgba(156, 39, 176, 0.2);
+  color: var(--icon-category);
+  border-color: color-mix(in srgb, var(--icon-category) 20%, transparent);
 }
 
 .category-btn:hover {
-  background: rgba(156, 39, 176, 0.1);
-  border-color: rgba(156, 39, 176, 0.4);
+  background: color-mix(in srgb, var(--icon-category) 10%, transparent);
+  border-color: color-mix(in srgb, var(--icon-category) 40%, transparent);
 }
 
 .view-toggle-btn {
-  border-color: rgba(0, 188, 212, 0.2);
+  color: var(--icon-viewToggle);
+  border-color: color-mix(in srgb, var(--icon-viewToggle) 20%, transparent);
 }
 
 .view-toggle-btn:hover {
-  background: rgba(0, 188, 212, 0.1);
-  border-color: rgba(0, 188, 212, 0.4);
+  background: color-mix(in srgb, var(--icon-viewToggle) 10%, transparent);
+  border-color: color-mix(in srgb, var(--icon-viewToggle) 40%, transparent);
 }
 
 .toggle-btn {
-  color: #667eea;
-  border-color: rgba(102, 126, 234, 0.2);
+  color: var(--icon-toggle);
+  border-color: color-mix(in srgb, var(--icon-toggle) 20%, transparent);
 }
 
 .toggle-btn:hover {
-  background: rgba(102, 126, 234, 0.1);
-  border-color: rgba(102, 126, 234, 0.4);
+  background: color-mix(in srgb, var(--icon-toggle) 10%, transparent);
+  border-color: color-mix(in srgb, var(--icon-toggle) 40%, transparent);
 }
 
 .filter-btn {
-  color: #9C27B0;
-  border-color: rgba(156, 39, 176, 0.2);
+  color: var(--icon-filter);
+  border-color: color-mix(in srgb, var(--icon-filter) 20%, transparent);
 }
 
 .filter-btn:hover {
-  background: rgba(156, 39, 176, 0.1);
-  border-color: rgba(156, 39, 176, 0.4);
+  background: color-mix(in srgb, var(--icon-filter) 10%, transparent);
+  border-color: color-mix(in srgb, var(--icon-filter) 40%, transparent);
 }
 
 .refresh-btn {
-  color: #00BCD4;
-  border-color: rgba(0, 188, 212, 0.2);
+  color: var(--icon-refresh);
+  border-color: color-mix(in srgb, var(--icon-refresh) 20%, transparent);
 }
 
 .refresh-btn:hover:not(:disabled) {
-  background: rgba(0, 188, 212, 0.1);
-  border-color: rgba(0, 188, 212, 0.4);
+  background: color-mix(in srgb, var(--icon-refresh) 10%, transparent);
+  border-color: color-mix(in srgb, var(--icon-refresh) 40%, transparent);
 }
 
 .refresh-btn:disabled {
@@ -457,7 +458,7 @@ onActivated(() => {
   height: 60px;
   margin-bottom: 16px;
   opacity: 0.5;
-  color: #ef4444;
+  color: var(--icon-error);
 }
 
 .error-state p {

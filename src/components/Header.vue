@@ -48,6 +48,20 @@
           </svg>
           <span v-if="noteCount > 0" class="note-badge">{{ noteCount }}</span>
         </button>
+        <button class="icon-style-btn" @click="toggleIconStyle" :title="isIconColorful ? 'Switch to Minimal Icons' : 'Switch to Colorful Icons'">
+          <svg v-if="isIconColorful" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="6" cy="6" r="3" fill="#FF5722"/>
+            <circle cx="18" cy="6" r="3" fill="#4CAF50"/>
+            <circle cx="6" cy="18" r="3" fill="#2196F3"/>
+            <circle cx="18" cy="18" r="3" fill="#FFC107"/>
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="6" cy="6" r="3"/>
+            <circle cx="18" cy="6" r="3"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="18" r="3"/>
+          </svg>
+        </button>
       </div>
     </div>
   </header>
@@ -58,16 +72,19 @@ import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useSidebarStore } from '@/stores/sidebar-store'
 import { useNoteStore } from '@/stores/note-store'
+import { useThemeStore } from '@/stores/theme-store'
 
 const router = useRouter()
 const route = useRoute()
 const sidebarStore = useSidebarStore()
 const noteStore = useNoteStore()
+const themeStore = useThemeStore()
 
 const searchQuery = ref<string>('')
 const isCollapsed = computed(() => sidebarStore.effectiveCollapsed)
 const noteCount = computed(() => noteStore.notes.length)
 const noteBtnRef = ref<HTMLElement | null>(null)
+const isIconColorful = computed(() => themeStore.iconStyle === 'colorful')
 
 watch(() => route.query?.q, (newQuery) => {
   if (newQuery !== undefined) {
@@ -95,6 +112,10 @@ const updateNoteBtnPosition = () => {
 const toggleNotePanel = () => {
   updateNoteBtnPosition()
   noteStore.togglePanel()
+}
+
+const toggleIconStyle = () => {
+  themeStore.toggleIconStyle()
 }
 
 defineExpose({
@@ -290,6 +311,30 @@ defineExpose({
   min-width: 16px;
   text-align: center;
   font-weight: 600;
+}
+
+.icon-style-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-secondary);
+}
+
+.icon-style-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent-color);
+}
+
+.icon-style-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 @media (max-width: 768px) {

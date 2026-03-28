@@ -3,9 +3,10 @@ import { useRouter } from 'vue-router'
 import { useBookmarkStore } from '@/stores/bookmark-store'
 import { useConfigStore } from '@/stores/config-store'
 import { useToastStore } from '@/stores/toast-store'
+import { useThemeStore } from '@/stores/theme-store'
 import { useDownloadHandler } from '@/composables/useDownloadHandler'
 import { useMarkdown } from '@/composables/useMarkdown'
-import { getCategoryColor, categories } from '@/utils/categoryColors'
+import { getCategoryColor, getTagStyle as getTagStyleUtil, categories } from '@/utils/categoryColors'
 
 export interface BookmarkItem {
   id: string
@@ -30,8 +31,11 @@ export function useBookmarkActions() {
   const bookmarkStore = useBookmarkStore()
   const configStore = useConfigStore()
   const toastStore = useToastStore()
+  const themeStore = useThemeStore()
   const { render, renderWithDefault } = useMarkdown()
   const { getStatus, getProgress, getStatusTitle, handleDownload } = useDownloadHandler()
+
+  const isMinimal = computed(() => themeStore.iconStyle === 'minimal')
 
   const loading = ref(false)
   const searchQuery = ref('')
@@ -177,12 +181,23 @@ export function useBookmarkActions() {
   }
 
   const getCategoryStyle = (category?: string) => {
+    if (isMinimal.value) {
+      return {
+        backgroundColor: 'var(--tag-primary-category-bg)',
+        color: 'var(--tag-primary-category)',
+        border: '1px solid var(--tag-primary-category-border)'
+      }
+    }
     const color = getCategoryColor(category || 'cs.AI')
     return {
       backgroundColor: color + '20',
       color: color,
       border: `1px solid ${color}40`
     }
+  }
+
+  const getTagStyle = (category: string) => {
+    return getTagStyleUtil(category, isMinimal.value)
   }
 
   const handleDownloadClick = async (bookmark: BookmarkItem) => {
@@ -220,6 +235,7 @@ export function useBookmarkActions() {
     getRenderedAbstract,
     getRenderedComment,
     getCategoryStyle,
+    getTagStyle,
     handleDownloadClick,
     goToFirstPage,
     goToPreviousPage,

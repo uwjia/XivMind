@@ -23,6 +23,58 @@
   --transition: all 0.2s ease;
   --pdf-bg: #f5f5f5;
   --pdf-page-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  
+  --icon-home: #00BCD4;
+  --icon-bookmarks: #FF9800;
+  --icon-bookmarks-active: #FFD700;
+  --icon-followed: #10B981;
+  --icon-downloads: #2196F3;
+  --icon-downloads-light: #64B5F6;
+  --icon-assistant: #AB47BC;
+  --icon-skills: #F59E0B;
+  --icon-subagents: #6366F1;
+  --icon-team: #8B5CF6;
+  --icon-memory: #E91E63;
+  --icon-ranking: #EF4444;
+  --icon-dataManager: #9C27B0;
+  --icon-settings: #2196F3;
+  --icon-theme: #FFC107;
+  --icon-date: #FF9800;
+  --icon-category: #9C27B0;
+  --icon-filter: #9C27B0;
+  --icon-viewToggle: #00BCD4;
+  --icon-toggle: #667eea;
+  --icon-refresh: #00BCD4;
+  --icon-pdf: #F44336;
+  --icon-abstract: #2196F3;
+  --icon-comments: #FF9800;
+  --icon-journal: #9C27B0;
+  --icon-doi: #9C27B0;
+  --icon-link: #4CAF50;
+  --icon-read: #8B5CF6;
+  --icon-author: #0b8db4;
+  --icon-error: #EF4444;
+  --icon-success: #4CAF50;
+  --icon-empty: #666666;
+  --icon-search: #00BCD4;
+  --icon-search-light: #26C6DA;
+  --icon-graph-node-1: #00BCD4;
+  --icon-graph-node-2: #3B82F6;
+  --icon-graph-node-3: #F59E0B;
+  --icon-graph-node-4: #EF4444;
+  --icon-graph-node-5: #8B5CF6;
+  --icon-graph-line: #6B7280;
+  
+  --tag-primary-category: #9C27B0;
+  --tag-primary-category-bg: rgba(156, 39, 176, 0.12);
+  --tag-primary-category-border: rgba(156, 39, 176, 0.3);
+  --tag-index: #2dadf7;
+  --tag-id: #00BCD4;
+  --tag-category: #9C27B0;
+  --tag-category-bg: rgba(156, 39, 176, 0.1);
+  --tag-category-border: rgba(156, 39, 176, 0.3);
+  --tag-published: #9C27B0;
+  --tag-updated: #FF9800;
 }
 
 .dark {
@@ -37,6 +89,60 @@
   --accent-hover: #26C6DA;
   --pdf-bg: #323232;
   --pdf-page-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+.minimal-icons {
+  --icon-home: var(--text-secondary);
+  --icon-bookmarks: var(--text-secondary);
+  --icon-bookmarks-active: var(--text-secondary);
+  --icon-followed: var(--text-secondary);
+  --icon-downloads: var(--text-secondary);
+  --icon-downloads-light: var(--text-secondary);
+  --icon-assistant: var(--text-secondary);
+  --icon-skills: var(--text-secondary);
+  --icon-subagents: var(--text-secondary);
+  --icon-team: var(--text-secondary);
+  --icon-memory: var(--text-secondary);
+  --icon-ranking: var(--text-secondary);
+  --icon-dataManager: var(--text-secondary);
+  --icon-settings: var(--text-secondary);
+  --icon-theme: var(--text-secondary);
+  --icon-date: var(--text-secondary);
+  --icon-category: var(--text-secondary);
+  --icon-filter: var(--text-secondary);
+  --icon-viewToggle: var(--text-secondary);
+  --icon-toggle: var(--text-secondary);
+  --icon-refresh: var(--text-secondary);
+  --icon-pdf: var(--text-secondary);
+  --icon-abstract: var(--text-secondary);
+  --icon-comments: var(--text-secondary);
+  --icon-journal: var(--text-secondary);
+  --icon-doi: var(--text-secondary);
+  --icon-link: var(--text-secondary);
+  --icon-read: var(--text-secondary);
+  --icon-author: var(--text-secondary);
+  --icon-error: var(--text-secondary);
+  --icon-success: var(--text-secondary);
+  --icon-empty: var(--text-secondary);
+  --icon-search: var(--text-secondary);
+  --icon-search-light: var(--text-secondary);
+  --icon-graph-node-1: var(--text-secondary);
+  --icon-graph-node-2: var(--text-secondary);
+  --icon-graph-node-3: var(--text-secondary);
+  --icon-graph-node-4: var(--text-secondary);
+  --icon-graph-node-5: var(--text-secondary);
+  --icon-graph-line: var(--text-secondary);
+  
+  --tag-primary-category: var(--text-secondary);
+  --tag-primary-category-bg: color-mix(in srgb, var(--text-secondary) 12%, transparent);
+  --tag-primary-category-border: color-mix(in srgb, var(--text-secondary) 30%, transparent);
+  --tag-index: var(--text-secondary);
+  --tag-id: var(--text-secondary);
+  --tag-category: var(--text-secondary);
+  --tag-category-bg: color-mix(in srgb, var(--text-secondary) 10%, transparent);
+  --tag-category-border: color-mix(in srgb, var(--text-secondary) 30%, transparent);
+  --tag-published: var(--text-secondary);
+  --tag-updated: var(--text-secondary);
 }
 
 body {

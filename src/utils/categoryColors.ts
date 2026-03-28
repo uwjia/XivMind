@@ -101,7 +101,14 @@ export const getCategoryColor = (category: string | null): string => {
   return categoryColors[category] || '#9E9E9E'
 }
 
-export const getTagStyle = (category: string): Record<string, string> => {
+export const getTagStyle = (category: string, isMinimal: boolean = false): Record<string, string> => {
+  if (isMinimal) {
+    return {
+      backgroundColor: 'var(--tag-category-bg)',
+      color: 'var(--tag-category)',
+      border: '1px solid var(--tag-category-border)'
+    }
+  }
   const color = getCategoryColor(category)
     return {
         backgroundColor: color + '15',

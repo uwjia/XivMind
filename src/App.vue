@@ -1,5 +1,5 @@
 <template>
-  <div id="app" :class="{ dark: isDark }">
+  <div id="app" :class="{ dark: isDark, 'minimal-icons': isMinimalIcons }">
     <Header />
     <Sidebar />
     <main class="main-content" :class="{ 'sidebar-collapsed': isCollapsed }">
@@ -39,6 +39,7 @@ const llmStore = useLLMStore()
 const downloadStore = useDownloadStore()
 
 const isDark = computed(() => themeStore.isDark)
+const isMinimalIcons = computed(() => themeStore.iconStyle === 'minimal')
 const isCollapsed = computed(() => sidebarStore.effectiveCollapsed)
 const toastVisible = computed(() => toastStore.visible)
 const toastMessage = computed(() => toastStore.message)

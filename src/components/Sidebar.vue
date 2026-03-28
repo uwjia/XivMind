@@ -9,7 +9,7 @@
           :title="isCollapsed ? 'Home' : ''"
         >
           <span class="picker-trigger-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#00BCD4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-home)">
               <path d="M3 9l9-7 9 7v11h-6v-6h-6v6h-6v-11z"/>
               <polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
@@ -25,7 +25,7 @@
           :title="isCollapsed ? 'Bookmarks' : ''"
         >
           <span class="picker-trigger-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#FF9800">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-bookmarks)">
               <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
             </svg>
           </span>
@@ -40,7 +40,7 @@
           :title="isCollapsed ? 'Followed Authors' : ''"
         >
           <span class="picker-trigger-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#10B981">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-followed)">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
               <circle cx="12" cy="7" r="4"/>
             </svg>
@@ -56,7 +56,7 @@
           :title="isCollapsed ? 'Downloads' : ''"
         >
           <span class="picker-trigger-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#2196F3">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-downloads)">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="7,10 12,15 17,10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
@@ -73,7 +73,7 @@
           :title="isCollapsed ? 'Assistant' : ''"
         >
           <span class="picker-trigger-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#AB47BC">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-assistant)">
               <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A1.5 1.5 0 0 0 6 14.5 1.5 1.5 0 0 0 7.5 16 1.5 1.5 0 0 0 9 14.5 1.5 1.5 0 0 0 7.5 13m9 0a1.5 1.5 0 0 0-1.5 1.5 1.5 1.5 0 0 0 1.5 1.5 1.5 1.5 0 0 0 1.5-1.5 1.5 1.5 0 0 0-1.5-1.5M12 17c-2 0-3 1-3 1v1h6v-1s-1-1-3-1z"/>
             </svg>
           </span>
@@ -88,7 +88,7 @@
           :title="isCollapsed ? 'Skills' : ''"
         >
           <span class="picker-trigger-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#F59E0B">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-skills)">
               <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
             </svg>
           </span>
@@ -103,7 +103,7 @@
           :title="isCollapsed ? 'SubAgents' : ''"
         >
           <span class="picker-trigger-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#6366F1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-subagents)">
               <rect x="3" y="11" width="18" height="10" rx="2"/>
               <circle cx="12" cy="5" r="2"/>
               <path d="M12 7v4"/>
@@ -122,7 +122,7 @@
           :title="isCollapsed ? 'Team' : ''"
         >
           <span class="picker-trigger-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#8B5CF6">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-team)">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
               <circle cx="9" cy="7" r="4"/>
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
@@ -140,7 +140,7 @@
           :title="isCollapsed ? 'Memory' : ''"
         >
           <span class="picker-trigger-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#E91E63">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-memory)">
               <ellipse cx="12" cy="5" rx="9" ry="3"/>
               <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
               <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
@@ -157,7 +157,7 @@
           :title="isCollapsed ? 'Author Ranking' : ''"
         >
           <span class="picker-trigger-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-ranking)">
               <path d="M12 2L2 7l10 5 10-5-10-5z"/>
               <path d="M2 17l10 5 10-5"/>
               <path d="M2 12l10 5 10-5"/>
@@ -174,7 +174,7 @@
           :title="isCollapsed ? 'Data Manager' : ''"
         >
           <span class="picker-trigger-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#9C27B0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-dataManager)">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
               <line x1="16" y1="2" x2="16" y2="6"/>
               <line x1="8" y1="2" x2="8" y2="6"/>
@@ -193,7 +193,7 @@
         :title="isCollapsed ? 'Settings' : ''"
       >
         <span class="picker-trigger-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#2196F3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-settings)">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.83.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.83-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
@@ -206,7 +206,7 @@
         :title="isCollapsed ? 'Toggle Theme' : ''"
       >
         <span class="picker-trigger-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#FFC107">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-theme)">
             <circle v-if="isDark" cx="12" cy="12" r="5"/>
             <path v-if="isDark" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
             <path v-else d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
@@ -459,6 +459,10 @@ const closeMobileSidebar = () => {
 .picker-trigger-btn:hover {
   background: var(--bg-secondary);
   color: var(--accent-color);
+}
+
+.picker-trigger-btn:hover .picker-trigger-icon svg {
+  stroke: var(--accent-color);
 }
 
 .picker-trigger-icon {
