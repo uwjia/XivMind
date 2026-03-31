@@ -8,18 +8,25 @@
         </svg>
         Related Papers
       </h3>
-      <button 
-        v-if="!loading && !error" 
-        @click="refresh" 
-        class="refresh-btn"
-        title="Find similar papers"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" :class="{ 'spinning': loading }">
-          <path d="M23 4v6h-6"/>
-          <path d="M1 20v-6h6"/>
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-        </svg>
-      </button>
+      <div class="header-controls">
+        <select v-model="top_k" class="limit-select" title="Number of papers to display" @change="($event.target as HTMLSelectElement)?.blur()">
+          <option :value="5">5</option>
+          <option :value="50">50</option>
+          <option :value="100">100</option>
+        </select>
+        <button 
+          v-if="!loading && !error" 
+          @click="refresh" 
+          class="refresh-btn"
+          title="Find similar papers"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" :class="{ 'spinning': loading }">
+            <path d="M23 4v6h-6"/>
+            <path d="M1 20v-6h6"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </button>
+      </div>
     </div>
     
     <div v-if="loading" class="related-loading">
@@ -37,12 +44,14 @@
       <button @click="refresh" class="retry-btn">Retry</button>
     </div>
     
-    <div v-else-if="papers.length > 0" class="related-papers">
+    <div v-else-if="papers.length > 0" class="related-papers" :class="{ scrollable: top_k > 5 }">
       <div 
         v-for="paper in papers" 
         :key="paper.id" 
         class="paper-item" 
         @click="goToPaper(paper.id)"
+        @mouseenter="showTooltip(paper, $event)"
+        @mouseleave="hideTooltip"
       >
         <span class="paper-id">{{ paper.id }}</span>
         <span class="paper-title">{{ paper.title }}</span>
@@ -54,13 +63,51 @@
       <p>No similar papers found</p>
       <button @click="refresh" class="retry-btn">Search Again</button>
     </div>
+    
+    <Teleport to="body">
+      <Transition name="tooltip">
+        <div 
+          v-if="tooltipVisible && tooltipPaper" 
+          class="paper-tooltip"
+          :style="tooltipStyle"
+        >
+          <div class="tooltip-header">
+            <span class="tooltip-title">{{ tooltipPaper.title }}</span>
+            <span class="tooltip-score">{{ (tooltipPaper.similarity_score * 100).toFixed(1) }}%</span>
+          </div>
+          <div class="tooltip-abstract">
+            <p class="abstract-text">{{ truncateAbstract(tooltipPaper.abstract) }}</p>
+          </div>
+          <div class="tooltip-section">
+            <span class="tooltip-label">Authors:</span>
+            <span class="tooltip-value">{{ tooltipPaper.authors.slice(0, 5).join(', ') }}{{ tooltipPaper.authors.length > 5 ? ' et al.' : '' }}</span>
+          </div>
+          <div class="tooltip-section">
+            <span class="tooltip-label">Categories:</span>
+            <span class="tooltip-value">{{ tooltipPaper.categories.join(', ') }}</span>
+          </div>
+          <div class="tooltip-section">
+            <span class="tooltip-label">Published:</span>
+            <span class="tooltip-value">{{ formatDate(tooltipPaper.published) }}</span>
+          </div>
+          <div v-if="tooltipPaper.updated && tooltipPaper.updated !== tooltipPaper.published" class="tooltip-section">
+            <span class="tooltip-label">Updated:</span>
+            <span class="tooltip-value">{{ formatDate(tooltipPaper.updated) }}</span>
+          </div>
+          <div v-if="tooltipPaper.doi" class="tooltip-section">
+            <span class="tooltip-label">DOI:</span>
+            <span class="tooltip-value tooltip-doi">{{ tooltipPaper.doi }}</span>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useRelatedPapers } from '@/composables/useRelatedPapers'
+import { useRelatedPapers, type RelatedPaper } from '@/composables/useRelatedPapers'
 
 const props = defineProps<{
   paperId: string
@@ -74,8 +121,58 @@ const {
   papers,
   loading,
   error,
+  top_k,
   fetchRelatedPapers,
 } = useRelatedPapers()
+
+const tooltipVisible = ref(false)
+const tooltipPaper = ref<RelatedPaper | null>(null)
+const tooltipStyle = ref<Record<string, string>>({})
+
+const showTooltip = (paper: RelatedPaper, event: MouseEvent) => {
+  tooltipPaper.value = paper
+  tooltipVisible.value = true
+  
+  const target = event.target as HTMLElement
+  const rect = target.closest('.paper-item')?.getBoundingClientRect()
+  
+  if (rect) {
+    const viewportWidth = window.innerWidth
+    const tooltipWidth = 400
+    const gap = 12
+    
+    let left = rect.right + gap
+    if (left + tooltipWidth > viewportWidth) {
+      left = rect.left - gap - tooltipWidth
+    }
+    if (left < 0) {
+      left = gap
+    }
+    
+    tooltipStyle.value = {
+      left: `${left}px`,
+      top: `${rect.top}px`,
+      maxWidth: `${tooltipWidth}px`
+    }
+  }
+}
+
+const hideTooltip = () => {
+  tooltipVisible.value = false
+  tooltipPaper.value = null
+}
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleDateString()
+}
+
+const truncateAbstract = (abstract: string, maxLength: number = 300) => {
+  if (!abstract) return ''
+  if (abstract.length <= maxLength) return abstract
+  return abstract.slice(0, maxLength) + '...'
+}
 
 const refresh = () => {
   if (props.paperId && props.paperTitle && props.paperAbstract) {
@@ -92,6 +189,10 @@ onMounted(() => {
 })
 
 watch(() => props.paperId, () => {
+  refresh()
+})
+
+watch(top_k, () => {
   refresh()
 })
 </script>
@@ -126,6 +227,31 @@ watch(() => props.paperId, () => {
   width: 24px;
   height: 24px;
   color: var(--accent-color);
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.limit-select {
+  padding: 6px 28px 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.limit-select:hover {
+  border-color: var(--accent-color);
 }
 
 .refresh-btn {
@@ -223,6 +349,31 @@ watch(() => props.paperId, () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 288px;
+}
+
+.related-papers.scrollable {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.related-papers.scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.related-papers.scrollable::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 3px;
+}
+
+.related-papers.scrollable::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.related-papers.scrollable::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color);
 }
 
 .paper-item {
@@ -275,5 +426,91 @@ watch(() => props.paperId, () => {
 .no-papers p {
   margin: 0 0 12px 0;
   font-size: 0.9rem;
+}
+
+.paper-tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.tooltip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.tooltip-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.tooltip-score {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 15%, transparent);
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.tooltip-section {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+.tooltip-label {
+  color: var(--text-muted);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.tooltip-value {
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.tooltip-doi {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+}
+
+.tooltip-abstract {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.abstract-text {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.tooltip-enter-active,
+.tooltip-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.tooltip-enter-from,
+.tooltip-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
 }
 </style>

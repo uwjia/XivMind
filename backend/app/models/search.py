@@ -12,7 +12,7 @@ class SearchResult(BaseModel):
 
 class SemanticSearchRequest(BaseModel):
     query: str = Field(..., description="Natural language query for semantic search")
-    top_k: int = Field(10, ge=1, le=100, description="Number of results to return")
+    top_k: int = Field(10, ge=1, le=5000, description="Number of results to return")
     category: Optional[str] = Field(None, description="Filter by category (e.g., 'cs.LG')")
     date_from: Optional[str] = Field(None, description="Filter papers from this date (YYYY-MM-DD)")
     date_to: Optional[str] = Field(None, description="Filter papers to this date (YYYY-MM-DD)")

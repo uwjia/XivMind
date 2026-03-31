@@ -8,11 +8,11 @@
         AI Paper Analysis
       </h3>
       <div class="analysis-controls">
-        <select v-model="selectedLanguage" class="language-select">
+        <select v-model="selectedLanguage" class="language-select" @change="($event.target as HTMLSelectElement)?.blur()">
           <option value="en">English</option>
           <option value="zh">中文</option>
         </select>
-        <select v-model="selectedType" class="type-select">
+        <select v-model="selectedType" class="type-select" @change="($event.target as HTMLSelectElement)?.blur()">
           <option value="full">Full Analysis</option>
           <option value="summary">Summary Only</option>
           <option value="keypoints">Key Points Only</option>
@@ -214,11 +214,16 @@ watch(() => props.paperId, () => {
 .type-select {
   padding: 8px 12px;
   border-radius: 8px;
+  min-width: 90px;
   border: 1px solid var(--border-color);
   background: var(--bg-primary);
   color: var(--text-primary);
   font-size: 0.85rem;
   cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
 }
 
 .analyze-btn {
