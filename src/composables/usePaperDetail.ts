@@ -3,15 +3,8 @@ import { usePaperStore } from '@/stores/paper-store'
 import { useBookmarkStore } from '@/stores/bookmark-store'
 import { useDownloadStore } from '@/stores/download-store'
 import { useToastStore } from '@/stores/toast-store'
-import { arxivBackendAPI } from '@/services/arxivBackend'
 import { useDownloadHandler } from '@/composables/useDownloadHandler'
 import type { Paper } from '@/types'
-
-export interface RelatedPaper {
-  id: string
-  title: string
-  similarity_score: number
-}
 
 export function usePaperDetail() {
   const paperStore = usePaperStore()
@@ -25,10 +18,6 @@ export function usePaperDetail() {
   const paper = ref<Paper | null>(null)
   const isBookmarked = ref(false)
   const isDownloaded = ref(false)
-
-  const relatedPapers = ref<RelatedPaper[]>([])
-  const relatedLoading = ref(false)
-  const relatedError = ref<string | null>(null)
 
   const downloadStatus = computed(() => {
     if (!paper.value?.id) return 'none'
@@ -56,37 +45,6 @@ export function usePaperDetail() {
       console.error('Error fetching paper:', err)
     } finally {
       loading.value = false
-    }
-  }
-
-  const fetchRelatedPapers = async () => {
-    if (!paper.value?.title || !paper.value?.abstract) return
-
-    relatedLoading.value = true
-    relatedError.value = null
-
-    try {
-      const query = `${paper.value.title} ${paper.value.abstract.slice(0, 500)}`
-      const result = await arxivBackendAPI.semanticSearch(query, 6)
-
-      if (result.error) {
-        relatedError.value = result.error
-        return
-      }
-
-      relatedPapers.value = result.papers
-        .filter((p: { id: string }) => p.id !== paper.value?.id)
-        .slice(0, 5)
-        .map((p: { id: string; title: string; similarity_score?: number }) => ({
-          id: p.id,
-          title: p.title,
-          similarity_score: p.similarity_score ?? 0
-        }))
-    } catch (err) {
-      relatedError.value = err instanceof Error ? err.message : 'Failed to find related papers'
-      console.error('Error fetching related papers:', err)
-    } finally {
-      relatedLoading.value = false
     }
   }
 
@@ -145,11 +103,7 @@ export function usePaperDetail() {
     isDownloaded,
     downloadStatus,
     downloadProgress,
-    relatedPapers,
-    relatedLoading,
-    relatedError,
     fetchPaperById,
-    fetchRelatedPapers,
     checkBookmark,
     checkDownload,
     toggleBookmark,

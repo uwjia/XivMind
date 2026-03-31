@@ -100,64 +100,12 @@
           <div v-html="renderedAbstract" class="abstract-content"></div>
         </div>
 
-        <div class="ai-insights">
-          <h2>
-            <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-color)">
-              <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/>
-              <path d="M12 6v6l4 2"/>
-            </svg>
-            AI-Powered Insights
-          </h2>
-          <div class="insight-card">
-            <h3>Key Contributions</h3>
-            <ul>
-              <li>Novel approach to handling long-context problems in vision-language models</li>
-              <li>7-20x compression ratio while maintaining high OCR accuracy</li>
-              <li>State-of-the-art performance with significantly fewer visual tokens</li>
-            </ul>
-          </div>
-          <div class="insight-card">
-            <div class="related-header">
-              <h3>Related Papers</h3>
-              <button 
-                v-if="!relatedLoading && !relatedError" 
-                @click="fetchRelatedPapers" 
-                class="refresh-related-btn"
-                title="Find similar papers"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" :class="{ 'spinning': relatedLoading }">
-                  <path d="M23 4v6h-6"/>
-                  <path d="M1 20v-6h6"/>
-                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                </svg>
-              </button>
-            </div>
-            <div v-if="relatedLoading" class="related-loading">
-              <div class="spinner small"></div>
-              <p>Finding similar papers...</p>
-            </div>
-            <div v-else-if="relatedError" class="related-error">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <p>{{ relatedError }}</p>
-              <button @click="fetchRelatedPapers" class="retry-btn">Retry</button>
-            </div>
-            <div v-else-if="relatedPapers.length > 0" class="related-papers">
-              <div v-for="related in relatedPapers" :key="related.id" class="related-paper" @click="goToPaper(related.id)">
-                <span class="related-id">{{ related.id }}</span>
-                <span class="related-title">{{ related.title }}</span>
-                <span class="related-score">{{ (related.similarity_score * 100).toFixed(1) }}%</span>
-              </div>
-            </div>
-            <div v-else class="no-related">
-              <p>No similar papers found</p>
-              <button @click="fetchRelatedPapers" class="retry-btn">Search Again</button>
-            </div>
-          </div>
-        </div>
+        <RelatePanel 
+          :paper-id="paper.id" 
+          :paper-title="paper.title" 
+          :paper-abstract="paper.abstract" 
+        />
+        <AnalysisPanel :paper-id="paper.id" />
       </div>
 
       <aside class="sidebar">
@@ -261,6 +209,7 @@ import { getTagStyle, categories } from '@/utils/categoryColors'
 import { useMarkdown } from '@/composables/useMarkdown'
 import { useDateFormatter } from '@/composables/useDateFormatter'
 import { usePaperDetail } from '@/composables/usePaperDetail'
+import { AnalysisPanel, RelatePanel } from '@/components/paper-analysis'
 
 const route = useRoute()
 const router = useRouter()
@@ -276,11 +225,7 @@ const {
   isDownloaded,
   downloadStatus,
   downloadProgress,
-  relatedPapers,
-  relatedLoading,
-  relatedError,
   fetchPaperById,
-  fetchRelatedPapers,
   checkBookmark,
   checkDownload,
   toggleBookmark,
@@ -301,7 +246,6 @@ onMounted(async () => {
   if (paper.value?.id) {
     await checkBookmark()
     await checkDownload()
-    await fetchRelatedPapers()
   }
 })
 
@@ -311,14 +255,9 @@ watch(() => route.params.id, async (newId) => {
     if (paper.value?.id) {
       await checkBookmark()
       await checkDownload()
-      await fetchRelatedPapers()
     }
   }
 })
-
-const goToPaper = (id: string) => {
-  router.push({ name: 'PaperDetail', params: { id } })
-}
 
 const goToAuthorPapers = (author: string) => {
   router.push({ name: 'AuthorPapers', params: { authorName: encodeURIComponent(author) } })
@@ -835,214 +774,6 @@ const getCategoryFullName = (category: string) => {
   margin: 16px 0;
   color: var(--text-secondary);
   font-style: italic;
-}
-
-.ai-insights {
-  background: linear-gradient(135deg, rgba(13, 110, 253, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
-  border-radius: 12px;
-  padding: 24px;
-  border: 1px solid var(--border-color);
-}
-
-.ai-insights h2 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 20px;
-}
-
-.ai-insights h2 svg {
-  width: 24px;
-  height: 24px;
-  color: var(--accent-color);
-}
-
-.insight-card {
-  background: var(--bg-primary);
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 16px;
-}
-
-.insight-card h3 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 12px;
-}
-
-.insight-card ul {
-  list-style: none;
-  padding: 0;
-}
-
-.insight-card li {
-  color: var(--text-secondary);
-  padding: 8px 0;
-  padding-left: 20px;
-  position: relative;
-}
-
-.insight-card li::before {
-  content: '•';
-  position: absolute;
-  left: 0;
-  color: var(--accent-color);
-  font-weight: bold;
-}
-
-.related-papers {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.related-paper {
-  display: flex;
-  gap: 12px;
-  padding: 12px;
-  background: var(--bg-secondary);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.related-paper:hover {
-  background: var(--bg-tertiary);
-  transform: translateX(4px);
-}
-
-.related-id {
-  font-family: 'Courier New', monospace;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  min-width: 80px;
-}
-
-.related-title {
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  font-weight: 500;
-  flex: 1;
-}
-
-.related-score {
-  font-size: 0.75rem;
-  color: var(--accent-color);
-  font-weight: 600;
-  background: rgba(var(--accent-color-rgb), 0.1);
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.related-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.related-header h3 {
-  margin: 0;
-}
-
-.refresh-related-btn {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 6px;
-  cursor: pointer;
-  transition: var(--transition);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.refresh-related-btn:hover {
-  background: var(--bg-tertiary);
-  border-color: var(--accent-color);
-}
-
-.refresh-related-btn svg {
-  width: 16px;
-  height: 16px;
-  color: var(--text-secondary);
-}
-
-.refresh-related-btn svg.spinning {
-  animation: spin 1s linear infinite;
-}
-
-.related-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 24px;
-  color: var(--text-secondary);
-}
-
-.spinner.small {
-  width: 24px;
-  height: 24px;
-  border-width: 2px;
-}
-
-.related-loading p {
-  margin: 12px 0 0 0;
-  font-size: 0.9rem;
-}
-
-.related-error {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 24px;
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.related-error svg {
-  width: 32px;
-  height: 32px;
-  color: #ef4444;
-  margin-bottom: 8px;
-}
-
-.related-error p {
-  margin: 0 0 12px 0;
-  font-size: 0.9rem;
-}
-
-.no-related {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 24px;
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.no-related p {
-  margin: 0 0 12px 0;
-  font-size: 0.9rem;
-}
-
-.retry-btn {
-  background: var(--accent-color);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.retry-btn:hover {
-  opacity: 0.9;
 }
 
 .sidebar {
