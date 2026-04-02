@@ -40,6 +40,7 @@
   --icon-settings: #2196F3;
   --icon-theme: #FFC107;
   --icon-date: #FF9800;
+  --icon-analysis: #38a4b3;
   --icon-category: #9C27B0;
   --icon-filter: #9C27B0;
   --icon-viewToggle: #00BCD4;
@@ -108,6 +109,7 @@
   --icon-settings: var(--text-secondary);
   --icon-theme: var(--text-secondary);
   --icon-date: var(--text-secondary);
+  --icon-analysis: var(--text-secondary);
   --icon-category: var(--text-secondary);
   --icon-filter: var(--text-secondary);
   --icon-viewToggle: var(--text-secondary);

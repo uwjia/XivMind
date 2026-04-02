@@ -58,6 +58,13 @@
               <line x1="15" y1="15" x2="16.5" y2="16.5" stroke="var(--icon-graph-line)" stroke-width="1.5"/>
             </svg>
           </button>
+          <button v-if="!isGraphView" class="icon-btn analysis-btn" @click="goToDailyAnalysis" title="AI Daily Analysis">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+          </button>
           <button v-if="!isGraphView" class="icon-btn refresh-btn" @click="refreshPapers" :disabled="loading" title="Refresh papers">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M23 4v6h-6M1 20v-6h6"/>
@@ -283,6 +290,31 @@ const handleRouteQuery = async () => {
   return false
 }
 
+function formatDateLocal(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function goToDailyAnalysis() {
+  let dateStr: string
+  
+  if (!selectedDate.value) {
+    dateStr = formatDateLocal(new Date())
+  } else if (selectedDate.value instanceof Date) {
+    dateStr = formatDateLocal(selectedDate.value)
+  } else if (typeof selectedDate.value === 'string') {
+    dateStr = selectedDate.value === 'all' ? formatDateLocal(new Date()) : selectedDate.value
+  } else if (typeof selectedDate.value === 'object' && 'startDate' in selectedDate.value) {
+    dateStr = selectedDate.value.startDate
+  } else {
+    dateStr = formatDateLocal(new Date())
+  }
+  
+  router.push({ name: 'DailyAnalysis', params: { date: dateStr } })
+}
+
 watch(() => route.query.date, async (newDate) => {
   if (newDate) {
     console.log('Route query date changed:', newDate)
@@ -383,6 +415,16 @@ onActivated(() => {
 .date-btn:hover {
   background: color-mix(in srgb, var(--icon-date) 10%, transparent);
   border-color: color-mix(in srgb, var(--icon-date) 40%, transparent);
+}
+
+.analysis-btn {
+  color: var(--icon-analysis);
+  border-color: color-mix(in srgb, var(--icon-analysis) 20%, transparent);
+}
+
+.analysis-btn:hover {
+  background: color-mix(in srgb, var(--icon-analysis) 10%, transparent);
+  border-color: color-mix(in srgb, var(--icon-analysis) 40%, transparent);
 }
 
 .category-btn {

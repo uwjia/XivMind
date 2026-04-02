@@ -87,6 +87,12 @@ const routes: RouteRecordRaw[] = [
     name: 'AuthorProfile',
     component: () => import('@/views/AuthorProfile.vue'),
     props: true
+  },
+  {
+    path: '/daily-analysis/:date',
+    name: 'DailyAnalysis',
+    component: () => import('@/views/DailyAnalysis.vue'),
+    props: true
   }
 ]
 
