@@ -203,9 +203,15 @@ class LanceDBPaperEmbeddingRepository(PaperEmbeddingRepository):
             
             similar_papers = []
             for _, row in results.iterrows():
+                # LanceDB uses L2 distance by default, which can be any non-negative value
+                # We normalize the similarity score to [0, 1] range
+                # Using a sigmoid-like function: similarity = 1 / (1 + distance)
+                distance = row.get("_distance", 0)
+                similarity = 1 / (1 + distance)
+                
                 similar_papers.append({
                     "paper_id": row.get("paper_id"),
-                    "similarity_score": 1 - row.get("_distance", 0),
+                    "similarity_score": similarity,
                     "embedding_model": row.get("embedding_model"),
                     "created_at": row.get("created_at"),
                 })

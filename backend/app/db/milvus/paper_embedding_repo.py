@@ -247,9 +247,13 @@ class MilvusPaperEmbeddingRepository:
                 else:
                     fields = entity_data
                 
+                # Normalize similarity score to [0, 1] range
+                # COSINE similarity ranges from -1 to 1, we map it to 0 to 1
+                similarity = (hit.score + 1) / 2
+                
                 similar_papers.append({
                     "paper_id": fields.get("paper_id"),
-                    "similarity_score": hit.score,
+                    "similarity_score": similarity,
                     "embedding_model": fields.get("embedding_model"),
                     "created_at": fields.get("created_at"),
                 })
