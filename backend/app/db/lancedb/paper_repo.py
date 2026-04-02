@@ -518,12 +518,12 @@ class LanceDBPaperRepository(PaperRepository):
                 filter_parts.append(f"categories LIKE '%\"{category}\"%'")
             
             if date_from and date_to:
-                filter_parts.append(f"published >= '{date_from}'")
-                filter_parts.append(f"published <= '{date_to}'")
+                filter_parts.append(f'published >= "{date_from}T00:00:00"')
+                filter_parts.append(f'published <= "{date_to}T23:59:59"')
             elif date_from:
-                filter_parts.append(f"published >= '{date_from}'")
+                filter_parts.append(f'published >= "{date_from}T00:00:00"')
             elif date_to:
-                filter_parts.append(f"published <= '{date_to}'")
+                filter_parts.append(f'published <= "{date_to}T23:59:59"')
             
             filter_str = " AND ".join(filter_parts) if filter_parts else None
             

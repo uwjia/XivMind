@@ -457,11 +457,11 @@ class MilvusPaperRepository(PaperRepository):
             conditions.append(f'categories like "%\\"{category}\\"%"')
         
         if date_from and date_to:
-            conditions.append(f'published >= "{date_from}" && published <= "{date_to}"')
+            conditions.append(f'published >= "{date_from}T00:00:00" && published <= "{date_to}T23:59:59"')
         elif date_from:
-            conditions.append(f'published >= "{date_from}"')
+            conditions.append(f'published >= "{date_from}T00:00:00"')
         elif date_to:
-            conditions.append(f'published <= "{date_to}"')
+            conditions.append(f'published <= "{date_to}T23:59:59"')
         
         if conditions:
             expr = " && ".join(conditions)
