@@ -247,7 +247,7 @@ class TestMilvusPaperEmbeddingRepositorySearchSimilar:
             
             assert len(result) == 1
             assert "similarity_score" in result[0]
-            assert result[0]["similarity_score"] == 0.9
+            assert result[0]["similarity_score"] == pytest.approx((0.9 + 1) / 2, rel=1e-3)
 
     def test_search_similar_with_paper_ids_filter(self, repo):
         mock_collection = Mock()

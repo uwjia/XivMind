@@ -438,6 +438,11 @@ class TestSemanticSearch:
         assert "error" in response.json()
 
     def test_search_papers_semantic_validation_top_k(self, client, mock_paper_service):
+        mock_paper_service.search_papers_semantic = AsyncMock(return_value={
+            "papers": [],
+            "total": 0,
+            "query": "test",
+        })
         response = client.post("/arxiv/search", json={
             "query": "test",
             "top_k": 0,
@@ -445,9 +450,14 @@ class TestSemanticSearch:
         assert response.status_code == 422
 
     def test_search_papers_semantic_validation_top_k_max(self, client, mock_paper_service):
+        mock_paper_service.search_papers_semantic = AsyncMock(return_value={
+            "papers": [],
+            "total": 0,
+            "query": "test",
+        })
         response = client.post("/arxiv/search", json={
             "query": "test",
-            "top_k": 101,
+            "top_k": 5001,
         })
         assert response.status_code == 422
 

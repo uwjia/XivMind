@@ -314,7 +314,7 @@ class TestLanceDBPaperEmbeddingRepositorySearchSimilar:
             
             assert len(result) == 2
             assert "similarity_score" in result[0]
-            assert result[0]["similarity_score"] == 0.9
+            assert result[0]["similarity_score"] == pytest.approx(1 / (1 + 0.1), rel=1e-3)
 
     def test_search_similar_with_paper_ids_filter(self, repo, sample_embedding):
         mock_table = Mock()
