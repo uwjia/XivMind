@@ -39,6 +39,11 @@
   --icon-dataManager: #9C27B0;
   --icon-settings: #2196F3;
   --icon-theme: #FFC107;
+  --icon-note: #07c5ff;
+  --icon-style-dot-1: #FF5722;
+  --icon-style-dot-2: #4CAF50;
+  --icon-style-dot-3: #2196F3;
+  --icon-style-dot-4: #FFC107;
   --icon-date: #FF9800;
   --icon-analysis: #38a4b3;
   --icon-category: #9C27B0;
@@ -108,6 +113,11 @@
   --icon-dataManager: var(--text-secondary);
   --icon-settings: var(--text-secondary);
   --icon-theme: var(--text-secondary);
+  --icon-note: var(--text-secondary);
+  --icon-style-dot-1: var(--text-secondary);
+  --icon-style-dot-2: var(--text-secondary);
+  --icon-style-dot-3: var(--text-secondary);
+  --icon-style-dot-4: var(--text-secondary);
   --icon-date: var(--text-secondary);
   --icon-analysis: var(--text-secondary);
   --icon-category: var(--text-secondary);

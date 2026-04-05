@@ -40,7 +40,7 @@
 
       <div class="header-right">
         <button ref="noteBtnRef" class="note-btn" @click="toggleNotePanel" title="Notes Panel">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-note)">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
             <line x1="16" y1="13" x2="8" y2="13"/>
@@ -49,17 +49,11 @@
           <span v-if="noteCount > 0" class="note-badge">{{ noteCount }}</span>
         </button>
         <button class="icon-style-btn" @click="toggleIconStyle" :title="isIconColorful ? 'Switch to Minimal Icons' : 'Switch to Colorful Icons'">
-          <svg v-if="isIconColorful" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <circle cx="6" cy="6" r="3" fill="#FF5722"/>
-            <circle cx="18" cy="6" r="3" fill="#4CAF50"/>
-            <circle cx="6" cy="18" r="3" fill="#2196F3"/>
-            <circle cx="18" cy="18" r="3" fill="#FFC107"/>
-          </svg>
-          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <circle cx="6" cy="6" r="3"/>
-            <circle cx="18" cy="6" r="3"/>
-            <circle cx="6" cy="18" r="3"/>
-            <circle cx="18" cy="18" r="3"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="6" cy="6" r="3" fill="var(--icon-style-dot-1)"/>
+            <circle cx="18" cy="6" r="3" fill="var(--icon-style-dot-2)"/>
+            <circle cx="6" cy="18" r="3" fill="var(--icon-style-dot-3)"/>
+            <circle cx="18" cy="18" r="3" fill="var(--icon-style-dot-4)"/>
           </svg>
         </button>
       </div>

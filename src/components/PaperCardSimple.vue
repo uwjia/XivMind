@@ -4,7 +4,7 @@
       <div class="paper-title-section">
         <h3 class="paper-title" @click="goToDetail">{{ paper.title || 'Untitled' }}</h3>
         <span class="paper-primary-category" :style="categoryStyle">{{ paper.primaryCategory || paper.category || 'CS' }}</span>
-        <span class="paper-index" :style="indexStyle">{{ index || 'N/A' }}</span>
+        <span class="paper-index">{{ index || 'N/A' }}</span>
       </div>
     </div>
   </div>
@@ -13,6 +13,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useThemeStore } from '@/stores/theme-store'
 import { getCategoryColor } from '@/utils/categoryColors'
 import type { Paper } from '@/types'
 
@@ -22,6 +23,7 @@ const props = defineProps<{
 }>()
 
 const router = useRouter()
+const themeStore = useThemeStore()
 
 const cardStyle = computed(() => {
   return {
@@ -30,17 +32,17 @@ const cardStyle = computed(() => {
   }
 })
 
-const categoryStyle = computed(() => {
-  const color = getCategoryColor(props.paper?.primaryCategory || props.paper?.category || 'cs.AI')
-  return {
-    backgroundColor: color + '20',
-    color: color,
-    border: `1px solid ${color}40`
-  }
-})
+const isMinimal = computed(() => themeStore.iconStyle === 'minimal')
 
-const indexStyle = computed(() => {
-  const color = '#2dadf7'
+const categoryStyle = computed(() => {
+  if (isMinimal.value) {
+    return {
+      backgroundColor: 'var(--tag-primary-category-bg)',
+      color: 'var(--tag-primary-category)',
+      border: '1px solid var(--tag-primary-category-border)'
+    }
+  }
+  const color = getCategoryColor(props.paper?.primaryCategory || props.paper?.category || 'cs.AI')
   return {
     backgroundColor: color + '20',
     color: color,
@@ -69,14 +71,13 @@ const goToDetail = () => {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  padding: 16px 20px;
+  padding: 12px 20px;
   cursor: default;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
   transform-style: preserve-3d;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   width: 100%;
-  min-height: 80px;
+  min-height: 60px;
   height: auto;
   display: flex;
   flex-direction: column;
@@ -92,14 +93,6 @@ const goToDetail = () => {
   border-radius: 16px;
   background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
   pointer-events: none;
-}
-
-.paper-card-simple:hover {
-  box-shadow: 
-    0 16px 48px rgba(0, 0, 0, 0.15),
-    0 4px 16px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  border-color: transparent;
 }
 
 .paper-title-section {
@@ -143,6 +136,9 @@ const goToDetail = () => {
   font-weight: 600;
   backdrop-filter: blur(10px);
   white-space: nowrap;
+  color: var(--tag-index);
+  background-color: color-mix(in srgb, var(--tag-index) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-index) 30%, transparent);
 }
 
 @media (max-width: 768px) {

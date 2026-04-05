@@ -446,8 +446,6 @@ const getVersionFromId = () => {
   border: 1px solid color-mix(in srgb, var(--tag-id) 30%, transparent);
 }
 
-
-
 .paper-categories {
   display: flex;
   gap: 8px;
