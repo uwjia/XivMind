@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { readingHistoryAPI, type ReadingHistoryItem } from '@/services/readingHistory'
+import { useNoteStore } from '@/stores/note-store'
 
 export const useReadingHistoryStore = defineStore('readingHistory', () => {
   const history = ref<ReadingHistoryItem[]>([])
@@ -28,6 +29,7 @@ export const useReadingHistoryStore = defineStore('readingHistory', () => {
   }
 
   const showPanel = () => {
+    useNoteStore().hidePanel()
     isVisible.value = true
     if (history.value.length === 0) {
       fetchHistory()
@@ -64,14 +66,11 @@ export const useReadingHistoryStore = defineStore('readingHistory', () => {
   }
 
   const resetToDefaultPosition = () => {
-    const defaultX = Math.min(
-      historyBtnPosition.value.x - size.value.width - 10,
-      window.innerWidth - size.value.width - 20
-    )
-    position.value = {
-      x: Math.max(20, defaultX),
-      y: 80
-    }
+    const panelWidth = size.value.width
+    const newX = Math.max(10, historyBtnPosition.value.x - panelWidth)
+    const newY = historyBtnPosition.value.y + 8
+    position.value = { x: newX, y: newY }
+    hasUserMovedPanel.value = false
   }
 
   return {

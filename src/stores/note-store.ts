@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Note, NotePanelPosition, NotePanelSize, ExportFormat } from '@/types/note'
+import { useReadingHistoryStore } from '@/stores/reading-history-store'
 
 const generateId = () => `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
@@ -230,10 +231,15 @@ export const useNoteStore = defineStore('note', () => {
   }
 
   const togglePanel = () => {
-    isVisible.value = !isVisible.value
+    if (isVisible.value) {
+      hidePanel()
+    } else {
+      showPanel()
+    }
   }
 
   const showPanel = () => {
+    useReadingHistoryStore().hidePanel()
     isVisible.value = true
   }
 
