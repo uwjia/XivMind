@@ -461,3 +461,257 @@ class TestLanceDBPdfAnnotationRepositoryEntityConversion:
         result = repo._entity_to_annotation(row)
         
         assert result["position"] == {}
+
+
+class TestLanceDBPdfAnnotationRepositoryGetAllReadingProgress:
+    def test_get_all_reading_progress_empty(self, repo):
+        mock_table = Mock()
+        mock_table.count_rows = Mock(return_value=0)
+        
+        with patch.object(repo, '_get_progress_table', return_value=mock_table):
+            result = repo.get_all_reading_progress_with_papers()
+            
+            assert result == []
+
+    def test_get_all_reading_progress_single_item(self, repo):
+        mock_progress_table = Mock()
+        mock_progress_lance_ds = Mock()
+        mock_result_table = Mock()
+        mock_scanner = Mock()
+        
+        progress_df = pd.DataFrame([{
+            "paper_id": "2301.12345",
+            "current_page": 5,
+            "total_pages": 20,
+            "last_read_at": "2024-01-15T10:00:00",
+        }])
+        
+        mock_result_table.to_pandas = Mock(return_value=progress_df)
+        mock_scanner.to_table = Mock(return_value=mock_result_table)
+        mock_progress_lance_ds.scanner = Mock(return_value=mock_scanner)
+        mock_progress_table.to_lance = Mock(return_value=mock_progress_lance_ds)
+        mock_progress_table.count_rows = Mock(return_value=1)
+        
+        mock_papers_table = Mock()
+        mock_papers_lance_ds = Mock()
+        mock_papers_result_table = Mock()
+        mock_papers_scanner = Mock()
+        
+        papers_df = pd.DataFrame([{
+            "id": "2301.12345",
+            "title": "Test Paper Title",
+            "authors": json.dumps(["Author One", "Author Two"]),
+            "primary_category": "cs.CL",
+            "categories": json.dumps(["cs.CL", "cs.LG"]),
+            "pdf_url": "https://arxiv.org/pdf/2301.12345",
+            "abs_url": "https://arxiv.org/abs/2301.12345",
+            "published": "2024-01-15",
+        }])
+        
+        mock_papers_result_table.to_pandas = Mock(return_value=papers_df)
+        mock_papers_scanner.to_table = Mock(return_value=mock_papers_result_table)
+        mock_papers_lance_ds.scanner = Mock(return_value=mock_papers_scanner)
+        mock_papers_table.to_lance = Mock(return_value=mock_papers_lance_ds)
+        
+        with patch.object(repo, '_get_progress_table', return_value=mock_progress_table), \
+             patch('app.db.lancedb.pdf_annotation_repo.lancedb_client.get_table', return_value=mock_papers_table):
+            result = repo.get_all_reading_progress_with_papers()
+            
+            assert len(result) == 1
+            assert result[0]["paper_id"] == "2301.12345"
+            assert result[0]["title"] == "Test Paper Title"
+            assert result[0]["authors"] == ["Author One", "Author Two"]
+            assert result[0]["primary_category"] == "cs.CL"
+            assert result[0]["current_page"] == 5
+            assert result[0]["total_pages"] == 20
+            assert result[0]["progress_percent"] == 25.0
+            assert result[0]["last_read_at"] == "2024-01-15T10:00:00"
+
+    def test_get_all_reading_progress_multiple_items(self, repo):
+        mock_progress_table = Mock()
+        mock_progress_lance_ds = Mock()
+        mock_result_table = Mock()
+        mock_scanner = Mock()
+        
+        progress_df = pd.DataFrame([
+            {"paper_id": "2301.12345", "current_page": 10, "total_pages": 20, "last_read_at": "2024-01-15T09:00:00"},
+            {"paper_id": "2301.67890", "current_page": 5, "total_pages": 10, "last_read_at": "2024-01-15T10:00:00"},
+        ])
+        
+        mock_result_table.to_pandas = Mock(return_value=progress_df)
+        mock_scanner.to_table = Mock(return_value=mock_result_table)
+        mock_progress_lance_ds.scanner = Mock(return_value=mock_scanner)
+        mock_progress_table.to_lance = Mock(return_value=mock_progress_lance_ds)
+        mock_progress_table.count_rows = Mock(return_value=2)
+        
+        mock_papers_table = Mock()
+        mock_papers_lance_ds = Mock()
+        mock_papers_result_table = Mock()
+        mock_papers_scanner = Mock()
+        
+        papers_df = pd.DataFrame([
+            {"id": "2301.12345", "title": "Paper 1", "authors": "[]", "primary_category": "cs.CL", "categories": "[]", "pdf_url": "", "abs_url": "", "published": ""},
+            {"id": "2301.67890", "title": "Paper 2", "authors": "[]", "primary_category": "cs.CV", "categories": "[]", "pdf_url": "", "abs_url": "", "published": ""},
+        ])
+        
+        mock_papers_result_table.to_pandas = Mock(return_value=papers_df)
+        mock_papers_scanner.to_table = Mock(return_value=mock_papers_result_table)
+        mock_papers_lance_ds.scanner = Mock(return_value=mock_papers_scanner)
+        mock_papers_table.to_lance = Mock(return_value=mock_papers_lance_ds)
+        
+        with patch.object(repo, '_get_progress_table', return_value=mock_progress_table), \
+             patch('app.db.lancedb.pdf_annotation_repo.lancedb_client.get_table', return_value=mock_papers_table):
+            result = repo.get_all_reading_progress_with_papers()
+            
+            assert len(result) == 2
+            assert result[0]["paper_id"] == "2301.12345"
+            assert result[1]["paper_id"] == "2301.67890"
+
+    def test_get_all_reading_progress_with_limit(self, repo):
+        mock_progress_table = Mock()
+        mock_progress_lance_ds = Mock()
+        mock_result_table = Mock()
+        mock_scanner = Mock()
+        
+        progress_df = pd.DataFrame([
+            {"paper_id": "2301.12345", "current_page": 5, "total_pages": 20, "last_read_at": "2024-01-15T10:00:00"},
+        ])
+        
+        mock_result_table.to_pandas = Mock(return_value=progress_df)
+        mock_scanner.to_table = Mock(return_value=mock_result_table)
+        mock_progress_lance_ds.scanner = Mock(return_value=mock_scanner)
+        mock_progress_table.to_lance = Mock(return_value=mock_progress_lance_ds)
+        mock_progress_table.count_rows = Mock(return_value=1)
+        
+        mock_papers_table = Mock()
+        mock_papers_lance_ds = Mock()
+        mock_papers_result_table = Mock()
+        mock_papers_scanner = Mock()
+        
+        papers_df = pd.DataFrame([{
+            "id": "2301.12345", "title": "Paper 1", "authors": "[]", "primary_category": "cs.CL", "categories": "[]", "pdf_url": "", "abs_url": "", "published": ""
+        }])
+        
+        mock_papers_result_table.to_pandas = Mock(return_value=papers_df)
+        mock_papers_scanner.to_table = Mock(return_value=mock_papers_result_table)
+        mock_papers_lance_ds.scanner = Mock(return_value=mock_papers_scanner)
+        mock_papers_table.to_lance = Mock(return_value=mock_papers_lance_ds)
+        
+        with patch.object(repo, '_get_progress_table', return_value=mock_progress_table), \
+             patch('app.db.lancedb.pdf_annotation_repo.lancedb_client.get_table', return_value=mock_papers_table):
+            result = repo.get_all_reading_progress_with_papers(limit=1)
+            
+            assert len(result) == 1
+
+    def test_get_all_reading_progress_completed_paper(self, repo):
+        mock_progress_table = Mock()
+        mock_progress_lance_ds = Mock()
+        mock_result_table = Mock()
+        mock_scanner = Mock()
+        
+        progress_df = pd.DataFrame([{
+            "paper_id": "2301.12345",
+            "current_page": 20,
+            "total_pages": 20,
+            "last_read_at": "2024-01-15T10:00:00",
+        }])
+        
+        mock_result_table.to_pandas = Mock(return_value=progress_df)
+        mock_scanner.to_table = Mock(return_value=mock_result_table)
+        mock_progress_lance_ds.scanner = Mock(return_value=mock_scanner)
+        mock_progress_table.to_lance = Mock(return_value=mock_progress_lance_ds)
+        mock_progress_table.count_rows = Mock(return_value=1)
+        
+        mock_papers_table = Mock()
+        mock_papers_lance_ds = Mock()
+        mock_papers_result_table = Mock()
+        mock_papers_scanner = Mock()
+        
+        papers_df = pd.DataFrame([{
+            "id": "2301.12345", "title": "Completed Paper", "authors": "[]", "primary_category": "cs.CL", "categories": "[]", "pdf_url": "", "abs_url": "", "published": ""
+        }])
+        
+        mock_papers_result_table.to_pandas = Mock(return_value=papers_df)
+        mock_papers_scanner.to_table = Mock(return_value=mock_papers_result_table)
+        mock_papers_lance_ds.scanner = Mock(return_value=mock_papers_scanner)
+        mock_papers_table.to_lance = Mock(return_value=mock_papers_lance_ds)
+        
+        with patch.object(repo, '_get_progress_table', return_value=mock_progress_table), \
+             patch('app.db.lancedb.pdf_annotation_repo.lancedb_client.get_table', return_value=mock_papers_table):
+            result = repo.get_all_reading_progress_with_papers()
+            
+            assert len(result) == 1
+            assert result[0]["progress_percent"] == 100.0
+
+    def test_get_all_reading_progress_missing_paper(self, repo):
+        mock_progress_table = Mock()
+        mock_progress_lance_ds = Mock()
+        mock_result_table = Mock()
+        mock_scanner = Mock()
+        
+        progress_df = pd.DataFrame([{
+            "paper_id": "nonexistent-paper",
+            "current_page": 5,
+            "total_pages": 20,
+            "last_read_at": "2024-01-15T10:00:00",
+        }])
+        
+        mock_result_table.to_pandas = Mock(return_value=progress_df)
+        mock_scanner.to_table = Mock(return_value=mock_result_table)
+        mock_progress_lance_ds.scanner = Mock(return_value=mock_scanner)
+        mock_progress_table.to_lance = Mock(return_value=mock_progress_lance_ds)
+        mock_progress_table.count_rows = Mock(return_value=1)
+        
+        mock_papers_table = Mock()
+        mock_papers_lance_ds = Mock()
+        mock_papers_result_table = Mock()
+        mock_papers_scanner = Mock()
+        
+        papers_df = pd.DataFrame([])
+        
+        mock_papers_result_table.to_pandas = Mock(return_value=papers_df)
+        mock_papers_scanner.to_table = Mock(return_value=mock_papers_result_table)
+        mock_papers_lance_ds.scanner = Mock(return_value=mock_papers_scanner)
+        mock_papers_table.to_lance = Mock(return_value=mock_papers_lance_ds)
+        
+        with patch.object(repo, '_get_progress_table', return_value=mock_progress_table), \
+             patch('app.db.lancedb.pdf_annotation_repo.lancedb_client.get_table', return_value=mock_papers_table):
+            result = repo.get_all_reading_progress_with_papers()
+            
+            assert len(result) == 1
+            assert result[0]["paper_id"] == "nonexistent-paper"
+            assert result[0]["title"] == "Unknown Title"
+            assert result[0]["authors"] == []
+            assert result[0]["primary_category"] == ""
+
+    def test_get_all_reading_progress_fallback_to_pandas(self, repo):
+        mock_progress_table = Mock()
+        mock_progress_lance_ds = Mock()
+        mock_progress_lance_ds.scanner = Mock(side_effect=Exception("Scanner error"))
+        mock_progress_table.to_lance = Mock(return_value=mock_progress_lance_ds)
+        mock_progress_table.count_rows = Mock(return_value=1)
+        
+        progress_df = pd.DataFrame([{
+            "paper_id": "2301.12345",
+            "current_page": 5,
+            "total_pages": 20,
+            "last_read_at": "2024-01-15T10:00:00",
+        }])
+        mock_progress_table.to_pandas = Mock(return_value=progress_df)
+        
+        mock_papers_table = Mock()
+        mock_papers_lance_ds = Mock()
+        mock_papers_lance_ds.scanner = Mock(side_effect=Exception("Scanner error"))
+        mock_papers_table.to_lance = Mock(return_value=mock_papers_lance_ds)
+        
+        papers_df = pd.DataFrame([{
+            "id": "2301.12345", "title": "Test Paper", "authors": "[]", "primary_category": "cs.CL", "categories": "[]", "pdf_url": "", "abs_url": "", "published": ""
+        }])
+        mock_papers_table.to_pandas = Mock(return_value=papers_df)
+        
+        with patch.object(repo, '_get_progress_table', return_value=mock_progress_table), \
+             patch('app.db.lancedb.pdf_annotation_repo.lancedb_client.get_table', return_value=mock_papers_table):
+            result = repo.get_all_reading_progress_with_papers()
+            
+            assert len(result) == 1
+            assert result[0]["paper_id"] == "2301.12345"

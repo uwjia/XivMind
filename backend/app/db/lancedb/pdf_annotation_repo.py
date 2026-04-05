@@ -5,6 +5,9 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+import lance
+from lance.dataset import ColumnOrdering
+
 from app.db.base import PdfAnnotationRepository
 from app.db.lancedb.client import lancedb_client
 
@@ -222,3 +225,90 @@ class LanceDBPdfAnnotationRepository(PdfAnnotationRepository):
             "view_mode": view_mode,
             "last_read_at": now,
         }
+
+    def get_all_reading_progress_with_papers(self, limit: int = 20) -> List[Dict[str, Any]]:
+        progress_table = self._get_progress_table()
+        
+        if progress_table.count_rows() == 0:
+            return []
+        
+        try:
+            progress_lance_ds = progress_table.to_lance()
+            progress_scanner = progress_lance_ds.scanner(
+                columns=["paper_id", "current_page", "total_pages", "last_read_at"],
+                limit=limit,
+                order_by=[ColumnOrdering("last_read_at", ascending=False)],
+            )
+            progress_df = progress_scanner.to_table().to_pandas()
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for reading progress, falling back to pandas: {e}")
+            progress_df = progress_table.to_pandas()
+            progress_df = progress_df.sort_values(by="last_read_at", ascending=False).head(limit)
+        
+        if progress_df.empty:
+            return []
+        
+        paper_ids = progress_df["paper_id"].tolist()
+        
+        papers_table = lancedb_client.get_table("papers")
+        
+        try:
+            papers_lance_ds = papers_table.to_lance()
+            paper_ids_str = ", ".join([f"'{pid}'" for pid in paper_ids])
+            papers_scanner = papers_lance_ds.scanner(
+                columns=["id", "title", "authors", "primary_category", "categories", "pdf_url", "abs_url", "published"],
+                filter=f"id IN ({paper_ids_str})",
+            )
+            papers_df = papers_scanner.to_table().to_pandas()
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for papers, falling back to pandas: {e}")
+            papers_df = papers_table.to_pandas()
+            papers_df = papers_df[papers_df["id"].isin(paper_ids)]
+        
+        paper_map = {row["id"]: row for _, row in papers_df.iterrows()}
+        
+        results = []
+        for _, rp in progress_df.iterrows():
+            paper_id = rp.get("paper_id", "")
+            paper = paper_map.get(paper_id)
+            
+            total_pages = rp.get("total_pages") or 1
+            current_page = rp.get("current_page") or 1
+            progress_percent = round((current_page / total_pages) * 100, 1) if total_pages > 0 else 0
+            
+            authors = []
+            categories = []
+            title = "Unknown Title"
+            primary_category = ""
+            pdf_url = ""
+            abs_url = ""
+            published = ""
+            
+            if paper is not None:
+                title = paper.get("title", "Unknown Title")
+                primary_category = paper.get("primary_category", "")
+                pdf_url = paper.get("pdf_url", "")
+                abs_url = paper.get("abs_url", "")
+                published = paper.get("published", "")
+                
+                authors_str = paper.get("authors", "[]")
+                authors = json.loads(authors_str) if isinstance(authors_str, str) else authors_str
+                categories_str = paper.get("categories", "[]")
+                categories = json.loads(categories_str) if isinstance(categories_str, str) else categories_str
+            
+            results.append({
+                "paper_id": paper_id,
+                "title": title,
+                "authors": authors or [],
+                "primary_category": primary_category,
+                "categories": categories or [],
+                "current_page": int(current_page),
+                "total_pages": int(total_pages),
+                "progress_percent": progress_percent,
+                "last_read_at": rp.get("last_read_at", ""),
+                "pdf_url": pdf_url,
+                "abs_url": abs_url,
+                "published": published,
+            })
+        
+        return results

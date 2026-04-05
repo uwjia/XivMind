@@ -61,5 +61,8 @@ class PdfAnnotationService:
             paper_id, current_page, total_pages, zoom_level, view_mode
         )
 
+    def get_all_reading_progress_with_papers(self, limit: int = 20) -> List[Dict[str, Any]]:
+        return self._repository.get_all_reading_progress_with_papers(limit)
+
 
 pdf_annotation_service = PdfAnnotationService()

@@ -223,3 +223,70 @@ class MilvusPdfAnnotationRepository(PdfAnnotationRepository):
             "view_mode": view_mode,
             "last_read_at": now,
         }
+
+    def get_all_reading_progress_with_papers(self, limit: int = 20) -> List[Dict[str, Any]]:
+        from app.db.milvus.client import milvus_client as client
+        
+        progress_collection = self._get_progress_collection()
+        progress_collection.load()
+        
+        results = progress_collection.query(
+            expr='',
+            output_fields=[
+                "paper_id", "current_page", "total_pages",
+                "zoom_level", "view_mode", "last_read_at"
+            ],
+            limit=limit,
+        )
+        
+        sorted_results = sorted(results, key=lambda x: x.get("last_read_at", ""), reverse=True)[:limit]
+        
+        if not sorted_results:
+            return []
+        
+        paper_ids = [r.get("paper_id") for r in sorted_results if r.get("paper_id")]
+        
+        papers_collection = client.get_collection("papers")
+        papers_collection.load()
+        
+        paper_results = []
+        for pid in paper_ids:
+            pr = papers_collection.query(
+                expr=f'id == "{pid}"',
+                output_fields=["id", "title", "authors", "primary_category", "categories", "pdf_url", "abs_url", "published"],
+            )
+            if pr:
+                paper_results.append(pr[0])
+        
+        paper_map = {p.get("id"): p for p in paper_results}
+        
+        final_results = []
+        for rp in sorted_results:
+            paper_id = rp.get("paper_id", "")
+            paper = paper_map.get(paper_id, {})
+            
+            total_pages = rp.get("total_pages") or 1
+            current_page = rp.get("current_page") or 1
+            progress_percent = round((current_page / total_pages) * 100, 1) if total_pages > 0 else 0
+            
+            authors_str = paper.get("authors", "[]")
+            authors = json.loads(authors_str) if isinstance(authors_str, str) else authors_str
+            categories_str = paper.get("categories", "[]")
+            categories = json.loads(categories_str) if isinstance(categories_str, str) else categories_str
+            
+            final_results.append({
+                "paper_id": paper_id,
+                "title": paper.get("title", "Unknown Title"),
+                "authors": authors or [],
+                "primary_category": paper.get("primary_category", ""),
+                "categories": categories or [],
+                "current_page": current_page,
+                "total_pages": total_pages,
+                "progress_percent": progress_percent,
+                "last_read_at": rp.get("last_read_at", ""),
+                "pdf_url": paper.get("pdf_url", ""),
+                "abs_url": paper.get("abs_url", ""),
+                "published": paper.get("published", ""),
+            })
+        
+        return final_results

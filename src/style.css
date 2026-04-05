@@ -40,6 +40,7 @@
   --icon-settings: #2196F3;
   --icon-theme: #FFC107;
   --icon-note: #07c5ff;
+  --icon-history: #9C27B0;
   --icon-style-dot-1: #FF5722;
   --icon-style-dot-2: #4CAF50;
   --icon-style-dot-3: #2196F3;
@@ -114,6 +115,7 @@
   --icon-settings: var(--text-secondary);
   --icon-theme: var(--text-secondary);
   --icon-note: var(--text-secondary);
+  --icon-history: var(--text-secondary);
   --icon-style-dot-1: var(--text-secondary);
   --icon-style-dot-2: var(--text-secondary);
   --icon-style-dot-3: var(--text-secondary);

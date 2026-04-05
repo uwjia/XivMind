@@ -39,6 +39,12 @@
       </div>
 
       <div class="header-right">
+        <button ref="historyBtnRef" class="history-btn" @click="toggleHistoryPanel" title="Recent Reading">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-history)">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </button>
         <button ref="noteBtnRef" class="note-btn" @click="toggleNotePanel" title="Notes Panel">
           <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-note)">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -58,6 +64,8 @@
         </button>
       </div>
     </div>
+    <NotePanel />
+    <ReadingHistoryPanel />
   </header>
 </template>
 
@@ -67,17 +75,22 @@ import { useRouter, useRoute } from 'vue-router'
 import { useSidebarStore } from '@/stores/sidebar-store'
 import { useNoteStore } from '@/stores/note-store'
 import { useThemeStore } from '@/stores/theme-store'
+import { useReadingHistoryStore } from '@/stores/reading-history-store'
+import NotePanel from '@/components/note/NotePanel.vue'
+import ReadingHistoryPanel from '@/components/reading-history/ReadingHistoryPanel.vue'
 
 const router = useRouter()
 const route = useRoute()
 const sidebarStore = useSidebarStore()
 const noteStore = useNoteStore()
 const themeStore = useThemeStore()
+const historyStore = useReadingHistoryStore()
 
 const searchQuery = ref<string>('')
 const isCollapsed = computed(() => sidebarStore.effectiveCollapsed)
 const noteCount = computed(() => noteStore.notes.length)
 const noteBtnRef = ref<HTMLElement | null>(null)
+const historyBtnRef = ref<HTMLElement | null>(null)
 const isIconColorful = computed(() => themeStore.iconStyle === 'colorful')
 
 watch(() => route.query?.q, (newQuery) => {
@@ -108,12 +121,25 @@ const toggleNotePanel = () => {
   noteStore.togglePanel()
 }
 
+const updateHistoryBtnPosition = () => {
+  if (historyBtnRef.value) {
+    const rect = historyBtnRef.value.getBoundingClientRect()
+    historyStore.setHistoryBtnPosition(rect.right, rect.bottom)
+  }
+}
+
+const toggleHistoryPanel = () => {
+  updateHistoryBtnPosition()
+  historyStore.togglePanel()
+}
+
 const toggleIconStyle = () => {
   themeStore.toggleIconStyle()
 }
 
 defineExpose({
   noteBtnRef,
+  historyBtnRef,
   updateNoteBtnPosition
 })
 </script>
@@ -266,6 +292,31 @@ defineExpose({
   align-items: center;
   gap: 12px;
   margin-left: auto;
+}
+
+.history-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-secondary);
+}
+
+.history-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent-color);
+}
+
+.history-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .note-btn {

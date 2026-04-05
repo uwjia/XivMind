@@ -280,3 +280,169 @@ class TestSQLitePdfAnnotationRepositoryReadingProgress:
         assert progress["total_pages"] == 10
         assert progress["zoom_level"] == 1.5
         assert progress["view_mode"] == "continuous"
+
+
+class TestSQLitePdfAnnotationRepositoryGetAllReadingProgress:
+    @pytest.fixture
+    def repo(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = os.path.join(tmpdir, "test_all_progress.db")
+            repo = SQLitePdfAnnotationRepository(db_path)
+            with repo._get_connection() as conn:
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS papers (
+                        id TEXT PRIMARY KEY,
+                        title TEXT NOT NULL,
+                        abstract TEXT,
+                        authors TEXT,
+                        primary_category TEXT,
+                        categories TEXT,
+                        pdf_url TEXT,
+                        abs_url TEXT,
+                        published TEXT,
+                        updated TEXT
+                    )
+                """)
+                conn.commit()
+            yield repo
+
+    @pytest.fixture
+    def sample_paper_data(self, repo):
+        with repo._get_connection() as conn:
+            conn.execute("""
+                INSERT INTO papers (id, title, authors, primary_category, categories, pdf_url, abs_url, published)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                "2301.12345",
+                "Test Paper Title",
+                json.dumps(["Author One", "Author Two"]),
+                "cs.CL",
+                json.dumps(["cs.CL", "cs.LG"]),
+                "https://arxiv.org/pdf/2301.12345",
+                "https://arxiv.org/abs/2301.12345",
+                "2024-01-15"
+            ))
+            conn.execute("""
+                INSERT INTO papers (id, title, authors, primary_category, categories, pdf_url, abs_url, published)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                "2301.67890",
+                "Another Test Paper",
+                json.dumps(["Author Three"]),
+                "cs.CV",
+                json.dumps(["cs.CV"]),
+                "https://arxiv.org/pdf/2301.67890",
+                "https://arxiv.org/abs/2301.67890",
+                "2024-01-16"
+            ))
+            conn.commit()
+
+    def test_get_all_reading_progress_empty(self, repo):
+        result = repo.get_all_reading_progress_with_papers()
+        
+        assert result == []
+
+    def test_get_all_reading_progress_single_item(self, repo, sample_paper_data):
+        repo.save_reading_progress(
+            paper_id="2301.12345",
+            current_page=5,
+            total_pages=20,
+            zoom_level=1.5,
+            view_mode="continuous",
+        )
+        
+        result = repo.get_all_reading_progress_with_papers()
+        
+        assert len(result) == 1
+        assert result[0]["paper_id"] == "2301.12345"
+        assert result[0]["title"] == "Test Paper Title"
+        assert result[0]["authors"] == ["Author One", "Author Two"]
+        assert result[0]["primary_category"] == "cs.CL"
+        assert result[0]["current_page"] == 5
+        assert result[0]["total_pages"] == 20
+        assert result[0]["progress_percent"] == 25.0
+        assert "last_read_at" in result[0]
+
+    def test_get_all_reading_progress_multiple_items(self, repo, sample_paper_data):
+        import time
+        
+        repo.save_reading_progress(
+            paper_id="2301.12345",
+            current_page=10,
+            total_pages=20,
+            zoom_level=1.5,
+            view_mode="continuous",
+        )
+        
+        time.sleep(0.1)
+        
+        repo.save_reading_progress(
+            paper_id="2301.67890",
+            current_page=5,
+            total_pages=10,
+            zoom_level=1.0,
+            view_mode="single",
+        )
+        
+        result = repo.get_all_reading_progress_with_papers()
+        
+        assert len(result) == 2
+        assert result[0]["paper_id"] == "2301.67890"
+        assert result[1]["paper_id"] == "2301.12345"
+
+    def test_get_all_reading_progress_with_limit(self, repo, sample_paper_data):
+        import time
+        
+        repo.save_reading_progress(
+            paper_id="2301.12345",
+            current_page=5,
+            total_pages=20,
+            zoom_level=1.5,
+            view_mode="continuous",
+        )
+        
+        time.sleep(0.1)
+        
+        repo.save_reading_progress(
+            paper_id="2301.67890",
+            current_page=3,
+            total_pages=10,
+            zoom_level=1.0,
+            view_mode="single",
+        )
+        
+        result = repo.get_all_reading_progress_with_papers(limit=1)
+        
+        assert len(result) == 1
+        assert result[0]["paper_id"] == "2301.67890"
+
+    def test_get_all_reading_progress_completed_paper(self, repo, sample_paper_data):
+        repo.save_reading_progress(
+            paper_id="2301.12345",
+            current_page=20,
+            total_pages=20,
+            zoom_level=1.5,
+            view_mode="continuous",
+        )
+        
+        result = repo.get_all_reading_progress_with_papers()
+        
+        assert len(result) == 1
+        assert result[0]["progress_percent"] == 100.0
+
+    def test_get_all_reading_progress_missing_paper(self, repo):
+        repo.save_reading_progress(
+            paper_id="nonexistent-paper",
+            current_page=5,
+            total_pages=20,
+            zoom_level=1.5,
+            view_mode="continuous",
+        )
+        
+        result = repo.get_all_reading_progress_with_papers()
+        
+        assert len(result) == 1
+        assert result[0]["paper_id"] == "nonexistent-paper"
+        assert result[0]["title"] == "Unknown Title"
+        assert result[0]["authors"] == []
+        assert result[0]["primary_category"] == ""

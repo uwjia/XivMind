@@ -14,7 +14,6 @@
       :message="toastMessage"
       :type="toastType"
     />
-    <NotePanel />
   </div>
 </template>
 
@@ -29,7 +28,6 @@ import { useDownloadStore } from '@/stores/download-store'
 import Header from '@/components/Header.vue'
 import Sidebar from '@/components/Sidebar.vue'
 import Toast from '@/components/Toast.vue'
-import NotePanel from '@/components/note/NotePanel.vue'
 
 const themeStore = useThemeStore()
 const sidebarStore = useSidebarStore()

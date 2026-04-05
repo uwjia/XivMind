@@ -508,6 +508,11 @@ class PdfAnnotationRepository(ABC):
         """Save reading progress for a paper."""
         pass
 
+    @abstractmethod
+    def get_all_reading_progress_with_papers(self, limit: int = 20) -> List[Dict[str, Any]]:
+        """Get all reading progress with paper details, sorted by last_read_at DESC."""
+        pass
+
 
 class FollowedAuthorRepository(BaseRepository):
     """Abstract repository for followed authors."""

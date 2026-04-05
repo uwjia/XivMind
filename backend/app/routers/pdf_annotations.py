@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
-from typing import List
+from typing import List, Any
 import os
 
 from app.models.pdf_annotation import (
@@ -180,5 +180,14 @@ def get_pdf_outline(paper_id: str):
             return []
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reading-history", response_model=List[Any])
+def get_reading_history(limit: int = Query(default=20, ge=1, le=100)):
+    try:
+        history = pdf_annotation_service.get_all_reading_progress_with_papers(limit)
+        return history
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

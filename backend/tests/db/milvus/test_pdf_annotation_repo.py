@@ -407,3 +407,221 @@ class TestMilvusPdfAnnotationRepositoryEntityConversion:
         result = repo._entity_to_annotation(entity)
         
         assert result["position"] == {}
+
+
+class TestMilvusPdfAnnotationRepositoryGetAllReadingProgress:
+    def test_get_all_reading_progress_empty(self, repo):
+        mock_progress_collection = Mock()
+        mock_progress_collection.load = Mock()
+        mock_progress_collection.query = Mock(return_value=[])
+        
+        with patch.object(repo, '_get_progress_collection', return_value=mock_progress_collection):
+            result = repo.get_all_reading_progress_with_papers()
+            
+            assert result == []
+
+    def test_get_all_reading_progress_single_item(self, repo):
+        mock_progress_collection = Mock()
+        mock_progress_collection.load = Mock()
+        mock_progress_collection.query = Mock(return_value=[{
+            "paper_id": "2301.12345",
+            "current_page": 5,
+            "total_pages": 20,
+            "last_read_at": "2024-01-15T10:00:00",
+        }])
+        
+        mock_papers_collection = Mock()
+        mock_papers_collection.load = Mock()
+        mock_papers_collection.query = Mock(return_value=[{
+            "id": "2301.12345",
+            "title": "Test Paper Title",
+            "authors": json.dumps(["Author One", "Author Two"]),
+            "primary_category": "cs.CL",
+            "categories": json.dumps(["cs.CL", "cs.LG"]),
+            "pdf_url": "https://arxiv.org/pdf/2301.12345",
+            "abs_url": "https://arxiv.org/abs/2301.12345",
+            "published": "2024-01-15",
+        }])
+        
+        mock_client = Mock()
+        mock_client.get_collection = Mock(return_value=mock_papers_collection)
+        
+        with patch.object(repo, '_get_progress_collection', return_value=mock_progress_collection), \
+             patch('app.db.milvus.client.milvus_client', mock_client):
+            result = repo.get_all_reading_progress_with_papers()
+            
+            assert len(result) == 1
+            assert result[0]["paper_id"] == "2301.12345"
+            assert result[0]["title"] == "Test Paper Title"
+            assert result[0]["authors"] == ["Author One", "Author Two"]
+            assert result[0]["primary_category"] == "cs.CL"
+            assert result[0]["current_page"] == 5
+            assert result[0]["total_pages"] == 20
+            assert result[0]["progress_percent"] == 25.0
+            assert result[0]["last_read_at"] == "2024-01-15T10:00:00"
+
+    def test_get_all_reading_progress_multiple_items(self, repo):
+        mock_progress_collection = Mock()
+        mock_progress_collection.load = Mock()
+        mock_progress_collection.query = Mock(return_value=[
+            {"paper_id": "2301.67890", "current_page": 5, "total_pages": 10, "last_read_at": "2024-01-15T10:00:00"},
+            {"paper_id": "2301.12345", "current_page": 10, "total_pages": 20, "last_read_at": "2024-01-15T09:00:00"},
+        ])
+        
+        mock_papers_collection = Mock()
+        mock_papers_collection.load = Mock()
+        
+        def papers_query_side_effect(expr, output_fields):
+            if "2301.12345" in expr:
+                return [{
+                    "id": "2301.12345",
+                    "title": "Paper 1",
+                    "authors": "[]",
+                    "primary_category": "cs.CL",
+                    "categories": "[]",
+                    "pdf_url": "",
+                    "abs_url": "",
+                    "published": "",
+                }]
+            elif "2301.67890" in expr:
+                return [{
+                    "id": "2301.67890",
+                    "title": "Paper 2",
+                    "authors": "[]",
+                    "primary_category": "cs.CV",
+                    "categories": "[]",
+                    "pdf_url": "",
+                    "abs_url": "",
+                    "published": "",
+                }]
+            return []
+        
+        mock_papers_collection.query = Mock(side_effect=papers_query_side_effect)
+        
+        mock_client = Mock()
+        mock_client.get_collection = Mock(return_value=mock_papers_collection)
+        
+        with patch.object(repo, '_get_progress_collection', return_value=mock_progress_collection), \
+             patch('app.db.milvus.client.milvus_client', mock_client):
+            result = repo.get_all_reading_progress_with_papers()
+            
+            assert len(result) == 2
+            assert result[0]["paper_id"] == "2301.67890"
+            assert result[1]["paper_id"] == "2301.12345"
+
+    def test_get_all_reading_progress_with_limit(self, repo):
+        mock_progress_collection = Mock()
+        mock_progress_collection.load = Mock()
+        mock_progress_collection.query = Mock(return_value=[{
+            "paper_id": "2301.12345",
+            "current_page": 5,
+            "total_pages": 20,
+            "last_read_at": "2024-01-15T10:00:00",
+        }])
+        
+        mock_papers_collection = Mock()
+        mock_papers_collection.load = Mock()
+        mock_papers_collection.query = Mock(return_value=[{
+            "id": "2301.12345",
+            "title": "Paper 1",
+            "authors": "[]",
+            "primary_category": "cs.CL",
+            "categories": "[]",
+            "pdf_url": "",
+            "abs_url": "",
+            "published": "",
+        }])
+        
+        mock_client = Mock()
+        mock_client.get_collection = Mock(return_value=mock_papers_collection)
+        
+        with patch.object(repo, '_get_progress_collection', return_value=mock_progress_collection), \
+             patch('app.db.milvus.pdf_annotation_repo.milvus_client', mock_client):
+            result = repo.get_all_reading_progress_with_papers(limit=1)
+            
+            assert len(result) == 1
+
+    def test_get_all_reading_progress_completed_paper(self, repo):
+        mock_progress_collection = Mock()
+        mock_progress_collection.load = Mock()
+        mock_progress_collection.query = Mock(return_value=[{
+            "paper_id": "2301.12345",
+            "current_page": 20,
+            "total_pages": 20,
+            "last_read_at": "2024-01-15T10:00:00",
+        }])
+        
+        mock_papers_collection = Mock()
+        mock_papers_collection.load = Mock()
+        mock_papers_collection.query = Mock(return_value=[{
+            "id": "2301.12345",
+            "title": "Completed Paper",
+            "authors": "[]",
+            "primary_category": "cs.CL",
+            "categories": "[]",
+            "pdf_url": "",
+            "abs_url": "",
+            "published": "",
+        }])
+        
+        mock_client = Mock()
+        mock_client.get_collection = Mock(return_value=mock_papers_collection)
+        
+        with patch.object(repo, '_get_progress_collection', return_value=mock_progress_collection), \
+             patch('app.db.milvus.pdf_annotation_repo.milvus_client', mock_client):
+            result = repo.get_all_reading_progress_with_papers()
+            
+            assert len(result) == 1
+            assert result[0]["progress_percent"] == 100.0
+
+    def test_get_all_reading_progress_missing_paper(self, repo):
+        mock_progress_collection = Mock()
+        mock_progress_collection.load = Mock()
+        mock_progress_collection.query = Mock(return_value=[{
+            "paper_id": "nonexistent-paper",
+            "current_page": 5,
+            "total_pages": 20,
+            "last_read_at": "2024-01-15T10:00:00",
+        }])
+        
+        mock_papers_collection = Mock()
+        mock_papers_collection.load = Mock()
+        mock_papers_collection.query = Mock(return_value=[])
+        
+        mock_client = Mock()
+        mock_client.get_collection = Mock(return_value=mock_papers_collection)
+        
+        with patch.object(repo, '_get_progress_collection', return_value=mock_progress_collection), \
+             patch('app.db.milvus.pdf_annotation_repo.milvus_client', mock_client):
+            result = repo.get_all_reading_progress_with_papers()
+            
+            assert len(result) == 1
+            assert result[0]["paper_id"] == "nonexistent-paper"
+            assert result[0]["title"] == "Unknown Title"
+            assert result[0]["authors"] == []
+            assert result[0]["primary_category"] == ""
+
+    def test_get_all_reading_progress_sorted_by_last_read_at(self, repo):
+        mock_progress_collection = Mock()
+        mock_progress_collection.load = Mock()
+        mock_progress_collection.query = Mock(return_value=[
+            {"paper_id": "2301.11111", "current_page": 1, "total_pages": 10, "last_read_at": "2024-01-15T08:00:00"},
+            {"paper_id": "2301.22222", "current_page": 2, "total_pages": 10, "last_read_at": "2024-01-15T12:00:00"},
+            {"paper_id": "2301.33333", "current_page": 3, "total_pages": 10, "last_read_at": "2024-01-15T10:00:00"},
+        ])
+        
+        mock_papers_collection = Mock()
+        mock_papers_collection.load = Mock()
+        mock_papers_collection.query = Mock(return_value=[])
+        
+        mock_client = Mock()
+        mock_client.get_collection = Mock(return_value=mock_papers_collection)
+        
+        with patch.object(repo, '_get_progress_collection', return_value=mock_progress_collection), \
+             patch('app.db.milvus.client.milvus_client', mock_client):
+            result = repo.get_all_reading_progress_with_papers()
+            
+            assert len(result) == 3
+            assert result[0]["paper_id"] == "2301.22222"
+            assert result[1]["paper_id"] == "2301.33333"
+            assert result[2]["paper_id"] == "2301.11111"

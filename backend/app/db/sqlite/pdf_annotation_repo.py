@@ -224,3 +224,54 @@ class SQLitePdfAnnotationRepository(PdfAnnotationRepository):
             "view_mode": view_mode,
             "last_read_at": now,
         }
+
+    def get_all_reading_progress_with_papers(self, limit: int = 20) -> List[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT 
+                    rp.paper_id,
+                    rp.current_page,
+                    rp.total_pages,
+                    rp.zoom_level,
+                    rp.view_mode,
+                    rp.last_read_at,
+                    p.title,
+                    p.authors,
+                    p.primary_category,
+                    p.categories,
+                    p.pdf_url,
+                    p.abs_url,
+                    p.published
+                FROM pdf_reading_progress rp
+                LEFT JOIN papers p ON rp.paper_id = p.id
+                ORDER BY rp.last_read_at DESC
+                LIMIT ?
+                """,
+                (limit,)
+            )
+            rows = cursor.fetchall()
+            
+            results = []
+            for row in rows:
+                total_pages = row["total_pages"] or 1
+                current_page = row["current_page"] or 1
+                progress_percent = round((current_page / total_pages) * 100, 1) if total_pages > 0 else 0
+                
+                results.append({
+                    "paper_id": row["paper_id"],
+                    "title": row["title"] or "Unknown Title",
+                    "authors": json.loads(row["authors"]) if row["authors"] else [],
+                    "primary_category": row["primary_category"] or "",
+                    "categories": json.loads(row["categories"]) if row["categories"] else [],
+                    "current_page": current_page,
+                    "total_pages": total_pages,
+                    "progress_percent": progress_percent,
+                    "last_read_at": row["last_read_at"],
+                    "pdf_url": row["pdf_url"] or "",
+                    "abs_url": row["abs_url"] or "",
+                    "published": row["published"] or "",
+                })
+            
+            return results
