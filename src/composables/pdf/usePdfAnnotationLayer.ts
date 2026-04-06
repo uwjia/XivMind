@@ -250,9 +250,17 @@ export function usePdfAnnotationLayer(
     hideTooltip()
   }
 
-  function handleTextSelection() {
+  function handleTextSelection(event: MouseEvent) {
+    if (!layerRef.value) return
+
+    const pageContainer = layerRef.value.closest('.page-container')
+    if (!pageContainer) return
+
+    const target = event.target as Node
+    if (!pageContainer.contains(target)) return
+
     const selection = window.getSelection()
-    if (!selection || selection.isCollapsed || !layerRef.value) return
+    if (!selection || selection.isCollapsed) return
 
     const text = selection.toString()
     if (!text) return
