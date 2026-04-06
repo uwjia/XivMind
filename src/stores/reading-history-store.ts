@@ -13,6 +13,7 @@ export const useReadingHistoryStore = defineStore('readingHistory', () => {
   const size = ref({ width: 360, height: 480 })
   const hasUserMovedPanel = ref(false)
   const historyBtnPosition = ref({ x: 0, y: 0 })
+  const needsRefresh = ref(false)
 
   const totalCount = computed(() => history.value.length)
 
@@ -21,6 +22,7 @@ export const useReadingHistoryStore = defineStore('readingHistory', () => {
     error.value = null
     try {
       history.value = await readingHistoryAPI.getReadingHistory(limit)
+      needsRefresh.value = false
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch reading history'
     } finally {
@@ -28,10 +30,14 @@ export const useReadingHistoryStore = defineStore('readingHistory', () => {
     }
   }
 
+  const markNeedsRefresh = () => {
+    needsRefresh.value = true
+  }
+
   const showPanel = () => {
     useNoteStore().hidePanel()
     isVisible.value = true
-    if (history.value.length === 0) {
+    if (history.value.length === 0 || needsRefresh.value) {
       fetchHistory()
     }
   }
@@ -83,8 +89,10 @@ export const useReadingHistoryStore = defineStore('readingHistory', () => {
     size,
     hasUserMovedPanel,
     historyBtnPosition,
+    needsRefresh,
     totalCount,
     fetchHistory,
+    markNeedsRefresh,
     showPanel,
     hidePanel,
     togglePanel,

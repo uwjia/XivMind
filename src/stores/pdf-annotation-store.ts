@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { PdfAnnotation, CreateAnnotationData, ViewMode } from '@/types/pdf'
 import { pdfAnnotationAPI } from '@/services/pdf-annotation'
 import { useToastStore } from '@/stores/toast-store'
+import { useReadingHistoryStore } from '@/stores/reading-history-store'
 
 export const usePdfAnnotationStore = defineStore('pdf-annotation', () => {
   const annotations = ref<PdfAnnotation[]>([])
@@ -144,6 +145,7 @@ export const usePdfProgressStore = defineStore('pdf-progress', () => {
         view_mode: viewMode,
       })
       setProgress(paperId, page, zoom, viewMode)
+      useReadingHistoryStore().markNeedsRefresh()
     } catch (e) {
       console.error('Failed to save reading progress:', e)
     }
