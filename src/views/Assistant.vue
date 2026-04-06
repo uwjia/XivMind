@@ -66,6 +66,7 @@ import { useMemoryStore } from '@/stores/memory-store'
 import { useConversationStore } from '@/stores/conversation-store'
 import { useChatMessages, type Message } from '@/composables/useChatMessages'
 import { useMessageCopy } from '@/composables/useMessageCopy'
+import { ROUTES } from '@/constants/routes'
 import ChatContainer from '@/components/chat/ChatContainer.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import ChatControls from '@/components/chat/ChatControls.vue'
@@ -103,7 +104,7 @@ const isLoading = computed(() => chatLoading.value)
 const historyBtnRef = computed(() => chatControlsRef.value?.historyBtnRef || null)
 
 const viewPaper = (paperId: string) => {
-  router.push(`/paper/${paperId}`)
+  router.push(ROUTES.PAPER_DETAIL.replace(':id', paperId))
 }
 
 watch(() => conversationStore.currentSessionId, (newId) => {
@@ -175,11 +176,11 @@ const sendSuggestion = (suggestion: string) => {
 }
 
 const goToSettings = () => {
-  router.push('/settings')
+  router.push(ROUTES.SETTINGS)
 }
 
 const goToMemory = () => {
-  router.push('/memory')
+  router.push(ROUTES.MEMORY)
 }
 
 const createNewConversation = () => {

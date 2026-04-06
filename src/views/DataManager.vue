@@ -292,6 +292,7 @@ import { useToastStore } from '@/stores/toast-store'
 import { useRouter } from 'vue-router'
 import { arxivBackendAPI } from '@/services/arxivBackend'
 import { useDateIndexes, useDayTooltip } from '@/composables/useDateIndexes'
+import { ROUTES } from '@/constants/routes'
 import MonthView from '@/components/MonthView.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import Tooltip from '@/components/Tooltip.vue'
@@ -453,7 +454,7 @@ function openMonthView(month: number) {
 }
 
 function viewPapers(date: string) {
-  router.push({ path: '/', query: { date } })
+  router.push({ path: ROUTES.HOME, query: { date } })
 }
 
 const months = computed(() => {

@@ -10,7 +10,7 @@
             <polyline points="9 18 15 12 9 6"/>
           </svg>
         </button>
-        <router-link to="/" class="logo">
+        <router-link :to="ROUTES.HOME" class="logo">
           <svg viewBox="0 0 24 24" class="logo-icon">
             <path d="M12 2C12 2 4 8 4 14C4 20 8 22 12 22C16 22 20 20 20 14C20 8 12 2 12 2Z" fill="none" stroke="#00BCD4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M12 2V22" stroke="#00BCD4" stroke-width="1" stroke-linecap="round"/>
@@ -76,6 +76,7 @@ import { useSidebarStore } from '@/stores/sidebar-store'
 import { useNoteStore } from '@/stores/note-store'
 import { useThemeStore } from '@/stores/theme-store'
 import { useReadingHistoryStore } from '@/stores/reading-history-store'
+import { ROUTES } from '@/constants/routes'
 import NotePanel from '@/components/note/NotePanel.vue'
 import ReadingHistoryPanel from '@/components/reading-history/ReadingHistoryPanel.vue'
 
@@ -101,7 +102,7 @@ watch(() => route.query?.q, (newQuery) => {
 
 const handleSearch = () => {
   if (searchQuery.value.trim()) {
-    router.push({ path: '/search', query: { q: searchQuery.value } })
+    router.push({ path: ROUTES.SEARCH, query: { q: searchQuery.value } })
   }
 }
 

@@ -5,6 +5,7 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          :class="{ active: isActive(ROUTES.HOME) }"
           @click="goToHome"
           :title="isCollapsed ? 'Home' : ''"
         >
@@ -21,6 +22,7 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          :class="{ active: isActive(ROUTES.BOOKMARKS) }"
           @click="goToBookmarks"
           :title="isCollapsed ? 'Bookmarks' : ''"
         >
@@ -36,6 +38,7 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          :class="{ active: isActive(ROUTES.FOLLOWED_AUTHORS) }"
           @click="goToFollowedAuthors"
           :title="isCollapsed ? 'Followed Authors' : ''"
         >
@@ -52,6 +55,7 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          :class="{ active: isActive(ROUTES.DOWNLOADS) }"
           @click="goToDownloads"
           :title="isCollapsed ? 'Downloads' : ''"
         >
@@ -69,6 +73,7 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          :class="{ active: isActive(ROUTES.ASSISTANT) }"
           @click="goToAssistant"
           :title="isCollapsed ? 'Assistant' : ''"
         >
@@ -84,6 +89,7 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          :class="{ active: isActive(ROUTES.SKILLS) }"
           @click="goToSkills"
           :title="isCollapsed ? 'Skills' : ''"
         >
@@ -99,6 +105,7 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          :class="{ active: isActive(ROUTES.SUBAGENTS) }"
           @click="goToSubAgents"
           :title="isCollapsed ? 'SubAgents' : ''"
         >
@@ -118,6 +125,7 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          :class="{ active: isActive(ROUTES.TEAM) }"
           @click="goToTeam"
           :title="isCollapsed ? 'Team' : ''"
         >
@@ -136,6 +144,7 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          :class="{ active: isActive(ROUTES.MEMORY) }"
           @click="goToMemory"
           :title="isCollapsed ? 'Memory' : ''"
         >
@@ -153,8 +162,9 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          :class="{ active: isActive(ROUTES.AUTHOR_RANKING) }"
           @click="goToAuthorRanking"
-          :title="isCollapsed ? 'Author Ranking' : ''"
+          :title="isCollapsed ? 'Ranking' : ''"
         >
           <span class="picker-trigger-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-ranking)">
@@ -170,6 +180,7 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          :class="{ active: isActive(ROUTES.DATA_MANAGER) }"
           @click="goToDataManager"
           :title="isCollapsed ? 'Data Manager' : ''"
         >
@@ -189,6 +200,7 @@
     <div class="sidebar-footer">
       <button
         class="picker-trigger-btn"
+        :class="{ active: isActive(ROUTES.SETTINGS) }"
         @click="goToSettings"
         :title="isCollapsed ? 'Settings' : ''"
       >
@@ -222,11 +234,13 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useSidebarStore } from '@/stores/sidebar-store'
 import { useThemeStore } from '@/stores/theme-store'
+import { ROUTES } from '@/constants/routes'
 
 const router = useRouter()
+const route = useRoute()
 const sidebarStore = useSidebarStore()
 const themeStore = useThemeStore()
 const windowWidth = ref<number>(window.innerWidth)
@@ -234,6 +248,8 @@ const windowWidth = ref<number>(window.innerWidth)
 const isCollapsed = computed(() => sidebarStore.effectiveCollapsed)
 const isMobileOpen = computed(() => sidebarStore.isMobileOpen)
 const isDark = computed(() => themeStore.isDark)
+
+const isActive = (path: string) => route.path === path
 
 const EXPAND_THRESHOLD = 1280
 const COLLAPSE_THRESHOLD = 1024
@@ -273,7 +289,7 @@ onUnmounted(() => {
 })
 
 const goToHome = () => {
-  router.push('/')
+  router.push(ROUTES.HOME)
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }
@@ -284,77 +300,77 @@ const toggleTheme = () => {
 }
 
 const goToSettings = () => {
-  router.push('/settings')
+  router.push(ROUTES.SETTINGS)
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }
 }
 
 const goToBookmarks = () => {
-  router.push('/bookmarks')
+  router.push(ROUTES.BOOKMARKS)
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }
 }
 
 const goToFollowedAuthors = () => {
-  router.push('/followed-authors')
+  router.push(ROUTES.FOLLOWED_AUTHORS)
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }
 }
 
 const goToDownloads = () => {
-  router.push('/downloads')
+  router.push(ROUTES.DOWNLOADS)
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }
 }
 
 const goToAuthorRanking = () => {
-  router.push('/author-ranking')
+  router.push(ROUTES.AUTHOR_RANKING)
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }
 }
 
 const goToAssistant = () => {
-  router.push('/assistant')
+  router.push(ROUTES.ASSISTANT)
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }
 }
 
 const goToDataManager = () => {
-  router.push('/data-manager')
+  router.push(ROUTES.DATA_MANAGER)
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }
 }
 
 const goToSkills = () => {
-  router.push('/skills')
+  router.push(ROUTES.SKILLS)
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }
 }
 
 const goToSubAgents = () => {
-  router.push('/subagents')
+  router.push(ROUTES.SUBAGENTS)
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }
 }
 
 const goToTeam = () => {
-  router.push('/team')
+  router.push(ROUTES.TEAM)
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }
 }
 
 const goToMemory = () => {
-  router.push('/memory')
+  router.push(ROUTES.MEMORY)
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }
@@ -465,6 +481,15 @@ const closeMobileSidebar = () => {
   stroke: var(--accent-color);
 }
 
+.picker-trigger-btn.active {
+  background: var(--bg-secondary);
+  color: var(--accent-color);
+}
+
+.picker-trigger-btn.active .picker-trigger-icon svg {
+  stroke: var(--accent-color);
+}
+
 .picker-trigger-icon {
   display: flex;
   align-items: center;
@@ -477,7 +502,7 @@ const closeMobileSidebar = () => {
 .picker-label {
   flex: 1;
   font-size: 0.9rem;
-  line-height: 1.4;
+  line-height: 20px;
   white-space: nowrap;
   overflow: hidden;
   transition: opacity 0.2s, width 0.3s;
@@ -502,9 +527,7 @@ const closeMobileSidebar = () => {
 }
 
 .sidebar.collapsed .picker-label {
-  opacity: 0;
-  width: 0;
-  overflow: hidden;
+  display: none;
 }
 
 .sidebar-footer {
