@@ -226,6 +226,8 @@
       @close="closeDrawer"
       @select="handleCategorySelect"
     />
+
+    <ScrollTopButton />
   </div>
 </template>
 
@@ -236,6 +238,7 @@ import { useBookmarkActions } from '@/composables/useBookmarkActions'
 import { getCategoryFullName, getCategoryShortName } from '@/utils/categoryColors'
 import { useDateFormatter } from '@/composables/useDateFormatter'
 import CategoryDrawer from '@/components/CategoryDrawer.vue'
+import ScrollTopButton from '@/components/ScrollTopButton.vue'
 import { useDownloadStore } from '@/stores/download-store'
 
 const route = useRoute()

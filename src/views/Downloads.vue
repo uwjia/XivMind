@@ -232,6 +232,8 @@
       @confirm="confirmDelete"
       @cancel="cancelDelete"
     />
+
+    <ScrollTopButton />
   </div>
 </template>
 
@@ -242,6 +244,7 @@ import { useDateFormatter } from '@/composables/useDateFormatter'
 import { formatFileSize, getDownloadStatusLabel } from '@/utils/format'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import DesktopView from '@/components/desktop/DesktopView.vue'
+import ScrollTopButton from '@/components/ScrollTopButton.vue'
 
 const STORAGE_KEY = 'xivmind-downloads-view-mode'
 

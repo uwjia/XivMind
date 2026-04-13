@@ -137,6 +137,8 @@
       @confirm="confirmUnfollow"
       @cancel="cancelUnfollow"
     />
+
+    <ScrollTopButton />
   </div>
 </template>
 
@@ -146,6 +148,7 @@ import { useRouter } from 'vue-router'
 import { useFollowedAuthorStore } from '@/stores/followed-author-store'
 import type { FollowedAuthor } from '@/types/followedAuthor'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import ScrollTopButton from '@/components/ScrollTopButton.vue'
 
 const router = useRouter()
 const store = useFollowedAuthorStore()

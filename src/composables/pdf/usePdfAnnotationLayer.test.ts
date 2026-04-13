@@ -15,24 +15,6 @@ function createMockSelection(text: string, rect: DOMRect): Selection {
   } as unknown as Selection
 }
 
-function createTestComponent(layerRef: Ref<HTMLDivElement | null>, emit: AnnotationLayerEmit, props: {
-  pageNumber: number
-  zoom: number
-  currentTool: AnnotationType | 'select' | null
-  currentColor: HighlightColor
-  strokeWidth: number
-}) {
-  return defineComponent({
-    setup() {
-      usePdfAnnotationLayer(layerRef, props, emit)
-      return {}
-    },
-    render() {
-      return h('div', { ref: layerRef }, 'Test Component')
-    },
-  })
-}
-
 describe('usePdfAnnotationLayer - handleTextSelection', () => {
   let layerRef: Ref<HTMLDivElement | null>
   let emit: AnnotationLayerEmit

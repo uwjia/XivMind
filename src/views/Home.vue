@@ -181,6 +181,8 @@
       @close="closeFilterDrawer"
       @select="handleFilterCategorySelect"
     />
+
+    <ScrollTopButton />
   </div>
 </template>
 
@@ -196,6 +198,7 @@ import DatePicker from '@/components/DatePicker.vue'
 import CategoryPicker from '@/components/CategoryPicker.vue'
 import { KnowledgeGraph, GraphControls, GraphStatistics } from '@/components/graph'
 import CategoryDrawer from '@/components/CategoryDrawer.vue'
+import ScrollTopButton from '@/components/ScrollTopButton.vue'
 import { usePaperFilter } from '@/composables/usePaperFilter'
 import { useKnowledgeGraph } from '@/composables/useKnowledgeGraph'
 
