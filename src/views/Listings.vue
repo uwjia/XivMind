@@ -2,7 +2,7 @@
   <div class="listings">
     <div class="content">
       <div class="content-header">
-        <div class="header-left">
+        <div class="header-row">
           <div class="tabs">
             <button
               class="tab-btn"
@@ -41,65 +41,65 @@
               <span class="tab-count">{{ totalCounts.replacement }}</span>
             </button>
           </div>
-          <p v-if="listingsDate" class="date-info">
-            {{ listingsDate }}
-            <span class="total-count">Total: {{ totalCounts.new + totalCounts.cross + totalCounts.replacement }}</span>
-          </p>
+          <div class="header-actions">
+            <input 
+              type="date" 
+              v-model="selectedDate" 
+              @change="onDateChange"
+              class="date-picker"
+              title="Select date to view historical listings"
+            />
+            <button 
+              v-if="selectedDate"
+              class="icon-btn clear-date-btn" 
+              @click="clearDateFilter"
+              title="Clear date filter and show latest"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+            <button 
+              class="icon-btn fetch-btn" 
+              @click="fetchAndRefresh" 
+              :disabled="isFetchingListings" 
+              title="Fetch New Listings from arXiv"
+            >
+              <svg v-if="!isFetchingListings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <svg v-else class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+            </button>
+            <button class="icon-btn toggle-btn" @click="configStore.setUseSimpleCard(!configStore.useSimpleCard)" :title="configStore.useSimpleCard ? 'Switch to detailed view' : 'Switch to simple view'">
+              <svg v-if="configStore.useSimpleCard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <line x1="3" y1="9" x2="21" y2="9"/>
+                <line x1="3" y1="15" x2="21" y2="15"/>
+                <line x1="9" y1="9" x2="9" y2="15"/>
+              </svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="5" rx="1"/>
+                <rect x="3" y="10" width="18" height="5" rx="1"/>
+                <rect x="3" y="17" width="18" height="4" rx="1"/>
+              </svg>
+            </button>
+            <button class="icon-btn refresh-btn" @click="handleRefresh" :disabled="isLoadingListings" title="Refresh listings">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+            </button>
+          </div>
         </div>
-        <div class="header-actions">
-          <input 
-            type="date" 
-            v-model="selectedDate" 
-            @change="onDateChange"
-            class="date-picker"
-            title="Select date to view historical listings"
-          />
-          <button 
-            v-if="selectedDate"
-            class="icon-btn clear-date-btn" 
-            @click="clearDateFilter"
-            title="Clear date filter and show latest"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-          <button 
-            class="icon-btn fetch-btn" 
-            @click="fetchAndRefresh" 
-            :disabled="isFetchingListings" 
-            title="Fetch New Listings from arXiv"
-          >
-            <svg v-if="!isFetchingListings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            <svg v-else class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-            </svg>
-          </button>
-          <button class="icon-btn toggle-btn" @click="configStore.setUseSimpleCard(!configStore.useSimpleCard)" :title="configStore.useSimpleCard ? 'Switch to detailed view' : 'Switch to simple view'">
-            <svg v-if="configStore.useSimpleCard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <line x1="3" y1="9" x2="21" y2="9"/>
-              <line x1="3" y1="15" x2="21" y2="15"/>
-              <line x1="9" y1="9" x2="9" y2="15"/>
-            </svg>
-            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="5" rx="1"/>
-              <rect x="3" y="10" width="18" height="5" rx="1"/>
-              <rect x="3" y="17" width="18" height="4" rx="1"/>
-            </svg>
-          </button>
-          <button class="icon-btn refresh-btn" @click="handleRefresh" :disabled="isLoadingListings" title="Refresh listings">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M23 4v6h-6M1 20v-6h6"/>
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-            </svg>
-          </button>
-        </div>
+        <p v-if="listingsDate" class="date-info">
+          {{ listingsDate }}
+          <span class="total-count">Total: {{ totalCounts.new + totalCounts.cross + totalCounts.replacement }}</span>
+        </p>
       </div>
 
       <div v-if="isLoadingListings" class="loading-state">
@@ -249,15 +249,15 @@ onMounted(() => {
 
 .content-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
   margin-bottom: 32px;
 }
 
-.header-left {
+.header-row {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .tabs {
@@ -340,6 +340,7 @@ onMounted(() => {
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .date-picker:hover {
@@ -350,6 +351,18 @@ onMounted(() => {
   outline: none;
   border-color: var(--accent-color);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 20%, transparent);
+}
+
+.date-picker::-webkit-calendar-picker-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
 }
 
 .clear-date-btn {
@@ -653,7 +666,7 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .content-header {
+  .header-row {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;

@@ -476,6 +476,12 @@ const closeMobileSidebar = () => {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-content::-webkit-scrollbar {
+  display: none;
 }
 
 .sidebar-section {
