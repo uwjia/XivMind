@@ -102,16 +102,8 @@
 
       <div v-else class="papers-grid">
         <PaperCard
-          v-if="!configStore.useSimpleCard"
           v-for="(paper, index) in filteredPapers"
-          :key="'detailed-' + paper.id"
-          :paper="paper"
-          :index="currentPage * configStore.maxResults + index + 1"
-        />
-        <PaperCardSimple
-          v-else
-          v-for="(paper, index) in filteredPapers"
-          :key="'simple-' + paper.id"
+          :key="paper.id"
           :paper="paper"
           :index="currentPage * configStore.maxResults + index + 1"
         />
@@ -193,7 +185,6 @@ import { useConfigStore } from '@/stores/config-store'
 import { useBookmarkStore } from '@/stores/bookmark-store'
 import { useDownloadStore } from '@/stores/download-store'
 import PaperCard from '@/components/PaperCard.vue'
-import PaperCardSimple from '@/components/PaperCardSimple.vue'
 import DatePicker from '@/components/DatePicker.vue'
 import CategoryPicker from '@/components/CategoryPicker.vue'
 import { KnowledgeGraph, GraphControls, GraphStatistics } from '@/components/graph'

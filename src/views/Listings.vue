@@ -119,16 +119,8 @@
 
       <div v-else class="papers-grid">
         <PaperCard
-          v-if="!configStore.useSimpleCard"
           v-for="(paper, index) in currentPapers"
-          :key="'detailed-' + paper.id"
-          :paper="paper"
-          :index="(currentPage - 1) * pageSize + index + 1"
-        />
-        <PaperCardSimple
-          v-else
-          v-for="(paper, index) in currentPapers"
-          :key="'simple-' + paper.id"
+          :key="paper.id"
           :paper="paper"
           :index="(currentPage - 1) * pageSize + index + 1"
         />
@@ -200,7 +192,6 @@ import { onMounted } from 'vue'
 import { useConfigStore } from '@/stores/config-store'
 import { useListings } from '@/composables/useListings'
 import PaperCard from '@/components/PaperCard.vue'
-import PaperCardSimple from '@/components/PaperCardSimple.vue'
 import ScrollTopButton from '@/components/ScrollTopButton.vue'
 
 const configStore = useConfigStore()

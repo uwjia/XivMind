@@ -457,13 +457,13 @@ watch(filteredBookmarks, async (papers) => {
 }
 
 .bookmark-title {
-  font-size: 1.35rem;
-  font-weight: 700;
+  font-size: large;
+  font-weight: bold;
   color: var(--text-primary);
   margin: 0;
   cursor: pointer;
   flex: 1;
-  line-height: 1.4;
+  line-height: normal;
 }
 
 .bookmark-title:hover {
