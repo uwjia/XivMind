@@ -75,6 +75,23 @@
               </svg>
             </button>
             <button class="control-btn today-btn" @click="goToToday">Today</button>
+            <button 
+              class="control-btn today-btn listings-btn" 
+              @click="fetchNewListings" 
+              :disabled="isFetchingListings"
+              title="Fetch New Listings from arXiv"
+            >
+              <svg v-if="!isFetchingListings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <svg v-else class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+              <span v-if="!isFetchingListings">New Listings</span>
+              <span v-else>Fetching...</span>
+            </button>
           </div>
 
           <div class="toolbar-group legend">
@@ -292,6 +309,7 @@ import { useToastStore } from '@/stores/toast-store'
 import { useRouter } from 'vue-router'
 import { arxivBackendAPI } from '@/services/arxivBackend'
 import { useDateIndexes, useDayTooltip } from '@/composables/useDateIndexes'
+import { useListings } from '@/composables/useListings'
 import { ROUTES } from '@/constants/routes'
 import MonthView from '@/components/MonthView.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -414,6 +432,8 @@ const panelOffsetY = ref(0)
 const isDragging = ref(false)
 const dragStartX = ref(0)
 const dragStartY = ref(0)
+
+const { isFetchingListings, fetchNewListings: fetchListingsFromComposable } = useListings()
 
 const panelStyle = computed(() => ({
   transform: `translate(${panelOffsetX.value}px, ${panelOffsetY.value}px)`
@@ -540,6 +560,17 @@ function nextYear() {
 function goToToday() {
   const today = new Date()
   selectedYear.value = today.getFullYear()
+}
+
+async function fetchNewListings() {
+  const result = await fetchListingsFromComposable()
+  if (result?.success) {
+    await refreshDaysWithData()
+  }
+}
+
+async function refreshDaysWithData() {
+  await refreshDateIndexes()
 }
 
 function selectYear(year: number) {
@@ -882,6 +913,31 @@ onMounted(() => {
 .control-btn.today-btn:hover {
   background: rgba(102, 126, 234, 0.2);
   border-color: var(--accent-color);
+}
+
+.control-btn.listings-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.control-btn.listings-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.control-btn.listings-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.control-btn.listings-btn .spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .control-btn svg {

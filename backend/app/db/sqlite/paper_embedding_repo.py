@@ -12,7 +12,7 @@ class SQLitePaperEmbeddingRepository(PaperEmbeddingRepository):
     def _not_supported(self):
         raise NotImplementedError(
             "Paper embedding functionality is not available in SQLite mode. "
-            "Please use Milvus for vector similarity search features."
+            "Please use LanceDB or Milvus for vector similarity search features."
         )
 
     def insert_embedding(

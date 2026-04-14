@@ -8,6 +8,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/Home.vue')
   },
   {
+    path: ROUTES.LISTINGS,
+    name: ROUTE_NAMES.LISTINGS,
+    component: () => import('@/views/Listings.vue')
+  },
+  {
     path: ROUTES.SEARCH,
     name: ROUTE_NAMES.SEARCH,
     component: () => import('@/views/Search.vue')

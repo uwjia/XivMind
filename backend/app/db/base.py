@@ -586,3 +586,83 @@ class AuthorRankRepository(ABC):
     def save_disambiguation_stats(self, stats: Dict[str, Any]) -> None:
         """Save disambiguation statistics."""
         pass
+
+
+class ListingsRepository(ABC):
+    """Abstract repository for arXiv new listings."""
+
+    @abstractmethod
+    def insert_new_submissions_batch(self, papers: List[Dict[str, Any]], listing_date: str = None) -> int:
+        """Insert multiple new submissions, return count of inserted papers."""
+        pass
+
+    @abstractmethod
+    def insert_cross_submissions_batch(self, papers: List[Dict[str, Any]], listing_date: str = None) -> int:
+        """Insert multiple cross submissions, return count of inserted papers."""
+        pass
+
+    @abstractmethod
+    def insert_replacement_submissions_batch(self, papers: List[Dict[str, Any]], listing_date: str = None) -> int:
+        """Insert multiple replacement submissions, return count of inserted papers."""
+        pass
+
+    @abstractmethod
+    def insert_listings_date_index(
+        self,
+        date: str,
+        new_count: int,
+        cross_count: int,
+        replacement_count: int
+    ) -> None:
+        """Insert or update listings date index."""
+        pass
+
+    @abstractmethod
+    def get_listings_date_indexes(self) -> List[Dict[str, Any]]:
+        """Get all listings date indexes."""
+        pass
+
+    @abstractmethod
+    def get_listings_date_index(self, date: str) -> Optional[Dict[str, Any]]:
+        """Get listings date index by date."""
+        pass
+
+    @abstractmethod
+    def get_latest_listings_date_index(self) -> Optional[Dict[str, Any]]:
+        """Get the latest listings date index (most recent date)."""
+        pass
+
+    @abstractmethod
+    def get_new_submissions(
+        self,
+        date: str,
+        start: int = 0,
+        max_results: int = 50
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Get new submissions by date with pagination."""
+        pass
+
+    @abstractmethod
+    def get_cross_submissions(
+        self,
+        date: str,
+        start: int = 0,
+        max_results: int = 50
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Get cross submissions by date with pagination."""
+        pass
+
+    @abstractmethod
+    def get_replacement_submissions(
+        self,
+        date: str,
+        start: int = 0,
+        max_results: int = 50
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Get replacement submissions by date with pagination."""
+        pass
+
+    @abstractmethod
+    def clear_listings_by_date(self, date: str) -> None:
+        """Clear all listings for a specific date."""
+        pass

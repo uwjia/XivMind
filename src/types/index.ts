@@ -1,4 +1,4 @@
-// 论文类型定义
+// Paper type definition
 export interface Paper {
   id: string;
   arxivId?: string;
@@ -6,16 +6,18 @@ export interface Paper {
   authors: string[];
   abstract: string;
   primaryCategory: string;
+  categoryId?: string;
+  category?: string;
   categories: string[];
   published: string | Date;
   updated: string | Date;
+  date?: string | Date;
   absUrl: string;
   pdfUrl: string;
   codeUrl?: string;
   downloads?: number;
   views?: number;
   citations?: number;
-  category?: string;
   summary?: string;
   links?: {
     pdf: string;
@@ -24,23 +26,66 @@ export interface Paper {
   doi?: string;
   comment?: string;
   journalRef?: string;
-  date?: string | Date;
 }
 
-// 分类类型定义
+export interface BackendPaper {
+  id: string
+  title: string
+  abstract: string
+  authors: string[]
+  primary_category: string
+  categories: string[]
+  published: string
+  updated: string
+  pdf_url: string
+  abs_url: string
+  comment: string
+  journal_ref: string
+  doi: string
+  similarity_score?: number
+}
+
+export function TransformBackendPaper(bp: BackendPaper): Paper {
+  const primaryCategory = bp.primary_category || ''
+  const categoryId = primaryCategory.split('.')[0] || 'cs'
+  
+  return {
+    id: bp.id,
+    arxivId: bp.id,
+    title: bp.title || '',
+    abstract: bp.abstract || '',
+    authors: bp.authors || [],
+    category: primaryCategory,
+    primaryCategory: primaryCategory,
+    categoryId: categoryId,
+    categories: bp.categories || [],
+    published: new Date(bp.published),
+    updated: new Date(bp.updated),
+    date: new Date(bp.published),
+    pdfUrl: bp.pdf_url || '',
+    absUrl: bp.abs_url || '',
+    comment: bp.comment || '',
+    journalRef: bp.journal_ref || '',
+    doi: bp.doi || '',
+    citations: Math.floor(Math.random() * 100),
+    downloads: Math.floor(Math.random() * 500)
+  }
+}
+
+// Category type definition
 export interface Category {
   id: string;
   name: string;
 }
 
-// 日期过滤器类型定义
+// Date filter type definition
 export interface DateFilter {
   id: string;
   name: string;
   value: string | Date;
 }
 
-// 论文获取选项类型定义
+// Paper fetch options type definition
 export interface FetchOptions {
   category: string;
   maxResults?: number;
@@ -48,17 +93,17 @@ export interface FetchOptions {
   sortBy?: string;
 }
 
-// 路由参数类型定义
+// Route params type definition
 export interface RouteParams {
   id: string;
 }
 
-// 分类颜色映射类型定义
+// Category colors mapping type definition
 export interface CategoryColors {
   [key: string]: string;
 }
 
-// Toast 类型定义
+// Toast type definition
 export type ToastType = 'success' | 'error' | 'info' | 'loading';
 
 export interface ToastState {
@@ -68,24 +113,24 @@ export interface ToastState {
   duration: number;
 }
 
-// 主题状态类型定义
+// Theme state type definition
 export interface ThemeState {
   isDark: boolean;
 }
 
-// 侧边栏状态类型定义
+// Sidebar state type definition
 export interface SidebarState {
   isCollapsed: boolean;
 }
 
-// 配置状态类型定义
+// Config state type definition
 export interface ConfigState {
   maxResults: number;
   useSimpleCard: boolean;
   autoRefresh: boolean;
 }
 
-// 论文状态类型定义
+// Paper state type definition
 export interface PaperState {
   papers: Paper[];
   loading: boolean;

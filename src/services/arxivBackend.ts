@@ -1,45 +1,9 @@
 import { API_BASE_URL } from './config'
+import type { Paper, BackendPaper } from '@/types'
+import { TransformBackendPaper } from '@/types'
 
 const BACKEND_API_BASE = `${API_BASE_URL}/api/arxiv`
 
-interface Paper {
-  id: string
-  arxivId: string
-  title: string
-  abstract: string
-  authors: string[]
-  category: string
-  primaryCategory: string
-  categoryId: string
-  categories: string[]
-  published: Date
-  updated: Date
-  date: Date
-  pdfUrl: string
-  absUrl: string
-  comment?: string
-  journalRef?: string
-  doi?: string
-  citations: number
-  downloads: number
-}
-
-interface BackendPaper {
-  id: string
-  title: string
-  abstract: string
-  authors: string[]
-  primary_category: string
-  categories: string[]
-  published: string
-  updated: string
-  pdf_url: string
-  abs_url: string
-  comment: string
-  journal_ref: string
-  doi: string
-  similarity_score?: number
-}
 
 interface DateIndex {
   date: string
@@ -72,32 +36,6 @@ interface QueryResult {
   total: number
 }
 
-function transformBackendPaper(bp: BackendPaper): Paper {
-  const primaryCategory = bp.primary_category || ''
-  const categoryId = primaryCategory.split('.')[0] || 'cs'
-  
-  return {
-    id: bp.id,
-    arxivId: bp.id,
-    title: bp.title || '',
-    abstract: bp.abstract || '',
-    authors: bp.authors || [],
-    category: primaryCategory,
-    primaryCategory: primaryCategory,
-    categoryId: categoryId,
-    categories: bp.categories || [],
-    published: new Date(bp.published),
-    updated: new Date(bp.updated),
-    date: new Date(bp.published),
-    pdfUrl: bp.pdf_url || '',
-    absUrl: bp.abs_url || '',
-    comment: bp.comment || '',
-    journalRef: bp.journal_ref || '',
-    doi: bp.doi || '',
-    citations: Math.floor(Math.random() * 100),
-    downloads: Math.floor(Math.random() * 500)
-  }
-}
 
 interface FetchOptions {
   category?: string
@@ -152,7 +90,7 @@ export const arxivBackendAPI = {
     console.log('Backend response:', data.papers.length, 'papers, total:', data.total)
     
     return {
-      papers: data.papers.map(transformBackendPaper),
+      papers: data.papers.map(TransformBackendPaper),
       total: data.total
     }
   },
@@ -207,7 +145,7 @@ export const arxivBackendAPI = {
       const response = await fetch(`${BACKEND_API_BASE}/paper/${id}`)
       if (response.ok) {
         const data: BackendPaper = await response.json()
-        papers.push(transformBackendPaper(data))
+        papers.push(TransformBackendPaper(data))
       }
     }
 
@@ -221,7 +159,7 @@ export const arxivBackendAPI = {
       return null
     }
     const data: BackendPaper = await response.json()
-    return transformBackendPaper(data)
+    return TransformBackendPaper(data)
   },
 
   async getDateIndexes(): Promise<DateIndex[]> {
@@ -441,7 +379,7 @@ export const arxivBackendAPI = {
     const data = await response.json()
     
     return {
-      papers: (data.papers || []).map(transformBackendPaper),
+      papers: (data.papers || []).map(TransformBackendPaper),
       total: data.total || 0
     }
   }

@@ -20,10 +20,7 @@ class LanceDBFollowedAuthorRepository(FollowedAuthorRepository):
     
     def _get_table(self):
         if self._table is None:
-            lancedb_client.init_tables()
             self._table = lancedb_client.get_table("followed_authors")
-            if self._table is None:
-                raise RuntimeError("Failed to initialize followed_authors table")
         return self._table
     
     @staticmethod

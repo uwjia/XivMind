@@ -11,6 +11,10 @@ from .conversation import ConversationMetaSchema
 from .pdf_annotations import PdfAnnotationSchema, PdfReadingProgressSchema
 from .followed_authors import FollowedAuthorSchema
 from .author_rank import AuthorRankSchema, AuthorAnalysisStatsSchema
+from .new_submissions import NewSubmissionsSchema
+from .cross_submissions import CrossSubmissionsSchema
+from .replacement_submissions import ReplacementSubmissionsSchema
+from .listings_date_index import ListingsDateIndexSchema
 
 
 class SchemaRegistry:
@@ -57,3 +61,8 @@ SchemaRegistry.register(PdfReadingProgressSchema())
 SchemaRegistry.register(FollowedAuthorSchema())
 SchemaRegistry.register(AuthorRankSchema())
 SchemaRegistry.register(AuthorAnalysisStatsSchema())
+SchemaRegistry.register(NewSubmissionsSchema())
+SchemaRegistry.register(CrossSubmissionsSchema())
+SchemaRegistry.register(ReplacementSubmissionsSchema())
+SchemaRegistry.register(ListingsDateIndexSchema())
+

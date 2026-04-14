@@ -8,6 +8,10 @@ from .paper_embeddings import PaperEmbeddingSchema
 from .memorys import RecallMemorySchema, ArchivalMemorySchema, CoreMemorySchema, MemoryConfigSchema
 from .conversation import ConversationMetaSchema
 from .registry import SchemaRegistry
+from .new_submissions import NewSubmissionsSchema
+from .cross_submissions import CrossSubmissionsSchema
+from .replacement_submissions import ReplacementSubmissionsSchema
+from .listings_date_index import ListingsDateIndexSchema
 
 __all__ = [
     "BaseCollectionSchema",
@@ -23,4 +27,8 @@ __all__ = [
     "MemoryConfigSchema",
     "ConversationMetaSchema",
     "SchemaRegistry",
+    "NewSubmissionsSchema",
+    "CrossSubmissionsSchema",
+    "ReplacementSubmissionsSchema",
+    "ListingsDateIndexSchema",
 ]

@@ -38,7 +38,7 @@ async def query_papers(
     date: str = Query(..., description="Date in YYYY-MM-DD format"),
     category: Optional[str] = Query(None, description="arXiv category filter (e.g., 'cs.LG')"),
     start: int = Query(0, ge=0, description="Start index for pagination"),
-    max_results: int = Query(50, ge=1, le=500, description="Maximum papers to return"),
+    max_results: int = Query(50, ge=1, le=5000, description="Maximum papers to return"),
     fetch_category: str = Query("cs*", description="Category to fetch from arXiv (e.g., 'cs*', 'physics*', or empty for all)"),
 ):
     """

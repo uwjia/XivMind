@@ -25,6 +25,7 @@
   --pdf-page-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   
   --icon-home: #00BCD4;
+  --icon-listings: #09a8f1;
   --icon-bookmarks: #FF9800;
   --icon-bookmarks-active: #FFD700;
   --icon-followed: #10B981;
@@ -100,6 +101,7 @@
 
 .minimal-icons {
   --icon-home: var(--text-secondary);
+  --icon-listings: var(--text-secondary);
   --icon-bookmarks: var(--text-secondary);
   --icon-bookmarks-active: var(--text-secondary);
   --icon-followed: var(--text-secondary);

@@ -1,5 +1,6 @@
 export const ROUTES = {
   HOME: '/',
+  LISTINGS: '/listings',
   SEARCH: '/search',
   PAPER_DETAIL: '/paper/:id',
   SETTINGS: '/settings',
@@ -21,6 +22,7 @@ export const ROUTES = {
 
 export const ROUTE_NAMES = {
   HOME: 'Home',
+  LISTINGS: 'Listings',
   SEARCH: 'Search',
   PAPER_DETAIL: 'PaperDetail',
   SETTINGS: 'Settings',

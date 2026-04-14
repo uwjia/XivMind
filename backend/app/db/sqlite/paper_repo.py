@@ -69,12 +69,103 @@ class SQLitePaperRepository(PaperRepository):
                 )
             ''')
             
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS new_submissions (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    abstract TEXT,
+                    authors TEXT,
+                    primary_category TEXT,
+                    categories TEXT,
+                    published TEXT,
+                    updated TEXT,
+                    pdf_url TEXT,
+                    abs_url TEXT,
+                    comment TEXT,
+                    journal_ref TEXT,
+                    doi TEXT,
+                    listing_date TEXT,
+                    fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_new_sub_published ON new_submissions(published)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_new_sub_listing_date ON new_submissions(listing_date)')
+            
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS cross_submissions (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    abstract TEXT,
+                    authors TEXT,
+                    primary_category TEXT,
+                    categories TEXT,
+                    published TEXT,
+                    updated TEXT,
+                    pdf_url TEXT,
+                    abs_url TEXT,
+                    comment TEXT,
+                    journal_ref TEXT,
+                    doi TEXT,
+                    listing_date TEXT,
+                    fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_cross_sub_published ON cross_submissions(published)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_cross_sub_listing_date ON cross_submissions(listing_date)')
+            
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS replacement_submissions (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    abstract TEXT,
+                    authors TEXT,
+                    primary_category TEXT,
+                    categories TEXT,
+                    published TEXT,
+                    updated TEXT,
+                    pdf_url TEXT,
+                    abs_url TEXT,
+                    comment TEXT,
+                    journal_ref TEXT,
+                    doi TEXT,
+                    listing_date TEXT,
+                    fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_replacement_sub_published ON replacement_submissions(published)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_replacement_sub_listing_date ON replacement_submissions(listing_date)')
+            
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS listings_date_index (
+                    date TEXT PRIMARY KEY,
+                    new_count INTEGER DEFAULT 0,
+                    cross_count INTEGER DEFAULT 0,
+                    replacement_count INTEGER DEFAULT 0,
+                    fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
             cursor.execute("PRAGMA table_info(papers)")
             columns = [col[1] for col in cursor.fetchall()]
             if 'journal_ref' not in columns:
                 cursor.execute('ALTER TABLE papers ADD COLUMN journal_ref TEXT')
             if 'doi' not in columns:
                 cursor.execute('ALTER TABLE papers ADD COLUMN doi TEXT')
+            
+            cursor.execute("PRAGMA table_info(new_submissions)")
+            new_sub_columns = [col[1] for col in cursor.fetchall()]
+            if 'listing_date' not in new_sub_columns:
+                cursor.execute('ALTER TABLE new_submissions ADD COLUMN listing_date TEXT')
+            
+            cursor.execute("PRAGMA table_info(cross_submissions)")
+            cross_sub_columns = [col[1] for col in cursor.fetchall()]
+            if 'listing_date' not in cross_sub_columns:
+                cursor.execute('ALTER TABLE cross_submissions ADD COLUMN listing_date TEXT')
+            
+            cursor.execute("PRAGMA table_info(replacement_submissions)")
+            replacement_sub_columns = [col[1] for col in cursor.fetchall()]
+            if 'listing_date' not in replacement_sub_columns:
+                cursor.execute('ALTER TABLE replacement_submissions ADD COLUMN listing_date TEXT')
             
             conn.commit()
 

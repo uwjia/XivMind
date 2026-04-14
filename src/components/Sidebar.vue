@@ -22,6 +22,25 @@
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
+          :class="{ active: isActive(ROUTES.LISTINGS) }"
+          @click="goToListings"
+          :title="isCollapsed ? 'Listings' : ''"
+        >
+          <span class="picker-trigger-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-listings)">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="7" y1="8" x2="17" y2="8"/>
+              <line x1="7" y1="12" x2="17" y2="12"/>
+              <line x1="7" y1="16" x2="13" y2="16"/>
+            </svg>
+          </span>
+          <span class="picker-label">Listings</span>
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        <button
+          class="picker-trigger-btn"
           :class="{ active: isActive(ROUTES.BOOKMARKS) }"
           @click="goToBookmarks"
           :title="isCollapsed ? 'Bookmarks' : ''"
@@ -32,23 +51,6 @@
             </svg>
           </span>
           <span class="picker-label">Bookmarks</span>
-        </button>
-      </div>
-
-      <div class="sidebar-section">
-        <button
-          class="picker-trigger-btn"
-          :class="{ active: isActive(ROUTES.FOLLOWED_AUTHORS) }"
-          @click="goToFollowedAuthors"
-          :title="isCollapsed ? 'Followed Authors' : ''"
-        >
-          <span class="picker-trigger-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-followed)">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </span>
-          <span class="picker-label">Followed</span>
         </button>
       </div>
 
@@ -70,6 +72,23 @@
         </button>
       </div>
 
+      <div class="sidebar-section">
+        <button
+          class="picker-trigger-btn"
+          :class="{ active: isActive(ROUTES.FOLLOWED_AUTHORS) }"
+          @click="goToFollowedAuthors"
+          :title="isCollapsed ? 'Followed Authors' : ''"
+        >
+          <span class="picker-trigger-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-followed)">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </span>
+          <span class="picker-label">Followed</span>
+        </button>
+      </div>
+      
       <div class="sidebar-section">
         <button
           class="picker-trigger-btn"
@@ -290,6 +309,13 @@ onUnmounted(() => {
 
 const goToHome = () => {
   router.push(ROUTES.HOME)
+  if (isMobileOpen.value) {
+    sidebarStore.closeMobileSidebar()
+  }
+}
+
+const goToListings = () => {
+  router.push(ROUTES.LISTINGS)
   if (isMobileOpen.value) {
     sidebarStore.closeMobileSidebar()
   }
