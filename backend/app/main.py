@@ -22,7 +22,9 @@ async def lifespan(app: FastAPI):
     logger.info("Starting application lifespan...")
     settings = get_settings()
     
-    if settings.DATABASE_TYPE.lower() == "milvus":
+    db_type = settings.DATABASE_TYPE.lower()
+    
+    if db_type == "milvus":
         try:
             logger.info("Creating Milvus collections...")
             from app.db.milvus.client import milvus_client
@@ -37,8 +39,18 @@ async def lifespan(app: FastAPI):
             logger.error(f"Unexpected error during startup: {e}")
             import os
             os._exit(1)
+    elif db_type == "lancedb":
+        try:
+            logger.info("Initializing LanceDB tables...")
+            from app.db.lancedb.client import lancedb_client
+            lancedb_client.init_tables()
+            logger.info("LanceDB tables initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize LanceDB: {e}")
+            import os
+            os._exit(1)
     else:
-        logger.info(f"Using {settings.DATABASE_TYPE} database, skipping Milvus initialization")
+        logger.info(f"Using {settings.DATABASE_TYPE} database, skipping vector database initialization")
     
     logger.info("Resetting incomplete download tasks...")
     reset_count = download_service.reset_incomplete_tasks()

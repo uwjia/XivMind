@@ -256,24 +256,6 @@ class LanceDBClient:
         if table_name in self._tables and self._tables[table_name] is not None:
             return self._tables[table_name]
         
-        if table_name in self._db.table_names():
-            from app.db.lancedb.schemas import SchemaRegistry
-            
-            try:
-                schema = SchemaRegistry.get(table_name)
-                if not self._schema_matches(table_name, schema):
-                    missing_fields = self._get_missing_fields(table_name, schema)
-                    if missing_fields:
-                        if self._migrate_table(table_name, schema, missing_fields):
-                            return self._tables[table_name]
-                        else:
-                            logger.warning(f"Migration failed for {table_name}")
-            except Exception as e:
-                logger.warning(f"Schema check failed for {table_name}: {e}")
-            
-            self._tables[table_name] = self._db.open_table(table_name)
-            return self._tables[table_name]
-        
         self.init_tables()
         
         return self._tables.get(table_name)
