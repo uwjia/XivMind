@@ -4,14 +4,19 @@ import { apiService, type DownloadTask, type DownloadTaskData } from '@/services
 import { API_BASE_URL } from '@/services/config'
 
 type ProgressCallback = (taskId: string, progress: number, status: string) => void
+type ConnectionCallback = () => void
 
 class DownloadWebSocket {
   private ws: WebSocket | null = null
   private reconnectAttempts = 0
-  private maxReconnectAttempts = 5
+  private maxReconnectAttempts = 10
   private reconnectDelay = 3000
   private progressCallbacks: ProgressCallback[] = []
+  private onConnectCallbacks: ConnectionCallback[] = []
+  private onDisconnectCallbacks: ConnectionCallback[] = []
   private baseUrl: string
+  private isConnecting = false
+  private shouldReconnect = true
 
   constructor() {
     if (API_BASE_URL) {
@@ -23,13 +28,22 @@ class DownloadWebSocket {
   }
 
   connect(): Promise<void> {
+    if (this.isConnecting) {
+      return Promise.reject(new Error('Already connecting'))
+    }
+    
     return new Promise((resolve, reject) => {
+      this.isConnecting = true
+      this.shouldReconnect = true
+      
       try {
         this.ws = new WebSocket(this.baseUrl)
 
         this.ws.onopen = () => {
           console.log('WebSocket connected to download service')
           this.reconnectAttempts = 0
+          this.isConnecting = false
+          this.onConnectCallbacks.forEach(cb => cb())
           resolve()
         }
 
@@ -45,30 +59,42 @@ class DownloadWebSocket {
         }
 
         this.ws.onerror = () => {
-          console.log('WebSocket connection error (backend may not be running)')
-          if (this.reconnectAttempts < this.maxReconnectAttempts) {
-            console.log('WebSocket connection failed, will attempt reconnect...')
+          this.isConnecting = false
+          if (this.reconnectAttempts === 0) {
+            console.log('WebSocket connection error - backend may not be running')
           }
           reject(new Error('WebSocket connection failed'))
         }
 
-        this.ws.onclose = () => {
-          console.log('WebSocket disconnected')
-          this.attemptReconnect()
+        this.ws.onclose = (event) => {
+          this.isConnecting = false
+          this.onDisconnectCallbacks.forEach(cb => cb())
+          if (event.code !== 1000) {
+            console.log('WebSocket disconnected unexpectedly')
+          }
+          if (this.shouldReconnect) {
+            this.attemptReconnect()
+          }
         }
       } catch (error) {
+        this.isConnecting = false
         reject(error)
       }
     })
   }
 
   private attemptReconnect() {
+    if (!this.shouldReconnect) return
+    
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++
-      console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`)
+      const delay = Math.min(this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1), 30000)
+      console.log(`WebSocket reconnecting in ${delay}ms (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`)
       setTimeout(() => {
-        this.connect().catch(e => console.error('Reconnect failed:', e))
-      }, this.reconnectDelay)
+        this.connect().catch(() => {})
+      }, delay)
+    } else {
+      console.log('WebSocket max reconnect attempts reached. Will retry on next page load.')
     }
   }
 
@@ -89,7 +115,16 @@ class DownloadWebSocket {
     }
   }
 
+  onConnect(callback: ConnectionCallback) {
+    this.onConnectCallbacks.push(callback)
+  }
+
+  onDisconnect(callback: ConnectionCallback) {
+    this.onDisconnectCallbacks.push(callback)
+  }
+
   disconnect() {
+    this.shouldReconnect = false
     if (this.ws) {
       this.ws.close()
       this.ws = null
@@ -101,8 +136,6 @@ class DownloadWebSocket {
   }
 }
 
-const downloadWs = new DownloadWebSocket()
-
 export const useDownloadStore = defineStore('download', () => {
   const tasks = ref<DownloadTask[]>([])
   const total = ref(0)
@@ -112,6 +145,23 @@ export const useDownloadStore = defineStore('download', () => {
   const wsConnected = ref(false)
   const initialized = ref(false)
   const downloadedIds = ref<Set<string>>(new Set())
+
+  let downloadWs: DownloadWebSocket | null = null
+
+  const getWebSocket = (): DownloadWebSocket => {
+    if (!downloadWs) {
+      downloadWs = new DownloadWebSocket()
+      
+      downloadWs.onConnect(() => {
+        wsConnected.value = true
+      })
+      
+      downloadWs.onDisconnect(() => {
+        wsConnected.value = false
+      })
+    }
+    return downloadWs
+  }
 
   const addDownloadedId = (paperId: string) => {
     const newSet = new Set(downloadedIds.value)
@@ -141,12 +191,11 @@ export const useDownloadStore = defineStore('download', () => {
   }
 
   const connectWebSocket = async () => {
-    if (!wsConnected.value) {
+    const ws = getWebSocket()
+    if (!wsConnected.value && !ws.isConnected()) {
       try {
-        await downloadWs.connect()
-        wsConnected.value = true
-        
-        downloadWs.onProgress(async (taskId, progress, status) => {
+        await ws.connect()
+        ws.onProgress(async (taskId, progress, status) => {
           const task = tasks.value.find(t => t.id === taskId)
           if (task) {
             const previousStatus = task.status
@@ -175,19 +224,38 @@ export const useDownloadStore = defineStore('download', () => {
         })
       } catch (e) {
         console.error('Failed to connect WebSocket:', e)
+        throw e
       }
     }
   }
 
   const disconnectWebSocket = () => {
-    downloadWs.disconnect()
+    if (downloadWs) {
+      downloadWs.disconnect()
+    }
     wsConnected.value = false
+  }
+
+  const ensureWebSocketConnection = async () => {
+    const ws = getWebSocket()
+    if (!wsConnected.value && !ws.isConnected()) {
+      try {
+        await connectWebSocket()
+      } catch (e) {
+        setError('WebSocket connection failed - cannot create download task')
+        throw new Error('WebSocket connection failed - please ensure the backend is running')
+      }
+    }
+    return ws
   }
 
   const createTask = async (data: DownloadTaskData) => {
     try {
       setLoading(true)
       setError(null)
+      
+      const ws = await ensureWebSocketConnection()
+      
       const result = await apiService.createDownloadTask(data)
       const existingIndex = tasks.value.findIndex(t => t.id === result.id)
       if (existingIndex >= 0) {
@@ -196,8 +264,8 @@ export const useDownloadStore = defineStore('download', () => {
         tasks.value.unshift(result)
       }
       
-      if (wsConnected.value) {
-        downloadWs.subscribe(result.id)
+      if (wsConnected.value || ws.isConnected()) {
+        ws.subscribe(result.id)
       }
       
       return result
@@ -271,14 +339,17 @@ export const useDownloadStore = defineStore('download', () => {
     try {
       setLoading(true)
       setError(null)
+
+      const ws = await ensureWebSocketConnection()
+
       const result = await apiService.retryDownloadTask(taskId)
       const existingIndex = tasks.value.findIndex(t => t.id === taskId)
       if (existingIndex >= 0) {
         tasks.value[existingIndex] = result
       }
       
-      if (wsConnected.value) {
-        downloadWs.subscribe(taskId)
+      if (wsConnected.value || ws.isConnected()) {
+        ws.subscribe(taskId)
       }
       
       return result

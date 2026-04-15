@@ -147,13 +147,6 @@ async def clear_date_cache(date: str):
     return {"message": f"Cache cleared for {date}"}
 
 
-@router.delete("/cache/date")
-async def clear_all_date_cache():
-    """Clear all date index cache."""
-    _paper_service.clear_all_date_index()
-    return {"message": "All date index cache cleared"}
-
-
 @router.get("/date-indexes")
 async def get_date_indexes():
     """Get all date index records."""
