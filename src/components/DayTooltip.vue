@@ -95,10 +95,36 @@ defineEmits<{
   (e: 'close'): void
 }>()
 
-const tooltipStyle = computed(() => ({
-  left: `${props.position.x}px`,
-  top: `${props.position.y}px`
-}))
+const tooltipWidth = 280
+const tooltipHeight = 180
+
+const tooltipStyle = computed(() => {
+  const padding = 10
+  const offsetX = 10
+  const offsetY = 10
+  
+  let left = props.position.x + offsetX
+  let top = props.position.y + offsetY
+  
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
+  
+  if (left + tooltipWidth + padding > viewportWidth) {
+    left = props.position.x - tooltipWidth - offsetX
+  }
+  
+  if (top + tooltipHeight + padding > viewportHeight) {
+    top = props.position.y - tooltipHeight - offsetY
+  }
+  
+  left = Math.max(padding, left)
+  top = Math.max(padding, top)
+  
+  return {
+    left: `${left}px`,
+    top: `${top}px`
+  }
+})
 
 function formatDate(datetime: string): string {
   if (!datetime) return ''
@@ -121,7 +147,6 @@ function formatDate(datetime: string): string {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  transform: translate(10px, 10px);
   overflow: hidden;
 }
 
@@ -223,12 +248,11 @@ function formatDate(datetime: string): string {
 
 .tooltip-fade-enter-active,
 .tooltip-fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
 .tooltip-fade-enter-from,
 .tooltip-fade-leave-to {
   opacity: 0;
-  transform: translate(5px, 5px);
 }
 </style>
