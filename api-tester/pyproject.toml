@@ -1,0 +1,15 @@
+[project]
+name = "xivmind-api-tester"
+version = "1.0.0"
+description = "API Testing Interface for XivMind"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "httpx>=0.24.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
