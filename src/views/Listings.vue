@@ -75,6 +75,11 @@
                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
               </svg>
             </button>
+            <button class="icon-btn filter-btn" @click="toggleFilterDrawer" :title="isFilterDrawerOpen ? 'Hide categories' : 'Show categories'">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V17C21 18.1046 20.1046 19 19 19H5C3.89543 19 3 18.1046 3 17V7Z" fill="currentColor" fill-opacity="0.2"/>
+              </svg>
+            </button>
             <button class="icon-btn toggle-btn" @click="configStore.setUseSimpleCard(!configStore.useSimpleCard)" :title="configStore.useSimpleCard ? 'Switch to detailed view' : 'Switch to simple view'">
               <svg v-if="configStore.useSimpleCard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -173,6 +178,17 @@
         <span class="page-info">
           {{ totalItems }} items
         </span>
+        <div class="page-size-selector">
+          <select 
+            :value="pageSize" 
+            @change="changePageSize(Number(($event.target as HTMLSelectElement).value))"
+            class="page-size-select"
+          >
+            <option v-for="size in pageSizeOptions" :key="size" :value="size">
+              {{ size }} / page
+            </option>
+          </select>
+        </div>
       </div>
 
       <div v-if="!isLoadingListings && !listingsError && currentPapers.length === 0" class="empty-state">
@@ -184,6 +200,14 @@
     </div>
 
     <ScrollTopButton />
+
+    <CategoryDrawer
+      :is-open="isFilterDrawerOpen"
+      :selected-category="filterCategory"
+      :category-counts="categoryCounts"
+      @close="closeFilterDrawer"
+      @select="handleFilterCategorySelect"
+    />
   </div>
 </template>
 
@@ -193,6 +217,7 @@ import { useConfigStore } from '@/stores/config-store'
 import { useListings } from '@/composables/useListings'
 import PaperCard from '@/components/PaperCard.vue'
 import ScrollTopButton from '@/components/ScrollTopButton.vue'
+import CategoryDrawer from '@/components/CategoryDrawer.vue'
 
 const configStore = useConfigStore()
 
@@ -206,6 +231,7 @@ const {
   selectedDate,
   currentPage,
   pageSize,
+  pageSizeOptions,
   totalItems,
   totalCounts,
   currentPapers,
@@ -213,12 +239,19 @@ const {
   totalPages,
   visiblePages,
   switchTab,
+  changePageSize,
   goToPage,
   jumpToPage,
   handleRefresh,
   onDateChange,
   clearDateFilter,
-  initListings
+  initListings,
+  filterCategory,
+  categoryCounts,
+  isFilterDrawerOpen,
+  toggleFilterDrawer,
+  closeFilterDrawer,
+  handleFilterCategorySelect
 } = useListings()
 
 onMounted(() => {
@@ -406,6 +439,16 @@ onMounted(() => {
   border-color: color-mix(in srgb, var(--icon-toggle) 40%, transparent);
 }
 
+.filter-btn {
+  color: var(--icon-filter);
+  border-color: color-mix(in srgb, var(--icon-filter) 20%, transparent);
+}
+
+.filter-btn:hover {
+  background: color-mix(in srgb, var(--icon-filter) 10%, transparent);
+  border-color: color-mix(in srgb, var(--icon-filter) 40%, transparent);
+}
+
 .refresh-btn {
   color: var(--icon-refresh);
   border-color: color-mix(in srgb, var(--icon-refresh) 20%, transparent);
@@ -590,6 +633,37 @@ onMounted(() => {
   margin-left: 12px;
   font-size: 0.85rem;
   color: var(--text-muted);
+}
+
+.page-size-selector {
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid var(--border-color);
+}
+
+.page-size-select {
+  padding: 6px 28px 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.page-size-select:hover {
+  border-color: var(--accent-color);
+}
+
+.page-size-select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 20%, transparent);
 }
 
 .page-jump {

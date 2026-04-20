@@ -3,6 +3,7 @@ import { useToastStore } from '@/stores/toast-store'
 import { useBookmarkStore } from '@/stores/bookmark-store'
 import { useDownloadStore } from '@/stores/download-store'
 import { listingsAPI } from '@/services/listings'
+import { categories } from '@/utils/categoryColors'
 import type { Paper } from '@/types'
 
 export type ListingTab = 'new' | 'cross' | 'replacement'
@@ -20,8 +21,12 @@ export function useListings() {
   const selectedDate = ref<string>('')
   const currentPage = ref(1)
   const pageInput = ref(1)
-  const pageSize = 50
+  const pageSize = ref(50)
+  const pageSizeOptions = [50, 100, 200, 500, 1000, 2000]
   const paginatedTotal = ref(0)
+  
+  const filterCategory = ref<string | null>(null)
+  const isFilterDrawerOpen = ref(false)
   
   const toastStore = useToastStore()
   const bookmarkStore = useBookmarkStore()
@@ -37,16 +42,43 @@ export function useListings() {
     }
   })
 
+  const getTabPapers = (tab: ListingTab): Paper[] => {
+    if (tab === 'new') return newPapers.value
+    if (tab === 'cross') return crossPapers.value
+    if (tab === 'replacement') return replacementPapers.value
+    return []
+  }
+
+  const categoryCounts = computed(() => {
+    const papers = getTabPapers(activeTab.value)
+    const counts: Record<string, number> = {}
+    for (const paper of papers) {
+      const category = paper.primaryCategory
+      if (category) {
+        counts[category] = (counts[category] || 0) + 1
+      }
+    }
+    return counts
+  })
+
+  const filteredPapers = computed(() => {
+    const papers = getTabPapers(activeTab.value)
+    if (!filterCategory.value || filterCategory.value === 'cs*') {
+      return papers
+    }
+    if (filterCategory.value === 'other') {
+      const csCategoryIds = categories.map(cat => cat.id)
+      return papers.filter(paper => !csCategoryIds.includes(paper.primaryCategory))
+    }
+    return papers.filter(paper => paper.primaryCategory === filterCategory.value)
+  })
+
   const totalItems = computed(() => {
-    const tab = activeTab.value
-    if (tab === 'new') return newPapers.value.length
-    if (tab === 'cross') return crossPapers.value.length
-    if (tab === 'replacement') return replacementPapers.value.length
-    return 0
+    return filteredPapers.value.length
   })
 
   const totalPages = computed(() => {
-    return Math.ceil(totalItems.value / pageSize)
+    return Math.ceil(totalItems.value / pageSize.value)
   })
 
   const visiblePages = computed(() => {
@@ -83,26 +115,15 @@ export function useListings() {
   })
 
   const updateCurrentPapers = () => {
-    const tab = activeTab.value
     const page = currentPage.value
-    let papers: Paper[]
+    const papers = filteredPapers.value
     
-    if (tab === 'new') {
-      papers = newPapers.value
-    } else if (tab === 'cross') {
-      papers = crossPapers.value
-    } else if (tab === 'replacement') {
-      papers = replacementPapers.value
-    } else {
-      papers = []
-    }
-    
-    const start = (page - 1) * pageSize
-    const end = start + pageSize
+    const start = (page - 1) * pageSize.value
+    const end = start + pageSize.value
     currentPapers.value = papers.slice(start, end)
   }
 
-  watch([activeTab, currentPage, newPapers, crossPapers, replacementPapers], () => {
+  watch([activeTab, currentPage, pageSize, filterCategory, newPapers, crossPapers, replacementPapers], () => {
     updateCurrentPapers()
   }, { immediate: true })
 
@@ -177,6 +198,27 @@ export function useListings() {
   const switchTab = (tab: ListingTab) => {
     activeTab.value = tab
     currentPage.value = 1
+    filterCategory.value = null
+  }
+
+  const toggleFilterDrawer = () => {
+    isFilterDrawerOpen.value = !isFilterDrawerOpen.value
+  }
+
+  const closeFilterDrawer = () => {
+    isFilterDrawerOpen.value = false
+  }
+
+  const handleFilterCategorySelect = (categoryId: string | null) => {
+    filterCategory.value = categoryId
+    currentPage.value = 1
+    pageInput.value = 1
+  }
+
+  const changePageSize = (size: number) => {
+    pageSize.value = size
+    currentPage.value = 1
+    pageInput.value = 1
   }
 
   const goToPage = (page: number) => {
@@ -231,6 +273,7 @@ export function useListings() {
     selectedDate,
     currentPage,
     pageSize,
+    pageSizeOptions,
     paginatedTotal,
     totalCounts,
     currentPapers,
@@ -239,11 +282,18 @@ export function useListings() {
     totalPages,
     visiblePages,
     switchTab,
+    changePageSize,
     goToPage,
     jumpToPage,
     handleRefresh,
     onDateChange,
     clearDateFilter,
-    initListings
+    initListings,
+    filterCategory,
+    categoryCounts,
+    isFilterDrawerOpen,
+    toggleFilterDrawer,
+    closeFilterDrawer,
+    handleFilterCategorySelect
   }
 }
