@@ -432,6 +432,27 @@ const {
   color: var(--text-muted);
 }
 
+.option-input[type="date"] {
+  position: relative;
+  cursor: pointer;
+}
+
+.option-input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.option-input[type="date"]::-webkit-datetime-edit {
+  cursor: pointer;
+}
+
 .checkbox-group {
   flex-direction: row;
   align-items: center;
