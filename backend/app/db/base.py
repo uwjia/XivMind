@@ -267,6 +267,21 @@ class PaperRepository(BaseRepository):
         """Get papers by author name, sorted by published date DESC."""
         pass
 
+    @abstractmethod
+    def search_papers(
+        self,
+        query: str,
+        category: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        start: int = 0,
+        max_results: int = 50,
+        title_only: bool = False,
+        exact_phrase: bool = False,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Search papers by query in title and abstract with optional filters."""
+        pass
+
 
 class PaperEmbeddingRepository(ABC):
     """Abstract repository for paper embeddings."""

@@ -618,3 +618,68 @@ class SQLitePaperRepository(PaperRepository):
             rows = cursor.fetchall()
             
             return [self._row_to_response(row) for row in rows], total
+
+    def search_papers(
+        self,
+        query: str,
+        category: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        start: int = 0,
+        max_results: int = 50,
+        title_only: bool = False,
+        exact_phrase: bool = False,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Search papers by query in title and abstract with optional filters."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            
+            conditions = []
+            params = []
+            
+            if exact_phrase:
+                if title_only:
+                    conditions.append('title LIKE ?')
+                    params.append(f'%{query.strip()}%')
+                else:
+                    conditions.append('(title LIKE ? OR abstract LIKE ?)')
+                    params.extend([f'%{query.strip()}%', f'%{query.strip()}%'])
+            else:
+                search_terms = query.strip().split()
+                for term in search_terms:
+                    if title_only:
+                        conditions.append('title LIKE ?')
+                        params.append(f'%{term}%')
+                    else:
+                        conditions.append('(title LIKE ? OR abstract LIKE ?)')
+                        params.extend([f'%{term}%', f'%{term}%'])
+            
+            if category and category != 'cs*':
+                conditions.append('primary_category LIKE ?')
+                params.append(f'%{category}%')
+            
+            if date_from:
+                conditions.append('date(published) >= ?')
+                params.append(date_from)
+            
+            if date_to:
+                conditions.append('date(published) <= ?')
+                params.append(date_to)
+            
+            where_clause = " AND ".join(conditions)
+            
+            count_query = f'SELECT COUNT(*) FROM papers WHERE {where_clause}'
+            cursor.execute(count_query, params)
+            total = cursor.fetchone()[0]
+            
+            data_query = f'''
+                SELECT * FROM papers 
+                WHERE {where_clause}
+                ORDER BY published DESC
+                LIMIT ? OFFSET ?
+            '''
+            params.extend([max_results, start])
+            cursor.execute(data_query, params)
+            rows = cursor.fetchall()
+            
+            return [self._row_to_response(row) for row in rows], total

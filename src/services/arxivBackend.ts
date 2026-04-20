@@ -113,22 +113,54 @@ export const arxivBackendAPI = {
     if (!startDateStr || !endDateStr) {
       throw new Error('startDateStr and endDateStr are required')
     }
-    
-    console.log('=== fetchPapersByDateRange (Backend) ===')
-    console.log('startDateStr:', startDateStr)
-    console.log('endDateStr:', endDateStr)
-    console.log('category:', category)
-
     const dateStr = startDateStr.substring(0, 10)
     return this.queryPapers(dateStr, category, maxResults, start)
   },
 
-  async searchPapers(_query: string, category: string = 'cs*', maxResults?: number): Promise<QueryResult> {
-    console.log('searchPapers: Using backend with today date')
-    const today = new Date()
-    const dateStr = today.toISOString().split('T')[0]
+  async searchPapersByKeyword(
+    query: string, 
+    category: string = 'cs*', 
+    maxResults?: number,
+    dateFrom?: string,
+    dateTo?: string,
+    titleOnly?: boolean,
+    exactPhrase?: boolean
+  ): Promise<QueryResult> {
+    const params = new URLSearchParams({
+      q: query,
+      category: category,
+      max_results: (maxResults || 50).toString()
+    })
     
-    return this.queryPapers(dateStr, category, maxResults)
+    if (dateFrom) {
+      params.append('date_from', dateFrom)
+    }
+    if (dateTo) {
+      params.append('date_to', dateTo)
+    }
+    if (titleOnly) {
+      params.append('title_only', 'true')
+    }
+    if (exactPhrase) {
+      params.append('exact_phrase', 'true')
+    }
+    
+    const url = `${BACKEND_API_BASE}/search_k?${params}`
+    console.log('Backend search URL:', url)
+    
+    const response = await fetch(url)
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const data: QueryResponse = await response.json()
+    console.log('Backend search response:', data.papers.length, 'papers, total:', data.total)
+    
+    return {
+      papers: data.papers.map(TransformBackendPaper),
+      total: data.total
+    }
   },
 
   async fetchPapersByIdList(idList: string | string[]): Promise<Paper[]> {

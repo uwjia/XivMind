@@ -22,7 +22,7 @@ export const semanticSearchAPI = {
   async searchPapers(query: string, options: SearchOptions = {}): Promise<SearchResponse> {
     const topK = options.topK ?? 50
 
-    const response = await fetch(`${API_BASE}/search`, {
+    const response = await fetch(`${API_BASE}/search_s`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

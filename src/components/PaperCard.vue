@@ -418,13 +418,6 @@ const getVersionFromId = () => {
   pointer-events: none;
 }
 
-.paper-card:hover {
-  box-shadow: 
-    0 12px 36px rgba(0, 0, 0, 0.12),
-    0 4px 12px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
 .paper-header {
   margin-bottom: 12px;
   z-index: 1;

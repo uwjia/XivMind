@@ -5,6 +5,9 @@ from app.core.utils import normalize_author_name, safe_json_loads
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -593,3 +596,67 @@ class MilvusPaperRepository(PaperRepository):
         paginated = sorted_results[start:start + max_results]
         
         return [self._entity_to_response(r) for r in paginated], total
+
+    def search_papers(
+        self,
+        query: str,
+        category: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        start: int = 0,
+        max_results: int = 50,
+        title_only: bool = False,
+        exact_phrase: bool = False,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Search papers by query in title and abstract with optional filters."""
+        collection = self._get_papers_collection()
+        collection.load()
+        
+        conditions = []
+        if exact_phrase:
+            escaped_query = query.strip().replace('"', '\\"')
+            if title_only:
+                conditions.append(f'title like "%{escaped_query}%"')
+            else:
+                conditions.append(f'(title like "%{escaped_query}%" || abstract like "%{escaped_query}%")')
+        else:
+            search_terms = query.strip().split()
+            for term in search_terms:
+                escaped_term = term.replace('"', '\\"')
+                if title_only:
+                    conditions.append(f'title like "%{escaped_term}%"')
+                else:
+                    conditions.append(f'(title like "%{escaped_term}%" || abstract like "%{escaped_term}%")')
+        
+        if category and category != 'cs*':
+            conditions.append(f'primary_category like "%{category}%"')
+        
+        if date_from:
+            conditions.append(f'published >= "{date_from}T00:00:00"')
+        if date_to:
+            conditions.append(f'published <= "{date_to}T23:59:59"')
+        
+        expr = " && ".join(conditions) if conditions else 'id != ""'
+        
+        try:
+            results = collection.query(
+                expr=expr,
+                output_fields=["id", "title", "abstract", "authors", "primary_category",
+                              "categories", "published", "updated", "pdf_url", "abs_url",
+                              "comment", "journal_ref", "doi", "fetched_at"],
+                limit=settings.MILVUS_QUERY_BATCH_SIZE,
+            )
+            
+            sorted_results = sorted(
+                results,
+                key=lambda x: x.get("published", ""),
+                reverse=True
+            )
+            
+            total = len(sorted_results)
+            paginated = sorted_results[start:start + max_results]
+            
+            return [self._entity_to_response(r) for r in paginated], total
+        except Exception as e:
+            logger.error(f"Failed to search papers in Milvus: {e}")
+            return [], 0

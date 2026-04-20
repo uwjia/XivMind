@@ -524,3 +524,49 @@ class PaperService:
             "max_results": max_results,
             "author": author,
         }
+
+    def search_papers_keyword(
+        self,
+        query: str,
+        category: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        start: int = 0,
+        max_results: int = 50,
+        title_only: bool = False,
+        exact_phrase: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Search papers by keyword in title and abstract.
+        
+        Args:
+            query: Search query string
+            category: Optional category filter
+            date_from: Optional start date filter
+            date_to: Optional end date filter
+            start: Pagination start index
+            max_results: Maximum number of results to return
+            title_only: If True, search only in title, not in abstract
+            exact_phrase: If True, match exact phrase instead of splitting
+        
+        Returns:
+            Dict with papers and metadata
+        """
+        papers, total = self.paper_repo.search_papers(
+            query=query,
+            category=category,
+            date_from=date_from,
+            date_to=date_to,
+            start=start,
+            max_results=max_results,
+            title_only=title_only,
+            exact_phrase=exact_phrase,
+        )
+        
+        return {
+            "papers": papers,
+            "total": total,
+            "start": start,
+            "max_results": max_results,
+            "query": query,
+        }

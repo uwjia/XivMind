@@ -21,24 +21,13 @@
         </router-link>
       </div>
 
-      <div class="header-center">
-        <div class="search-bar">
-          <input
-            type="text"
-            placeholder="Search papers..."
-            v-model="searchQuery"
-            @keyup.enter="handleSearch"
-          />
-          <button class="search-icon-btn" @click="handleSearch">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="M21 21l-4.35-4.35"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-
       <div class="header-right">
+        <button ref="searchBtnRef" class="search-panel-btn" @click="toggleSearchPanel" title="Search Papers">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-search)">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+        </button>
         <button ref="historyBtnRef" class="history-btn" @click="toggleHistoryPanel" title="Recent Reading">
           <svg viewBox="0 0 24 24" fill="none" stroke="var(--icon-history)">
             <circle cx="12" cy="12" r="10"/>
@@ -66,45 +55,34 @@
     </div>
     <NotePanel />
     <ReadingHistoryPanel />
+    <SearchPanel />
   </header>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, computed } from 'vue'
 import { useSidebarStore } from '@/stores/sidebar-store'
 import { useNoteStore } from '@/stores/note-store'
 import { useThemeStore } from '@/stores/theme-store'
 import { useReadingHistoryStore } from '@/stores/reading-history-store'
+import { useSearchPanelStore } from '@/stores/search-panel-store'
 import { ROUTES } from '@/constants/routes'
 import NotePanel from '@/components/note/NotePanel.vue'
 import ReadingHistoryPanel from '@/components/reading-history/ReadingHistoryPanel.vue'
+import SearchPanel from '@/components/search/SearchPanel.vue'
 
-const router = useRouter()
-const route = useRoute()
 const sidebarStore = useSidebarStore()
 const noteStore = useNoteStore()
 const themeStore = useThemeStore()
 const historyStore = useReadingHistoryStore()
+const searchPanelStore = useSearchPanelStore()
 
-const searchQuery = ref<string>('')
 const isCollapsed = computed(() => sidebarStore.effectiveCollapsed)
 const noteCount = computed(() => noteStore.notes.length)
 const noteBtnRef = ref<HTMLElement | null>(null)
 const historyBtnRef = ref<HTMLElement | null>(null)
+const searchBtnRef = ref<HTMLElement | null>(null)
 const isIconColorful = computed(() => themeStore.iconStyle === 'colorful')
-
-watch(() => route.query?.q, (newQuery) => {
-  if (newQuery !== undefined) {
-    searchQuery.value = newQuery as string
-  }
-}, { immediate: true })
-
-const handleSearch = () => {
-  if (searchQuery.value.trim()) {
-    router.push({ path: ROUTES.SEARCH, query: { q: searchQuery.value } })
-  }
-}
 
 const toggleSidebar = () => {
   sidebarStore.toggleSidebar()
@@ -132,6 +110,18 @@ const updateHistoryBtnPosition = () => {
 const toggleHistoryPanel = () => {
   updateHistoryBtnPosition()
   historyStore.togglePanel()
+}
+
+const updateSearchBtnPosition = () => {
+  if (searchBtnRef.value) {
+    const rect = searchBtnRef.value.getBoundingClientRect()
+    searchPanelStore.setSearchBtnPosition(rect.right, rect.bottom)
+  }
+}
+
+const toggleSearchPanel = () => {
+  updateSearchBtnPosition()
+  searchPanelStore.togglePanel()
 }
 
 const toggleIconStyle = () => {
@@ -228,71 +218,36 @@ defineExpose({
   white-space: nowrap;
 }
 
-.header-center {
-  flex: 1;
-  max-width: 600px;
-  margin: 0 40px;
-}
-
-.search-bar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 24px;
-  padding: 8px 16px;
-  transition: var(--transition);
-}
-
-.search-bar:focus-within {
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
-}
-
-.search-icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: var(--transition);
-  color: var(--text-muted);
-  margin-left: 8px;
-}
-
-.search-icon-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--accent-color);
-}
-
-.search-icon {
-  width: 20px;
-  height: 20px;
-}
-
-.search-bar input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-size: 0.95rem;
-  color: var(--text-primary);
-  outline: none;
-}
-
-.search-bar input::placeholder {
-  color: var(--text-muted);
-}
-
 .header-right {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-left: auto;
+}
+
+.search-panel-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-secondary);
+}
+
+.search-panel-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent-color);
+}
+
+.search-panel-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .history-btn {
@@ -384,10 +339,6 @@ defineExpose({
 }
 
 @media (max-width: 768px) {
-  .header-center {
-    display: none;
-  }
-
   .header-container {
     padding: 0 16px;
   }

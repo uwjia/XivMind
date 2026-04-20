@@ -173,7 +173,7 @@ async def fetch_papers_for_date(
     return result
 
 
-@router.post("/search", response_model=SemanticSearchResponse)
+@router.post("/search_s", response_model=SemanticSearchResponse)
 async def search_papers_semantic(request: SemanticSearchRequest = Body(...)):
     """
     Search papers using semantic similarity.
@@ -189,6 +189,50 @@ async def search_papers_semantic(request: SemanticSearchRequest = Body(...)):
         date_to=request.date_to,
     )
     return result
+
+
+@router.get("/search_k")
+async def search_papers_keyword(
+    q: str = Query(..., description="Search query string"),
+    category: str = Query("cs*", description="arXiv category filter"),
+    max_results: int = Query(50, ge=1, le=10000, description="Maximum papers to return"),
+    start: int = Query(0, ge=0, description="Start index for pagination"),
+    date_from: Optional[str] = Query(None, description="Start date filter (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="End date filter (YYYY-MM-DD)"),
+    title_only: bool = Query(False, description="Search in title only"),
+    exact_phrase: bool = Query(False, description="Match exact phrase instead of splitting"),
+):
+    """
+    Search papers by keyword in title and abstract.
+    
+    Supports:
+    - Full-text search in title and abstract (or title only if title_only=True)
+    - Exact phrase matching (if exact_phrase=True, don't split query)
+    - Category filtering
+    - Date range filtering
+    - Pagination
+    """
+    try:
+        result = _paper_service.search_papers_keyword(
+            query=q,
+            category=category,
+            date_from=date_from,
+            date_to=date_to,
+            start=start,
+            max_results=max_results,
+            title_only=title_only,
+            exact_phrase=exact_phrase,
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error searching papers: {e}")
+        return {
+            "papers": [],
+            "total": 0,
+            "start": start,
+            "max_results": max_results,
+            "query": q,
+        }
 
 
 @router.get("/paper/{paper_id}/similar", response_model=SimilarPapersResponse)

@@ -372,7 +372,7 @@ class TestSemanticSearch:
             "model": "text-embedding-ada-002",
         })
         
-        response = client.post("/arxiv/search", json={
+        response = client.post("/arxiv/search_s", json={
             "query": "machine learning",
             "top_k": 10,
         })
@@ -390,7 +390,7 @@ class TestSemanticSearch:
             "model": "text-embedding-ada-002",
         })
         
-        response = client.post("/arxiv/search", json={
+        response = client.post("/arxiv/search_s", json={
             "query": "machine learning",
             "top_k": 10,
             "category": "cs.LG",
@@ -412,7 +412,7 @@ class TestSemanticSearch:
             "model": "text-embedding-ada-002",
         })
         
-        response = client.post("/arxiv/search", json={
+        response = client.post("/arxiv/search_s", json={
             "query": "nonexistent topic",
             "top_k": 10,
         })
@@ -429,7 +429,7 @@ class TestSemanticSearch:
             "error": "Embedding service unavailable",
         })
         
-        response = client.post("/arxiv/search", json={
+        response = client.post("/arxiv/search_s", json={
             "query": "test query",
             "top_k": 10,
         })
@@ -443,7 +443,7 @@ class TestSemanticSearch:
             "total": 0,
             "query": "test",
         })
-        response = client.post("/arxiv/search", json={
+        response = client.post("/arxiv/search_s", json={
             "query": "test",
             "top_k": 0,
         })
@@ -455,7 +455,7 @@ class TestSemanticSearch:
             "total": 0,
             "query": "test",
         })
-        response = client.post("/arxiv/search", json={
+        response = client.post("/arxiv/search_s", json={
             "query": "test",
             "top_k": 5001,
         })

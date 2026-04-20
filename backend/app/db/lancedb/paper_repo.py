@@ -96,17 +96,67 @@ class LanceDBPaperRepository(PaperRepository):
         
         if total == 0:
             return [], 0
+
+    def search_papers(
+        self,
+        query: str,
+        category: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        start: int = 0,
+        max_results: int = 50,
+        title_only: bool = False,
+        exact_phrase: bool = False,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Search papers by query in title and abstract with optional filters."""
+        table = self._get_papers_table()
+        
+        if table.count_rows() == 0:
+            return [], 0
         
         try:
             lance_ds = table.to_lance()
+            filter_parts = []
+            
+            if exact_phrase:
+                escaped_query = query.strip().replace("'", "''")
+                if title_only:
+                    filter_parts.append(f"title LIKE '%{escaped_query}%'")
+                else:
+                    filter_parts.append(f"(title LIKE '%{escaped_query}%' OR abstract LIKE '%{escaped_query}%')")
+            else:
+                search_terms = query.strip().split()
+                for term in search_terms:
+                    escaped_term = term.replace("'", "''")
+                    if title_only:
+                        filter_parts.append(f"title LIKE '%{escaped_term}%'")
+                    else:
+                        filter_parts.append(f"(title LIKE '%{escaped_term}%' OR abstract LIKE '%{escaped_term}%')")
+            
+            if category and category != 'cs*':
+                filter_parts.append(f"primary_category LIKE '%{category}%'")
+            
+            if date_from:
+                filter_parts.append(f'published >= "{date_from}T00:00:00"')
+            if date_to:
+                filter_parts.append(f'published <= "{date_to}T23:59:59"')
+            
+            filter_str = " AND ".join(filter_parts)
+            
+            total = lance_ds.scanner(columns=["id"], filter=filter_str).to_table().num_rows
+            
+            if total == 0:
+                return [], 0
+            
             scanner = lance_ds.scanner(
                 columns=[
                     "id", "title", "abstract", "authors", "primary_category",
                     "categories", "published", "updated", "pdf_url", "abs_url",
                     "comment", "journal_ref", "doi", "fetched_at"
                 ],
-                limit=limit,
-                offset=offset,
+                filter=filter_str,
+                limit=max_results,
+                offset=start,
                 order_by=[ColumnOrdering("published", ascending=False)],
             )
             df = scanner.to_table().to_pandas()
@@ -114,14 +164,44 @@ class LanceDBPaperRepository(PaperRepository):
             results = [self._entity_to_response(row) for _, row in df.iterrows()]
             return results, total
         except Exception as e:
-            logger.warning(f"Failed to use Lance scanner, falling back to pandas: {e}")
+            logger.warning(f"Failed to use Lance scanner for search_papers: {e}")
             df = table.to_pandas()
-            total = len(df)
+            if len(df) == 0:
+                return [], 0
+            
+            mask = pd.Series([True] * len(df))
+            if exact_phrase:
+                if title_only:
+                    mask &= df["title"].str.contains(query.strip(), case=False, na=False)
+                else:
+                    mask &= (df["title"].str.contains(query.strip(), case=False, na=False) | 
+                            df["abstract"].str.contains(query.strip(), case=False, na=False))
+            else:
+                search_terms = query.strip().split()
+                for term in search_terms:
+                    if title_only:
+                        mask &= df["title"].str.contains(term, case=False, na=False)
+                    else:
+                        mask &= (df["title"].str.contains(term, case=False, na=False) | 
+                                df["abstract"].str.contains(term, case=False, na=False))
+            
+            if category and category != 'cs*':
+                mask &= df["primary_category"].str.contains(category, case=False, na=False)
+            if date_from:
+                mask &= df["published"] >= date_from
+            if date_to:
+                mask &= df["published"] <= date_to
+            
+            filtered = df[mask]
+            total = len(filtered)
+            
             if total == 0:
                 return [], 0
-            df_sorted = df.sort_values(by="published", ascending=False)
-            df_paginated = df_sorted.iloc[offset:offset + limit]
-            results = [self._entity_to_response(row) for _, row in df_paginated.iterrows()]
+            
+            sorted_df = filtered.sort_values(by="published", ascending=False)
+            paginated = sorted_df.iloc[start:start + max_results]
+            
+            results = [self._entity_to_response(row) for _, row in paginated.iterrows()]
             return results, total
     
     def exists(self, id: str) -> bool:
