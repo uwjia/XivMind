@@ -48,14 +48,25 @@
       <div 
         v-for="paper in papers" 
         :key="paper.id" 
-        class="paper-item" 
-        @click="goToPaper(paper.id)"
-        @mouseenter="showTooltip(paper, $event)"
-        @mouseleave="hideTooltip"
+        class="paper-item"
       >
-        <span class="paper-id">{{ paper.id }}</span>
-        <span class="paper-title">{{ paper.title }}</span>
-        <span class="paper-score">{{ (paper.similarity_score * 100).toFixed(1) }}%</span>
+        <span 
+          class="paper-id" 
+          @click="goToPaper(paper.id)"
+          @mouseenter="showTooltip(paper, $event)"
+          @mouseleave="hideTooltip"
+        >{{ paper.id }}</span>
+        <span 
+          class="paper-title"
+          @click="goToPaper(paper.id)"
+          @mouseenter="showTooltip(paper, $event)"
+          @mouseleave="hideTooltip"
+        >{{ paper.title }}</span>
+        <span 
+          class="paper-score"
+          :class="{ pinned: pinnedPaper?.id === paper.id }"
+          @click.stop="togglePinnedTooltip(paper, $event)"
+        >{{ (paper.similarity_score * 100).toFixed(1) }}%</span>
       </div>
     </div>
     
@@ -68,15 +79,30 @@
       <Transition name="tooltip">
         <div 
           v-if="tooltipVisible && tooltipPaper" 
+          ref="tooltipRef"
           class="paper-tooltip"
+          :class="{ pinned: isTooltipPinned }"
           :style="tooltipStyle"
         >
+          <button v-if="isTooltipPinned" class="tooltip-close" @click="closePinnedTooltip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
           <div class="tooltip-header">
             <span class="tooltip-title">{{ tooltipPaper.title }}</span>
             <span class="tooltip-score">{{ (tooltipPaper.similarity_score * 100).toFixed(1) }}%</span>
           </div>
           <div class="tooltip-abstract">
-            <p class="abstract-text">{{ truncateAbstract(tooltipPaper.abstract) }}</p>
+            <p class="abstract-text">{{ isAbstractExpanded && isTooltipPinned ? tooltipPaper.abstract : truncateAbstract(tooltipPaper.abstract) }}</p>
+            <button 
+              v-if="isTooltipPinned && isAbstractLong(tooltipPaper.abstract)" 
+              class="abstract-toggle"
+              @click.stop="toggleAbstractExpand"
+            >
+              {{ isAbstractExpanded ? 'Show less' : 'Show more' }}
+            </button>
           </div>
           <div class="tooltip-section">
             <span class="tooltip-label">Authors:</span>
@@ -105,9 +131,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useRelatedPapers, type RelatedPaper } from '@/composables/useRelatedPapers'
+import { useRelatedPapers } from '@/composables/useRelatedPapers'
+import { useRelateTooltip } from '@/composables/useRelateTooltip'
 
 const props = defineProps<{
   paperId: string
@@ -125,54 +152,23 @@ const {
   fetchRelatedPapers,
 } = useRelatedPapers()
 
-const tooltipVisible = ref(false)
-const tooltipPaper = ref<RelatedPaper | null>(null)
-const tooltipStyle = ref<Record<string, string>>({})
-
-const showTooltip = (paper: RelatedPaper, event: MouseEvent) => {
-  tooltipPaper.value = paper
-  tooltipVisible.value = true
-  
-  const target = event.target as HTMLElement
-  const rect = target.closest('.paper-item')?.getBoundingClientRect()
-  
-  if (rect) {
-    const viewportWidth = window.innerWidth
-    const tooltipWidth = 400
-    const gap = 12
-    
-    let left = rect.right + gap
-    if (left + tooltipWidth > viewportWidth) {
-      left = rect.left - gap - tooltipWidth
-    }
-    if (left < 0) {
-      left = gap
-    }
-    
-    tooltipStyle.value = {
-      left: `${left}px`,
-      top: `${rect.top}px`,
-      maxWidth: `${tooltipWidth}px`
-    }
-  }
-}
-
-const hideTooltip = () => {
-  tooltipVisible.value = false
-  tooltipPaper.value = null
-}
-
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleDateString()
-}
-
-const truncateAbstract = (abstract: string, maxLength: number = 300) => {
-  if (!abstract) return ''
-  if (abstract.length <= maxLength) return abstract
-  return abstract.slice(0, maxLength) + '...'
-}
+const {
+  tooltipVisible,
+  tooltipPaper,
+  tooltipStyle,
+  isTooltipPinned,
+  pinnedPaper,
+  isAbstractExpanded,
+  tooltipRef,
+  showTooltip,
+  hideTooltip,
+  togglePinnedTooltip,
+  closePinnedTooltip,
+  truncateAbstract,
+  isAbstractLong,
+  toggleAbstractExpand,
+  formatDate,
+} = useRelateTooltip()
 
 const refresh = () => {
   if (props.paperId && props.paperTitle && props.paperAbstract) {
@@ -396,6 +392,12 @@ watch(top_k, () => {
   font-size: 0.8rem;
   color: var(--text-muted);
   min-width: 80px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.paper-id:hover {
+  color: var(--accent-color);
 }
 
 .paper-title {
@@ -403,6 +405,12 @@ watch(top_k, () => {
   font-size: 0.9rem;
   font-weight: 500;
   flex: 1;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.paper-title:hover {
+  color: var(--accent-color);
 }
 
 .paper-score {
@@ -412,6 +420,17 @@ watch(top_k, () => {
   background: color-mix(in srgb, var(--accent-color) 10%, transparent);
   padding: 2px 8px;
   border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.paper-score:hover {
+  background: color-mix(in srgb, var(--accent-color) 20%, transparent);
+}
+
+.paper-score.pinned {
+  background: var(--accent-color);
+  color: white;
 }
 
 .no-papers {
@@ -437,8 +456,54 @@ watch(top_k, () => {
   padding: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   pointer-events: none;
-  max-height: 80vh;
   overflow-y: auto;
+}
+
+.paper-tooltip::-webkit-scrollbar {
+  width: 6px;
+}
+
+.paper-tooltip::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.paper-tooltip::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.paper-tooltip::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color);
+}
+
+.paper-tooltip.pinned {
+  pointer-events: auto;
+}
+
+.tooltip-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.tooltip-close:hover {
+  background: var(--danger-color);
+  color: white;
+}
+
+.tooltip-close svg {
+  width: 14px;
+  height: 14px;
 }
 
 .tooltip-header {
@@ -501,6 +566,22 @@ watch(top_k, () => {
   font-size: 0.85rem;
   line-height: 1.6;
   margin: 0;
+}
+
+.abstract-toggle {
+  margin-top: 8px;
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  color: var(--accent-color);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.abstract-toggle:hover {
+  text-decoration: underline;
 }
 
 .tooltip-enter-active,

@@ -272,7 +272,7 @@ export const arxivBackendAPI = {
     model?: string
     error?: string
   }> {
-    const response = await fetch(`${BACKEND_API_BASE}/search`, {
+    const response = await fetch(`${BACKEND_API_BASE}/search_s`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
