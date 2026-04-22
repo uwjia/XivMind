@@ -26,7 +26,7 @@
           <div class="header-info">
             <span class="paper-id">{{ paper.id }}</span>
             <span class="paper-category">{{ paper.category }}</span>
-            <span class="paper-date">{{ formatDate(paper.date) }}</span>
+            <span class="paper-date">{{ formatShortDate(paper.date) }}</span>
           </div>
           <button @click="goBack" class="back-button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -49,45 +49,31 @@
           </span>
         </div>
 
+        <div class="paper-tags">
+          <div class="paper-categories-section">
+            <span v-for="cat in paper.categories" :key="cat" class="tag" :style="tagStyle(cat)" :title="getCategoryFullName(cat)">{{ cat }}</span>
+          </div>
+          <div class="paper-published-section">
+            <div class="paper-published">v1 {{ formatDateToUTCString(paper.published) }}</div>
+            <div v-if="getVersionFromId() !== 1" class="paper-updated">v{{ getVersionFromId() }} {{ formatDateToUTCString(paper.updated) }}</div>
+          </div>
+        </div>
+
         <div class="paper-stats">
           <div class="stat-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6">
+            <svg viewBox="0 0 24 24" fill="none" :stroke="isMinimal ? 'currentColor' : '#3b82f6'">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
             </svg>
             <span>{{ paper?.downloads || 0 }} downloads</span>
           </div>
           <div class="stat-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#10b981">
+            <svg viewBox="0 0 24 24" fill="none" :stroke="isMinimal ? 'currentColor' : '#10b981'">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
             </svg>
             <span>{{ paper?.citations || 0 }} citations</span>
           </div>
-        </div>
-
-        <div class="paper-actions">
-          <a :href="paper.pdfUrl" target="_blank" class="action-button primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-              <polyline points="10 9 9 9 8 9"/>
-            </svg>
-            View PDF
-          </a>
-          <a :href="paper.absUrl" target="_blank" class="action-button secondary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            </svg>
-            View on arXiv
-          </a>
-        </div>
-
-        <div class="paper-tags">
-          <span v-for="cat in paper.categories" :key="cat" class="tag" :style="getTagStyle(cat)" :title="getCategoryFullName(cat)">{{ cat }}</span>
         </div>
 
         <div v-if="paper.comment" class="paper-comments">
@@ -113,26 +99,26 @@
           <h3>Quick Actions</h3>
           <div class="action-list">
             <button class="sidebar-action" :class="{ active: isBookmarked }" @click="toggleBookmark">
-              <svg viewBox="0 0 24 24" fill="none" :stroke="isBookmarked ? '#FFD700' : '#f59e0b'">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" :fill="isBookmarked ? '#FFD700' : 'none'"/>
+              <svg viewBox="0 0 24 24" fill="none" :stroke="isMinimal ? 'currentColor' : (isBookmarked ? '#FFD700' : '#f59e0b')">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" :fill="isMinimal ? 'none' : (isBookmarked ? '#FFD700' : 'none')"/>
               </svg>
               {{ isBookmarked ? 'Bookmarked' : 'Bookmark' }}
             </button>
             <button class="sidebar-action" :class="downloadStatus" @click="downloadPdf">
-              <svg v-if="downloadStatus === 'downloading'" viewBox="0 0 24 24" fill="none" stroke="#2196F3">
+              <svg v-if="downloadStatus === 'downloading'" viewBox="0 0 24 24" fill="none" :stroke="isMinimal ? 'currentColor' : '#2196F3'">
                 <circle cx="12" cy="12" r="10" stroke-width="2" fill="none"/>
                 <circle cx="12" cy="12" r="10" stroke-width="2" fill="none" stroke-dasharray="62.83" :stroke-dashoffset="62.83 - (62.83 * downloadProgress / 100)" style="transform: rotate(-90deg); transform-origin: center;"/>
               </svg>
-              <svg v-else-if="downloadStatus === 'completed' || isDownloaded" viewBox="0 0 24 24" fill="none" stroke="#4CAF50">
+              <svg v-else-if="downloadStatus === 'completed' || isDownloaded" viewBox="0 0 24 24" fill="none" :stroke="isMinimal ? 'currentColor' : '#4CAF50'">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                 <polyline points="22 4 12 14.01 9 11.01"/>
               </svg>
-              <svg v-else-if="downloadStatus === 'failed'" viewBox="0 0 24 24" fill="none" stroke="#F44336">
+              <svg v-else-if="downloadStatus === 'failed'" viewBox="0 0 24 24" fill="none" :stroke="isMinimal ? 'currentColor' : '#F44336'">
                 <circle cx="12" cy="12" r="10"/>
                 <line x1="15" y1="9" x2="9" y2="15"/>
                 <line x1="9" y1="9" x2="15" y2="15"/>
               </svg>
-              <svg v-else viewBox="0 0 24 24" fill="none" :stroke="downloadStatus === 'pending' ? '#FF9800' : '#06b6d4'">
+              <svg v-else viewBox="0 0 24 24" fill="none" :stroke="isMinimal ? 'currentColor' : (downloadStatus === 'pending' ? '#FF9800' : '#06b6d4')">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
@@ -148,17 +134,11 @@
               class="sidebar-action read" 
               @click="openReader"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6">
+              <svg viewBox="0 0 24 24" fill="none" :stroke="isMinimal ? 'currentColor' : '#8b5cf6'">
                 <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" stroke-width="2"/>
                 <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" stroke-width="2"/>
               </svg>
               Read PDF
-            </button>
-            <button class="sidebar-action">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              Discuss
             </button>
           </div>
         </div>
@@ -167,14 +147,24 @@
           <h3>External Links</h3>
           <div class="link-list">
             <a :href="paper.pdfUrl" target="_blank" class="external-link">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#be1234">
+              <svg viewBox="0 0 24 24" fill="none" :stroke="isMinimal ? 'currentColor' : '#e53935'" stroke-width="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                 <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
               </svg>
               arXiv PDF
             </a>
+            <a :href="paper.absUrl" target="_blank" class="external-link">
+              <svg viewBox="0 0 24 24" fill="none" :stroke="isMinimal ? 'currentColor' : '#1976d2'" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+              arXiv abstract
+            </a>
             <a v-if="paper.codeUrl" :href="paper.codeUrl" target="_blank" class="external-link">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6">
+              <svg viewBox="0 0 24 24" fill="none" :stroke="isMinimal ? 'currentColor' : '#8b5cf6'" stroke-width="2">
                 <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
               </svg>
               GitHub Repository
@@ -209,13 +199,15 @@ import { getTagStyle, categories } from '@/utils/categoryColors'
 import { useMarkdown } from '@/composables/useMarkdown'
 import { useDateFormatter } from '@/composables/useDateFormatter'
 import { usePaperDetail } from '@/composables/usePaperDetail'
+import { useThemeStore } from '@/stores/theme-store'
 import { AnalysisPanel, RelatePanel } from '@/components/paper-analysis'
 
 const route = useRoute()
 const router = useRouter()
+const themeStore = useThemeStore()
 
 const { render, renderWithDefault } = useMarkdown()
-const { formatDate } = useDateFormatter()
+const { formatShortDate, formatDateToUTCString } = useDateFormatter()
 
 const {
   loading,
@@ -232,6 +224,13 @@ const {
   downloadPdf,
 } = usePaperDetail()
 
+
+const isMinimal = computed(() => themeStore.iconStyle === 'minimal')
+
+const tagStyle = computed(() => {
+  return (category: string) => getTagStyle(category, isMinimal.value)
+})
+
 const renderedAbstract = computed(() => {
   return renderWithDefault(paper.value?.abstract, 'No abstract available')
 })
@@ -239,6 +238,15 @@ const renderedAbstract = computed(() => {
 const renderedComment = computed(() => {
   return render(paper.value?.comment)
 })
+
+const getVersionFromId = () => {
+  const pdfUrl = paper.value?.pdfUrl || ''
+  const versionMatch = pdfUrl.match(/v(\d+)$/)
+  if (versionMatch && versionMatch[1]) {
+    return parseInt(versionMatch[1])
+  }
+  return 1
+}
 
 onMounted(async () => {
   const paperId = route.params.id as string
@@ -424,21 +432,21 @@ const getCategoryFullName = (category: string) => {
 .paper-id {
   font-family: 'Courier New', monospace;
   font-size: 0.9rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .paper-category {
   background: var(--bg-secondary);
-  color: var(--text-muted);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
   padding: 6px 14px;
   border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .paper-date {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
@@ -488,65 +496,52 @@ const getCategoryFullName = (category: string) => {
   height: 20px;
 }
 
-.paper-actions {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.action-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  font-family: 'Courier New', monospace;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  border: 1px solid var(--border-color);
-  cursor: pointer;
-  background: var(--bg-secondary);
-  color: var(--text-muted);
-}
-
-.action-button svg {
-  width: 20px;
-  height: 20px;
-}
-
-.action-button.primary {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
-}
-
-.action-button.primary:hover {
-  background: #764ba2;
-  color: white;
-  border-color: #764ba2;
-  transform: translateY(-2px);
-}
-
-.action-button.secondary {
-  background: #f093fb;
-  color: white;
-  border-color: #f093fb;
-}
-
-.action-button.secondary:hover {
-  background: #f5576c;
-  color: white;
-  border-color: #f5576c;
-  transform: translateY(-2px);
-}
-
 .paper-tags {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
   margin-bottom: 32px;
+}
+
+.paper-categories-section {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 1;
+}
+
+.paper-published-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.paper-published {
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  color: var(--tag-published);
+  background-color: color-mix(in srgb, var(--tag-published) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-published) 30%, transparent);
+  white-space: nowrap;
+}
+
+.paper-updated {
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  color: var(--tag-updated);
+  background-color: color-mix(in srgb, var(--tag-updated) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-updated) 30%, transparent);
+  white-space: nowrap;
 }
 
 .tag {
@@ -946,15 +941,6 @@ const getCategoryFullName = (category: string) => {
 
   .paper-title {
     font-size: 1.5rem;
-  }
-
-  .paper-actions {
-    flex-direction: column;
-  }
-
-  .action-button {
-    width: 100%;
-    justify-content: center;
   }
 
   .paper-stats {

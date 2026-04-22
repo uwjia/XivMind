@@ -66,8 +66,8 @@
               <span v-for="cat in (paper.categories || []).slice(0, 3)" :key="cat" class="tag" :style="tagStyle(cat)" :title="getCategoryFullName(cat)">{{ getCategoryShortName(cat) }}</span>
             </div>
             <div class="paper-published-section">
-              <div class="paper-published">v1 {{ formatDate(paper.published) }}</div>
-              <div v-if="getVersionFromId() !== 1" class="paper-updated">v{{ getVersionFromId() }} {{ formatDate(paper.updated) }}</div>
+              <div class="paper-published">v1 {{ formatDateToUTCString(paper.published) }}</div>
+              <div v-if="getVersionFromId() !== 1" class="paper-updated">v{{ getVersionFromId() }} {{ formatDateToUTCString(paper.updated) }}</div>
             </div>
           </div>
           <div class="paper-stats">
@@ -156,7 +156,10 @@ import { useToastStore } from '@/stores/toast-store'
 import { useThemeStore } from '@/stores/theme-store'
 import { useConfigStore } from '@/stores/config-store'
 import { useDownloadHandler } from '@/composables/useDownloadHandler'
+import { useDateFormatter } from '@/composables/useDateFormatter'
 import type { Paper } from '@/types'
+
+const { formatDateToUTCString } = useDateFormatter()
 
 const props = defineProps<{
   paper: Paper
@@ -322,27 +325,6 @@ const openReader = () => {
 
 const goToAuthorPapers = (author: string) => {
   router.push({ name: 'AuthorPapers', params: { authorName: encodeURIComponent(author) } })
-}
-
-const formatDate = (dateStr: string | Date) => {
-  if (!dateStr) return 'Unknown date'
-  
-  try {
-    const date = new Date(dateStr)
-    if (isNaN(date.getTime())) return 'Invalid date'
-    
-    const year = date.getUTCFullYear()
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-    const day = String(date.getUTCDate()).padStart(2, '0')
-    const hours = String(date.getUTCHours()).padStart(2, '0')
-    const minutes = String(date.getUTCMinutes()).padStart(2, '0')
-    const seconds = String(date.getUTCSeconds()).padStart(2, '0')
-    
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
-  } catch (err) {
-    console.error('Error formatting date:', err)
-    return String(dateStr)
-  }
 }
 
 const getCategoryShortName = (category: string) => {

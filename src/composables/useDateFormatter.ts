@@ -79,11 +79,39 @@ export function useDateFormatter() {
     return `${year}${month}${day}${hours}${minutes}${seconds}`
   }
 
+  const formatDateToLocalString = (dateStr: string): string => {
+    const date = new Date(dateStr)
+    return date.toLocaleString()
+  }
+
+  const formatDateToUTCString = (dateStr: string | Date) => {
+    if (!dateStr) return 'Unknown date'
+    
+    try {
+      const date = new Date(dateStr)
+      if (isNaN(date.getTime())) return 'Invalid date'
+      
+      const year = date.getUTCFullYear()
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+      const day = String(date.getUTCDate()).padStart(2, '0')
+      const hours = String(date.getUTCHours()).padStart(2, '0')
+      const minutes = String(date.getUTCMinutes()).padStart(2, '0')
+      const seconds = String(date.getUTCSeconds()).padStart(2, '0')
+      
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+    } catch (err) {
+      console.error('Error formatting date:', err)
+      return String(dateStr)
+    }
+  }
+
   return { 
     formatDate, 
     formatShortDate, 
     formatDateTime,
     formatRelativeTime,
-    toTimestamp
+    toTimestamp,
+    formatDateToLocalString,
+    formatDateToUTCString
   }
 }

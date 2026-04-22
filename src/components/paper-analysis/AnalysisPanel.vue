@@ -121,7 +121,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="meta-icon">
             <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          {{ formatDate(result.analyzed_at) }}
+          {{ formatDateToLocalString(result.analyzed_at) }}
         </span>
       </div>
     </div>
@@ -138,7 +138,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { usePaperAnalysis, type AnalysisType } from '@/composables/usePaperAnalysis'
-import { formatDate } from '@/utils/format'
+import { useDateFormatter } from '@/composables/useDateFormatter'
+
+const { formatDateToLocalString } = useDateFormatter()
 
 const props = defineProps<{
   paperId: string
