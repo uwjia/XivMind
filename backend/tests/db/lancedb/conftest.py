@@ -198,3 +198,33 @@ def sample_reading_progress_data():
         "zoom_level": 1.5,
         "view_mode": "continuous",
     }
+
+
+@pytest.fixture
+def sample_code_data():
+    return {
+        "paper_id": "2301.12345",
+        "url": "https://github.com/test/repo",
+        "platform": "github",
+        "owner": "test",
+        "repo": "repo",
+        "is_official": True,
+        "stars": 100,
+        "language": "Python",
+    }
+
+
+@pytest.fixture
+def sample_code_entity():
+    return {
+        "id": "2301.12345",
+        "paper_id": "2301.12345",
+        "url": "https://github.com/test/repo",
+        "platform": "github",
+        "owner": "test",
+        "repo": "repo",
+        "is_official": True,
+        "stars": 100,
+        "language": "Python",
+        "fetched_at": "2024-01-01T00:00:00",
+    }

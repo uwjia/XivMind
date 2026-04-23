@@ -96,6 +96,29 @@ class LanceDBPaperRepository(PaperRepository):
         
         if total == 0:
             return [], 0
+        
+        try:
+            lance_ds = table.to_lance()
+            scanner = lance_ds.scanner(
+                columns=[
+                    "id", "title", "abstract", "authors", "primary_category",
+                    "categories", "published", "updated", "pdf_url", "abs_url",
+                    "comment", "journal_ref", "doi", "fetched_at"
+                ],
+                limit=limit,
+                offset=offset,
+                order_by=[ColumnOrdering("published", ascending=False)],
+            )
+            df = scanner.to_table().to_pandas()
+            results = [self._entity_to_response(row) for _, row in df.iterrows()]
+            return results, total
+        except Exception as e:
+            logger.warning(f"Failed to use Lance scanner for get_all, falling back to pandas: {e}")
+            df = table.to_pandas()
+            sorted_df = df.sort_values(by="published", ascending=False)
+            paginated = sorted_df.iloc[offset:offset + limit]
+            results = [self._entity_to_response(row) for _, row in paginated.iterrows()]
+            return results, total
 
     def search_papers(
         self,

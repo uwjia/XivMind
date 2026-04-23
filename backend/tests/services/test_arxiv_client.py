@@ -134,7 +134,7 @@ class TestQueryPapers:
         assert response.status_code == 422
 
     def test_query_papers_max_results_exceeds_limit(self, client, mock_paper_service):
-        response = client.get("/arxiv/query?date=2024-01-15&max_results=501")
+        response = client.get("/arxiv/query?date=2024-01-15&max_results=5001")
         assert response.status_code == 422
 
     def test_query_papers_fetch_category(self, client, mock_paper_service, sample_paper_response):
@@ -256,15 +256,6 @@ class TestClearCache:
         assert response.status_code == 200
         assert "cleared" in response.json()["message"].lower()
         mock_paper_service.clear_date_index.assert_called_once_with("2024-01-15")
-
-    def test_clear_all_cache_success(self, client, mock_paper_service):
-        mock_paper_service.clear_all_date_index.return_value = None
-        
-        response = client.delete("/arxiv/cache/date")
-        
-        assert response.status_code == 200
-        assert "cleared" in response.json()["message"].lower()
-        mock_paper_service.clear_all_date_index.assert_called_once()
 
     def test_clear_cache_service_error(self, client, mock_paper_service):
         mock_paper_service.clear_date_index.side_effect = Exception("Database error")

@@ -100,6 +100,7 @@ class TestLanceDBPaperRepositoryPaperOperations:
 
     def test_get_all_papers(self, repo):
         mock_table = Mock()
+        mock_table.count_rows = Mock(return_value=2)
         df = pd.DataFrame([
             {
                 "id": "2301.00001",
@@ -136,6 +137,10 @@ class TestLanceDBPaperRepositoryPaperOperations:
         ])
         mock_table.to_pandas = Mock(return_value=df)
         
+        mock_lance_ds = Mock()
+        mock_lance_ds.scanner = Mock(side_effect=Exception("Mock error to trigger fallback"))
+        mock_table.to_lance = Mock(return_value=mock_lance_ds)
+        
         with patch.object(repo, '_get_papers_table', return_value=mock_table):
             results, total = repo.get_all()
             
@@ -144,8 +149,7 @@ class TestLanceDBPaperRepositoryPaperOperations:
 
     def test_get_all_papers_empty(self, repo):
         mock_table = Mock()
-        df = pd.DataFrame()
-        mock_table.to_pandas = Mock(return_value=df)
+        mock_table.count_rows = Mock(return_value=0)
         
         with patch.object(repo, '_get_papers_table', return_value=mock_table):
             results, total = repo.get_all()

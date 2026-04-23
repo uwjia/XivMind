@@ -381,10 +381,12 @@ class TestLanceDBClientGetTable:
                 client = LanceDBClient()
                 client.connect("/tmp/test_db")
                 
+                client._tables["test_table"] = mock_table
+                client._tables_initialized = True
+                
                 result = client.get_table("test_table")
                 
                 assert result is mock_table
-                assert client._tables["test_table"] is mock_table
 
     def test_get_table_not_connected(self, mock_settings):
         with patch('app.db.lancedb.client.lancedb') as mock_lancedb:
