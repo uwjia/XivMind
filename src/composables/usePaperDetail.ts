@@ -4,7 +4,8 @@ import { useBookmarkStore } from '@/stores/bookmark-store'
 import { useDownloadStore } from '@/stores/download-store'
 import { useToastStore } from '@/stores/toast-store'
 import { useDownloadHandler } from '@/composables/useDownloadHandler'
-import type { Paper } from '@/types'
+import { listingsAPI } from '@/services/listings'
+import type { Paper, CodeUrlInfo } from '@/types'
 
 export function usePaperDetail() {
   const paperStore = usePaperStore()
@@ -18,6 +19,8 @@ export function usePaperDetail() {
   const paper = ref<Paper | null>(null)
   const isBookmarked = ref(false)
   const isDownloaded = ref(false)
+  const hasCodeUrl = ref(false)
+  const codeInfo = ref<CodeUrlInfo | null>(null)
 
   const downloadStatus = computed(() => {
     if (!paper.value?.id) return 'none'
@@ -57,6 +60,20 @@ export function usePaperDetail() {
   const checkDownload = async () => {
     if (paper.value?.id) {
       isDownloaded.value = await downloadStore.checkDownload(paper.value.id)
+    }
+  }
+
+  const checkCodeUrl = async () => {
+    if (paper.value?.id) {
+      try {
+        const codes = await listingsAPI.getCodesForPapers([paper.value.id])
+        codeInfo.value = codes[paper.value.id]
+        hasCodeUrl.value = codeInfo.value !== null
+      } catch (err) {
+        console.error('Error checking code URL:', err)
+        hasCodeUrl.value = false
+        codeInfo.value = null
+      }
     }
   }
 
@@ -101,11 +118,14 @@ export function usePaperDetail() {
     paper,
     isBookmarked,
     isDownloaded,
+    hasCodeUrl,
+    codeInfo,
     downloadStatus,
     downloadProgress,
     fetchPaperById,
     checkBookmark,
     checkDownload,
+    checkCodeUrl,
     toggleBookmark,
     downloadPdf,
   }

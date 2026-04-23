@@ -52,6 +52,7 @@
   --icon-filter: #9C27B0;
   --icon-viewToggle: #00BCD4;
   --icon-toggle: #667eea;
+  --icon-code: #10B981;
   --icon-refresh: #00BCD4;
   --icon-pdf: #F44336;
   --icon-abstract: #2196F3;
@@ -128,6 +129,7 @@
   --icon-filter: var(--text-secondary);
   --icon-viewToggle: var(--text-secondary);
   --icon-toggle: var(--text-secondary);
+  --icon-code: var(--text-secondary);
   --icon-refresh: var(--text-secondary);
   --icon-pdf: var(--text-secondary);
   --icon-abstract: var(--text-secondary);

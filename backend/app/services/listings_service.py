@@ -6,8 +6,9 @@ from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 import asyncio
 
-from app.db.factory import get_listings_repository, get_paper_repository
+from app.db.factory import get_listings_repository, get_paper_repository, get_paper_code_repository
 from app.services.arxiv_client import ArxivClient
+from app.core.utils import extract_code_urls
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ class ListingsService:
     def __init__(self):
         self.listings_repo = get_listings_repository()
         self.paper_repo = get_paper_repository()
+        self.paper_code_repo = get_paper_code_repository()
         self.arxiv_client = ArxivClient()
     
     async def fetch_listings_page(self, skip: int = 0) -> str:
@@ -347,12 +349,36 @@ class ListingsService:
                 logger.info(f"Inserted {inserted} new papers to papers table")
                 
                 self._update_date_index_for_new_papers(cs_new_papers)
+                self._extract_and_store_code_urls(cs_new_papers)
             except Exception as e:
                 logger.error(f"Failed to insert new papers to papers table: {e}")
         
         all_papers = existing_papers + new_papers
         
         return all_papers
+    
+    async def _process_listing_type_replacement(self, paper_ids: List[str]) -> List[Dict[str, Any]]:
+        """
+        Process a listing type (replacement).
+        
+        1. Fetch details for replacement papers
+        2. upsert replacement papers to papers table
+        """
+        if not paper_ids:
+            return []
+        
+        new_papers = await self.fetch_paper_details(paper_ids)
+        
+        if new_papers:
+            try:
+                cs_new_papers = self._filter_cs_papers(new_papers)
+                inserted = self.paper_repo.upsert_papers_batch(cs_new_papers)
+                logger.info(f"Upserted {inserted} replacement papers to papers table")
+                self._extract_and_store_code_urls(cs_new_papers)
+            except Exception as e:
+                logger.error(f"Failed to upsert replacement papers to papers table: {e}")
+        
+        return new_papers
     
     def _update_date_index_for_new_papers(self, new_papers: List[Dict[str, Any]]) -> None:
         """
@@ -384,28 +410,6 @@ class ListingsService:
                     logger.info(f"Updated date_index for {date_str}: +{count} papers, total={new_total}")
             except Exception as e:
                 logger.error(f"Failed to update date_index for {date_str}: {e}")
-    
-    async def _process_listing_type_replacement(self, paper_ids: List[str]) -> List[Dict[str, Any]]:
-        """
-        Process a listing type (replacement).
-        
-        1. Fetch details for replacement papers
-        2. upsert replacement papers to papers table
-        """
-        if not paper_ids:
-            return []
-        
-        new_papers = await self.fetch_paper_details(paper_ids)
-        
-        if new_papers:
-            try:
-                cs_new_papers = self._filter_cs_papers(new_papers)
-                inserted = self.paper_repo.upsert_papers_batch(cs_new_papers)
-                logger.info(f"Upserted {inserted} replacement papers to papers table")
-            except Exception as e:
-                logger.error(f"Failed to upsert replacement papers to papers table: {e}")
-        
-        return new_papers
     
     def get_listings_indexes(self) -> List[Dict[str, Any]]:
         """Get all listings date indexes."""
@@ -507,4 +511,121 @@ class ListingsService:
             "cross": cross_papers,
             "replacement": replacement_papers,
             "auto_refreshed": auto_refreshed,
+        }
+    
+    def _extract_and_store_code_urls(self, papers: List[Dict[str, Any]]) -> None:
+        """
+        Extract code URLs from paper abstract and comment, then store them.
+        
+        Each paper only stores the first code URL found.
+        
+        Args:
+            papers: List of paper dictionaries with abstract and comment fields
+        """
+        if not papers:
+            return
+        
+        code_records = []
+        
+        for paper in papers:
+            paper_id = paper.get('id')
+            if not paper_id:
+                continue
+            
+            abstract = paper.get('abstract', '') or ''
+            comment = paper.get('comment', '') or ''
+            combined_text = f"{abstract} {comment}"
+            
+            codes = extract_code_urls(combined_text)
+            
+            if codes:
+                code = codes[0]
+                code_records.append({
+                    "paper_id": paper_id,
+                    "url": code.url,
+                    "platform": code.platform.value,
+                    "owner": code.owner or "",
+                    "repo": code.repo or "",
+                    "is_official": True,
+                    "stars": 0,
+                    "language": "",
+                    "fetched_at": datetime.utcnow().isoformat(),
+                })
+        
+        if code_records:
+            try:
+                upserted = self.paper_code_repo.upsert_paper_codes(code_records)
+                logger.info(f"Upserted {upserted} code URLs for {len(papers)} papers")
+            except Exception as e:
+                logger.error(f"Failed to upsert code URLs: {e}")
+    
+    def check_papers_with_code(self, paper_ids: List[str]) -> Dict[str, bool]:
+        """
+        Check which papers have code repositories.
+        
+        Args:
+            paper_ids: List of paper IDs to check.
+        
+        Returns:
+            Dictionary mapping paper_id to boolean (True if has code).
+        """
+        if not paper_ids:
+            return {}
+        return self.paper_code_repo.check_batch(paper_ids)
+    
+    def get_codes_for_papers(self, paper_ids: List[str]) -> Dict[str, Optional[Dict[str, Any]]]:
+        """
+        Get code repositories for multiple papers.
+        
+        Args:
+            paper_ids: List of paper IDs to get codes for.
+        
+        Returns:
+            Dictionary mapping paper_id to code repository (or None if not found).
+        """
+        if not paper_ids:
+            return {}
+        return self.paper_code_repo.get_codes_by_paper_ids(paper_ids)
+    
+    def get_papers_with_code_by_date(self, date: str) -> Dict[str, Any]:
+        """
+        Get papers with code repositories for a specific date.
+        
+        Args:
+            date: Date string (YYYY-MM-DD).
+        
+        Returns:
+            {
+                "date": "2026-04-22",
+                "new": [...],
+                "cross": [...],
+                "replacement": [...]
+            }
+        """
+        new_papers, _ = self.listings_repo.get_new_submissions(date, 0, 10000)
+        cross_papers, _ = self.listings_repo.get_cross_submissions(date, 0, 10000)
+        replacement_papers, _ = self.listings_repo.get_replacement_submissions(date, 0, 10000)
+        
+        all_papers = new_papers + cross_papers + replacement_papers
+        all_paper_ids = [p.get('id') for p in all_papers if p.get('id')]
+        
+        if not all_paper_ids:
+            return {
+                "date": date,
+                "new": [],
+                "cross": [],
+                "replacement": [],
+            }
+        
+        code_status = self.paper_code_repo.check_batch(all_paper_ids)
+        paper_ids_with_code = set(pid for pid, has_code in code_status.items() if has_code)
+        
+        def filter_papers_with_code(papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+            return [p for p in papers if p.get('id') in paper_ids_with_code]
+        
+        return {
+            "date": date,
+            "new": filter_papers_with_code(new_papers),
+            "cross": filter_papers_with_code(cross_papers),
+            "replacement": filter_papers_with_code(replacement_papers),
         }

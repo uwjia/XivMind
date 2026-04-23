@@ -27,6 +27,13 @@ export function useListings() {
   
   const filterCategory = ref<string | null>(null)
   const isFilterDrawerOpen = ref(false)
+  const filterHasCodeUrl = ref(false)
+  
+  const papersWithCodeNew = ref<Paper[]>([])
+  const papersWithCodeCross = ref<Paper[]>([])
+  const papersWithCodeReplacement = ref<Paper[]>([])
+  const isLoadingCodeFilter = ref(false)
+  let lastCheckedPaperIds: string = ''
   
   const toastStore = useToastStore()
   const bookmarkStore = useBookmarkStore()
@@ -35,6 +42,14 @@ export function useListings() {
   const currentPapers = ref<Paper[]>([])
 
   const totalCounts = computed(() => {
+    if (filterHasCodeUrl.value) {
+      return {
+        new: papersWithCodeNew.value.length,
+        cross: papersWithCodeCross.value.length,
+        replacement: papersWithCodeReplacement.value.length
+      }
+    }
+
     return {
       new: newPapers.value.length,
       cross: crossPapers.value.length,
@@ -43,9 +58,15 @@ export function useListings() {
   })
 
   const getTabPapers = (tab: ListingTab): Paper[] => {
-    if (tab === 'new') return newPapers.value
-    if (tab === 'cross') return crossPapers.value
-    if (tab === 'replacement') return replacementPapers.value
+    if (filterHasCodeUrl.value) {
+      if (tab === 'new') return papersWithCodeNew.value
+      if (tab === 'cross') return papersWithCodeCross.value
+      if (tab === 'replacement') return papersWithCodeReplacement.value
+    } else {
+      if (tab === 'new') return newPapers.value
+      if (tab === 'cross') return crossPapers.value
+      if (tab === 'replacement') return replacementPapers.value
+    }
     return []
   }
 
@@ -62,7 +83,8 @@ export function useListings() {
   })
 
   const filteredPapers = computed(() => {
-    const papers = getTabPapers(activeTab.value)
+    let papers = getTabPapers(activeTab.value)
+    
     if (!filterCategory.value || filterCategory.value === 'cs*') {
       return papers
     }
@@ -123,7 +145,7 @@ export function useListings() {
     currentPapers.value = papers.slice(start, end)
   }
 
-  watch([activeTab, currentPage, pageSize, filterCategory, newPapers, crossPapers, replacementPapers], () => {
+  watch([activeTab, currentPage, pageSize, filterCategory, filterHasCodeUrl, newPapers, crossPapers, replacementPapers, papersWithCodeNew, papersWithCodeCross, papersWithCodeReplacement], () => {
     updateCurrentPapers()
   }, { immediate: true })
 
@@ -133,10 +155,12 @@ export function useListings() {
 
   watch(currentPapers, async (papers) => {
     if (papers.length > 0) {
-      const paperIds = papers.map(p => p.id).filter(Boolean)
-      if (paperIds.length > 0) {
-        await bookmarkStore.checkBookmarksBatch(paperIds)
-        await downloadStore.checkDownloadsBatch(paperIds)
+      const paperIds = papers.map(p => p.id).filter(Boolean).sort().join(',')
+      if (paperIds && paperIds !== lastCheckedPaperIds) {
+        lastCheckedPaperIds = paperIds
+        const checkIds = papers.map(p => p.id).filter(Boolean)
+        await bookmarkStore.checkBookmarksBatch(checkIds)
+        await downloadStore.checkDownloadsBatch(checkIds)
       }
     }
   }, { immediate: true })
@@ -215,6 +239,36 @@ export function useListings() {
     pageInput.value = 1
   }
 
+  const fetchPapersWithCode = async (date: string) => {
+    isLoadingCodeFilter.value = true
+    try {
+      const result = await listingsAPI.getPapersWithCode(date)
+      papersWithCodeNew.value = result.new
+      papersWithCodeCross.value = result.cross
+      papersWithCodeReplacement.value = result.replacement
+      listingsDate.value = result.date
+    } catch (e) {
+      console.error('Error fetching papers with code:', e)
+    } finally {
+      isLoadingCodeFilter.value = false
+    }
+  }
+
+  const toggleCodeUrlFilter = async () => {
+    const newValue = !filterHasCodeUrl.value
+    
+    if (newValue && listingsDate.value) {
+      await fetchPapersWithCode(listingsDate.value)
+      filterHasCodeUrl.value = true
+    } else {
+      await refreshListings(selectedDate.value || undefined)
+      filterHasCodeUrl.value = newValue
+    }
+    
+    currentPage.value = 1
+    pageInput.value = 1
+  }
+
   const changePageSize = (size: number) => {
     pageSize.value = size
     currentPage.value = 1
@@ -239,18 +293,27 @@ export function useListings() {
     }
   }
 
-  const handleRefresh = () => {
-    refreshListings(selectedDate.value || undefined)
+  const handleRefresh = async () => {
+    if (filterHasCodeUrl.value && listingsDate.value) {
+      await fetchPapersWithCode(listingsDate.value)
+    } else {
+      await refreshListings(selectedDate.value || undefined)
+    }
   }
 
   const onDateChange = async () => {
     currentPage.value = 1
-    await refreshListings(selectedDate.value || undefined)
+    if (filterHasCodeUrl.value && selectedDate.value) {
+      await fetchPapersWithCode(selectedDate.value)
+    } else {
+      await refreshListings(selectedDate.value || undefined)
+    }
   }
 
   const clearDateFilter = async () => {
     selectedDate.value = ''
     currentPage.value = 1
+    filterHasCodeUrl.value = false
     await refreshListings()
   }
 
@@ -294,6 +357,9 @@ export function useListings() {
     isFilterDrawerOpen,
     toggleFilterDrawer,
     closeFilterDrawer,
-    handleFilterCategorySelect
+    handleFilterCategorySelect,
+    filterHasCodeUrl,
+    toggleCodeUrlFilter,
+    isLoadingCodeFilter
   }
 }

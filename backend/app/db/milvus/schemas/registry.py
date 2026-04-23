@@ -10,6 +10,7 @@ from .memorys import RecallMemorySchema, ArchivalMemorySchema, CoreMemorySchema,
 from .conversation import ConversationMetaSchema
 from .pdf_annotations import PdfAnnotationSchema, PdfReadingProgressSchema
 from .followed_authors import FollowedAuthorSchema
+from .paper_codes import PaperCodeSchema
 
 
 class SchemaRegistry:
@@ -54,3 +55,4 @@ SchemaRegistry.register(ConversationMetaSchema())
 SchemaRegistry.register(PdfAnnotationSchema())
 SchemaRegistry.register(PdfReadingProgressSchema())
 SchemaRegistry.register(FollowedAuthorSchema())
+SchemaRegistry.register(PaperCodeSchema())

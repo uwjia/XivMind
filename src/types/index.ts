@@ -1,4 +1,17 @@
 // Paper type definition
+export interface CodeUrlInfo {
+  id: string;
+  paperId: string;
+  url: string;
+  platform: string;
+  owner?: string;
+  repo?: string;
+  isOfficial: boolean;
+  stars?: number;
+  language?: string;
+  fetchedAt?: string;
+}
+
 export interface Paper {
   id: string;
   arxivId?: string;
@@ -15,6 +28,7 @@ export interface Paper {
   absUrl: string;
   pdfUrl: string;
   codeUrl?: string;
+  codeInfo?: CodeUrlInfo;
   downloads?: number;
   views?: number;
   citations?: number;

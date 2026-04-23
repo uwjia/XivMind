@@ -93,6 +93,12 @@
                 <rect x="3" y="17" width="18" height="4" rx="1"/>
               </svg>
             </button>
+            <button class="icon-btn code-filter-btn" :class="{ active: filterHasCodeUrl }" @click="toggleCodeUrlFilter" :title="filterHasCodeUrl ? 'Show all papers' : 'Filter papers with code'">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 18 22 12 16 6"/>
+                <polyline points="8 6 2 12 8 18"/>
+              </svg>
+            </button>
             <button class="icon-btn refresh-btn" @click="handleRefresh" :disabled="isLoadingListings" title="Refresh listings">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M23 4v6h-6M1 20v-6h6"/>
@@ -251,7 +257,9 @@ const {
   isFilterDrawerOpen,
   toggleFilterDrawer,
   closeFilterDrawer,
-  handleFilterCategorySelect
+  handleFilterCategorySelect,
+  filterHasCodeUrl,
+  toggleCodeUrlFilter
 } = useListings()
 
 onMounted(() => {
@@ -437,6 +445,22 @@ onMounted(() => {
 .toggle-btn:hover {
   background: color-mix(in srgb, var(--icon-toggle) 10%, transparent);
   border-color: color-mix(in srgb, var(--icon-toggle) 40%, transparent);
+}
+
+.code-filter-btn {
+  color: var(--icon-code);
+  border-color: color-mix(in srgb, var(--icon-code) 20%, transparent);
+}
+
+.code-filter-btn:hover {
+  background: color-mix(in srgb, var(--icon-code) 10%, transparent);
+  border-color: color-mix(in srgb, var(--icon-code) 40%, transparent);
+}
+
+.code-filter-btn.active {
+  background: color-mix(in srgb, var(--icon-code) 20%, transparent);
+  border-color: var(--icon-code);
+  color: var(--icon-code);
 }
 
 .filter-btn {

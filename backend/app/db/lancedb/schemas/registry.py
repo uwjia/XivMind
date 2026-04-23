@@ -15,6 +15,7 @@ from .new_submissions import NewSubmissionsSchema
 from .cross_submissions import CrossSubmissionsSchema
 from .replacement_submissions import ReplacementSubmissionsSchema
 from .listings_date_index import ListingsDateIndexSchema
+from .paper_codes import PaperCodeSchema
 
 
 class SchemaRegistry:
@@ -65,4 +66,5 @@ SchemaRegistry.register(NewSubmissionsSchema())
 SchemaRegistry.register(CrossSubmissionsSchema())
 SchemaRegistry.register(ReplacementSubmissionsSchema())
 SchemaRegistry.register(ListingsDateIndexSchema())
+SchemaRegistry.register(PaperCodeSchema())
 

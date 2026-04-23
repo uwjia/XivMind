@@ -12,6 +12,7 @@ _followed_author_repo = None
 _author_rank_repo = None
 _paper_reader = None
 _listings_repo = None
+_paper_code_repo = None
 
 
 def get_paper_reader():
@@ -246,8 +247,29 @@ def get_listings_repository():
     return _listings_repo
 
 
+def get_paper_code_repository():
+    global _paper_code_repo
+    if _paper_code_repo is None:
+        settings = get_settings()
+        db_type = settings.DATABASE_TYPE.lower()
+        
+        if db_type == "sqlite":
+            from app.db.sqlite.paper_code_repo import SQLitePaperCodeRepository
+            _paper_code_repo = SQLitePaperCodeRepository(settings.SQLITE_DB_PATH)
+        elif db_type == "milvus":
+            from app.db.milvus.paper_code_repo import MilvusPaperCodeRepository
+            _paper_code_repo = MilvusPaperCodeRepository()
+        elif db_type == "lancedb":
+            from app.db.lancedb.paper_code_repo import LanceDBPaperCodeRepository
+            _paper_code_repo = LanceDBPaperCodeRepository()
+        else:
+            raise ValueError(f"Unsupported database type: {db_type}")
+    
+    return _paper_code_repo
+
+
 def reset_repositories():
-    global _bookmark_repo, _download_repo, _paper_repo, _paper_embedding_repo, _conversation_repo, _memory_repo, _pdf_annotation_repo, _followed_author_repo, _author_rank_repo, _paper_reader, _listings_repo
+    global _bookmark_repo, _download_repo, _paper_repo, _paper_embedding_repo, _conversation_repo, _memory_repo, _pdf_annotation_repo, _followed_author_repo, _author_rank_repo, _paper_reader, _listings_repo, _paper_code_repo
     _bookmark_repo = None
     _download_repo = None
     _paper_repo = None
@@ -259,3 +281,4 @@ def reset_repositories():
     _author_rank_repo = None
     _paper_reader = None
     _listings_repo = None
+    _paper_code_repo = None

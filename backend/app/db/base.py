@@ -681,3 +681,32 @@ class ListingsRepository(ABC):
     def clear_listings_by_date(self, date: str) -> None:
         """Clear all listings for a specific date."""
         pass
+
+
+class PaperCodeRepository(ABC):
+    """Abstract repository for paper code repository links."""
+
+    @abstractmethod
+    def upsert_paper_codes(self, codes: List[Dict[str, Any]]) -> int:
+        """Upsert paper code records (insert new, update existing). Returns count of records."""
+        pass
+
+    @abstractmethod
+    def get_code_by_paper_id(self, paper_id: str) -> Optional[Dict[str, Any]]:
+        """Get code repository for a paper. Returns None if not found."""
+        pass
+
+    @abstractmethod
+    def get_paper_ids_with_code(self) -> List[str]:
+        """Get all paper IDs that have code repositories."""
+        pass
+
+    @abstractmethod
+    def check_batch(self, paper_ids: List[str]) -> Dict[str, bool]:
+        """Check which papers have code repositories."""
+        pass
+
+    @abstractmethod
+    def get_codes_by_paper_ids(self, paper_ids: List[str]) -> Dict[str, Optional[Dict[str, Any]]]:
+        """Get code repositories for multiple papers."""
+        pass
