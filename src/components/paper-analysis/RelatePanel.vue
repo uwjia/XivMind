@@ -79,7 +79,7 @@
       <Transition name="tooltip">
         <div 
           v-if="tooltipVisible && tooltipPaper" 
-          ref="tooltipRef"
+          ref="_tooltipRef"
           class="paper-tooltip"
           :class="{ pinned: isTooltipPinned }"
           :style="tooltipStyle"
@@ -159,7 +159,7 @@ const {
   isTooltipPinned,
   pinnedPaper,
   isAbstractExpanded,
-  tooltipRef,
+  tooltipRef: _tooltipRef,
   showTooltip,
   hideTooltip,
   togglePinnedTooltip,
