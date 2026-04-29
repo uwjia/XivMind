@@ -88,6 +88,18 @@ const toggleSidebar = () => {
   sidebarStore.toggleSidebar()
 }
 
+const closeOtherPanels = (exclude: 'note' | 'history' | 'search') => {
+  if (exclude !== 'note') {
+    noteStore.hidePanel()
+  }
+  if (exclude !== 'history') {
+    historyStore.hidePanel()
+  }
+  if (exclude !== 'search') {
+    searchPanelStore.hidePanel()
+  }
+}
+
 const updateNoteBtnPosition = () => {
   if (noteBtnRef.value) {
     const rect = noteBtnRef.value.getBoundingClientRect()
@@ -97,6 +109,9 @@ const updateNoteBtnPosition = () => {
 
 const toggleNotePanel = () => {
   updateNoteBtnPosition()
+  if (!noteStore.isVisible) {
+    closeOtherPanels('note')
+  }
   noteStore.togglePanel()
 }
 
@@ -109,6 +124,9 @@ const updateHistoryBtnPosition = () => {
 
 const toggleHistoryPanel = () => {
   updateHistoryBtnPosition()
+  if (!historyStore.isVisible) {
+    closeOtherPanels('history')
+  }
   historyStore.togglePanel()
 }
 
@@ -121,6 +139,9 @@ const updateSearchBtnPosition = () => {
 
 const toggleSearchPanel = () => {
   updateSearchBtnPosition()
+  if (!searchPanelStore.isVisible) {
+    closeOtherPanels('search')
+  }
   searchPanelStore.togglePanel()
 }
 

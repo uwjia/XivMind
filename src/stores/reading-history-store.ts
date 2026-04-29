@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { readingHistoryAPI, type ReadingHistoryItem } from '@/services/readingHistory'
-import { useNoteStore } from '@/stores/note-store'
 
 export const useReadingHistoryStore = defineStore('readingHistory', () => {
   const history = ref<ReadingHistoryItem[]>([])
@@ -35,7 +34,6 @@ export const useReadingHistoryStore = defineStore('readingHistory', () => {
   }
 
   const showPanel = () => {
-    useNoteStore().hidePanel()
     isVisible.value = true
     if (history.value.length === 0 || needsRefresh.value) {
       fetchHistory()
