@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { useLLMStore } from '@/stores/llm-store'
 import { useToastStore } from '@/stores/toast-store'
+import { API_BASE_URL } from '@/services/config'
 
 export interface KeyPoint {
   title: string
@@ -26,7 +27,7 @@ export interface AnalysisResult {
 
 export type AnalysisType = 'full' | 'summary' | 'keypoints' | 'methodology' | 'questions'
 
-const API_BASE = '/api/papers'
+const API_BASE = `${API_BASE_URL}/api/papers`
 
 const PROGRESS_MAP: Record<string, number> = {
   summary: 25,
