@@ -169,10 +169,13 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   transition: background-color 0.3s ease, color 0.3s ease;
+  min-width: 768px;
+  overflow-x: auto;
 }
 
 #app {
   min-height: 100vh;
+  min-width: 768px;
   transition: opacity 0.3s ease;
 }
 

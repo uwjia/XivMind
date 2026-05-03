@@ -272,7 +272,6 @@ const {
   jumpToPage,
   handleRefresh,
   onDateChange,
-  clearDateFilter,
   initListings,
   filterCategory,
   categoryCounts,
