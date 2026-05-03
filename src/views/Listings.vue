@@ -42,24 +42,30 @@
             </button>
           </div>
           <div class="header-actions">
-            <input 
-              type="date" 
-              v-model="selectedDate" 
-              @change="onDateChange"
-              class="date-picker"
-              title="Select date to view historical listings"
-            />
-            <button 
-              v-if="selectedDate"
-              class="icon-btn clear-date-btn" 
-              @click="clearDateFilter"
-              title="Clear date filter and show latest"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
+            <div class="date-picker-container">
+              <button 
+                class="icon-btn date-picker-btn" 
+                :class="{ active: selectedDate }" 
+                @click="toggleDatePicker"
+                type="button"
+                title="Select date to view historical listings"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </button>
+              <input 
+                ref="dateInputRef"
+                type="date" 
+                v-model="selectedDate" 
+                @change="onDateChange"
+                class="date-picker-input"
+                title="Select date to view historical listings"
+              />
+            </div>
             <button 
               class="icon-btn fetch-btn" 
               @click="fetchAndRefresh" 
@@ -218,7 +224,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useConfigStore } from '@/stores/config-store'
 import { useListings } from '@/composables/useListings'
 import PaperCard from '@/components/PaperCard.vue'
@@ -226,6 +232,22 @@ import ScrollTopButton from '@/components/ScrollTopButton.vue'
 import CategoryDrawer from '@/components/CategoryDrawer.vue'
 
 const configStore = useConfigStore()
+
+const dateInputRef = ref<HTMLInputElement | null>(null)
+
+const toggleDatePicker = () => {
+  if (dateInputRef.value) {
+    try {
+      if ('showPicker' in dateInputRef.value && typeof dateInputRef.value.showPicker === 'function') {
+        dateInputRef.value.showPicker()
+      } else {
+        dateInputRef.value.click()
+      }
+    } catch (e) {
+      dateInputRef.value.click()
+    }
+  }
+}
 
 const {
   isFetchingListings,
@@ -363,49 +385,31 @@ onMounted(() => {
   gap: 8px;
 }
 
-.date-picker {
-  padding: 8px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.date-picker-container {
   position: relative;
+  display: inline-block;
 }
 
-.date-picker:hover {
-  border-color: var(--accent-color);
-}
-
-.date-picker:focus {
-  outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 20%, transparent);
-}
-
-.date-picker::-webkit-calendar-picker-indicator {
+.date-picker-input {
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
+  width: 40px;
+  height: 1px;
   padding: 0;
-  cursor: pointer;
+  margin: -5px 0px;
   opacity: 0;
+  pointer-events: none;
 }
 
-.clear-date-btn {
-  color: var(--text-muted);
-  border-color: color-mix(in srgb, var(--text-muted) 20%, transparent);
+.icon-btn.date-picker-btn {
+  color: var(--icon-date);
+  border-color: color-mix(in srgb, var(--icon-date) 20%, transparent);
 }
 
-.clear-date-btn:hover {
-  color: var(--icon-error);
-  background: color-mix(in srgb, var(--icon-error) 10%, transparent);
-  border-color: color-mix(in srgb, var(--icon-error) 40%, transparent);
+.icon-btn.date-picker-btn:hover {
+  background: color-mix(in srgb, var(--icon-date) 10%, transparent);
+  border-color: color-mix(in srgb, var(--icon-date) 40%, transparent);
 }
 
 .icon-btn {
