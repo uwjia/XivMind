@@ -4,10 +4,23 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import asyncio
 import logging
+import random
 
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/120.0.0.0",
+    "Mozilla/5.0 (iPad; CPU OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1",
+]
 
 
 class ArxivClient:
@@ -19,10 +32,33 @@ class ArxivClient:
 
     def __init__(self):
         self.settings = get_settings()
-        self.max_retries = getattr(self.settings, "ARXIV_MAX_RETRIES", 3)
-        self.retry_base_delay = getattr(self.settings, "ARXIV_RETRY_BASE_DELAY", 1.0)
+        self.max_retries = getattr(self.settings, "ARXIV_MAX_RETRIES", 5)
+        self.retry_base_delay = getattr(self.settings, "ARXIV_RETRY_BASE_DELAY", 2.0)
         self.batch_size = getattr(self.settings, "ARXIV_BATCH_SIZE", 300)
-        self.fetch_delay = getattr(self.settings, "ARXIV_FETCH_DELAY", 5.0)
+        self.fetch_delay = getattr(self.settings, "ARXIV_FETCH_DELAY", 10.0)
+
+    def _get_random_headers(self) -> Dict[str, str]:
+        """Generate random request headers to avoid rate limiting patterns."""
+        user_agent = random.choice(USER_AGENTS)
+        accept_languages = [
+            "en-US,en;q=0.9",
+            "en-GB,en;q=0.9",
+            "en-US,en;q=0.8,zh-CN;q=0.7,zh;q=0.6",
+            "en,en-US;q=0.9",
+        ]
+        return {
+            "User-Agent": user_agent,
+            "Accept": "application/xml, text/xml, */*",
+            "Accept-Language": random.choice(accept_languages),
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Cache-Control": random.choice(["no-cache", "max-age=0"]),
+        }
+
+    def _get_random_delay(self) -> float:
+        """Get a random delay to avoid predictable request patterns."""
+        base = self.fetch_delay
+        return base + random.uniform(0, 5)
 
     def _date_to_arxiv_format(self, date_str: str) -> tuple[str, str]:
         """
@@ -48,12 +84,19 @@ class ArxivClient:
                 response.raise_for_status()
                 return response.text
             except httpx.HTTPStatusError as e:
-                if e.response.status_code in (500, 503):
-                    delay = self.retry_base_delay * (2 ** attempt)
-                    logger.warning(
-                        f"arXiv API returned {e.response.status_code}, retrying in {delay}s "
-                        f"(attempt {attempt + 1}/{self.max_retries})"
-                    )
+                if e.response.status_code in (429, 500, 503):
+                    if e.response.status_code == 429:
+                        delay = max(30, self.retry_base_delay * (2 ** attempt) * 3)
+                        logger.warning(
+                            f"arXiv API rate limited (429), waiting {delay}s "
+                            f"(attempt {attempt + 1}/{self.max_retries})"
+                        )
+                    else:
+                        delay = self.retry_base_delay * (2 ** attempt)
+                        logger.warning(
+                            f"arXiv API returned {e.response.status_code}, retrying in {delay}s "
+                            f"(attempt {attempt + 1}/{self.max_retries})"
+                        )
                     await asyncio.sleep(delay)
                     last_error = e
                 else:
@@ -83,12 +126,19 @@ class ArxivClient:
                 response.raise_for_status()
                 return response.text
             except httpx.HTTPStatusError as e:
-                if e.response.status_code in (500, 503):
-                    delay = self.retry_base_delay * (2 ** attempt)
-                    logger.warning(
-                        f"arXiv API returned {e.response.status_code}, retrying in {delay}s "
-                        f"(attempt {attempt + 1}/{self.max_retries})"
-                    )
+                if e.response.status_code in (429, 500, 503):
+                    if e.response.status_code == 429:
+                        delay = max(30, self.retry_base_delay * (2 ** attempt) * 3)
+                        logger.warning(
+                            f"arXiv API rate limited (429), waiting {delay}s "
+                            f"(attempt {attempt + 1}/{self.max_retries})"
+                        )
+                    else:
+                        delay = self.retry_base_delay * (2 ** attempt)
+                        logger.warning(
+                            f"arXiv API returned {e.response.status_code}, retrying in {delay}s "
+                            f"(attempt {attempt + 1}/{self.max_retries})"
+                        )
                     await asyncio.sleep(delay)
                     last_error = e
                 else:
@@ -209,7 +259,8 @@ class ArxivClient:
         all_papers = []
         start = 0
         
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        headers = self._get_random_headers()
+        async with httpx.AsyncClient(timeout=60.0, headers=headers) as client:
             while True:
                 if category:
                     url = (
@@ -245,7 +296,8 @@ class ArxivClient:
                 
                 start += self.batch_size
                 
-                await asyncio.sleep(self.fetch_delay)
+                delay = self._get_random_delay()
+                await asyncio.sleep(delay)
         
         logger.info(f"Total {category or 'all'} papers fetched for {date}: {len(all_papers)}")
         return all_papers

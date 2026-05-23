@@ -36,7 +36,8 @@ class ListingsService:
         if skip > 0:
             url = f"{self.LISTINGS_URL}?skip={skip}&show={self.PAGE_SIZE}"
         
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        headers = self.arxiv_client._get_random_headers()
+        async with httpx.AsyncClient(timeout=60.0, headers=headers) as client:
             response = await client.get(url)
             response.raise_for_status()
             return response.text
@@ -205,7 +206,8 @@ class ListingsService:
         
         logger.info(f"Fetching papers from arXiv API: {url}")
         
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        headers = self.arxiv_client._get_random_headers()
+        async with httpx.AsyncClient(timeout=60.0, headers=headers) as client:
             response_text = await self.arxiv_client._fetch_with_retry_url(client, url)
         
         papers, _ = self.arxiv_client._parse_response(response_text)
