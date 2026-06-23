@@ -232,6 +232,86 @@ export const eessCategoryColors: Record<string, string> = {
   'eess.SY': '#3F51B5',
 }
 
+// Mathematics categories
+export const MATH_CATEGORY_IDS: string[] = [
+  'math.AC', 'math.AG', 'math.AP', 'math.AT', 'math.CA', 'math.CO', 'math.CT',
+  'math.CV', 'math.DG', 'math.DS', 'math.FA', 'math.GM', 'math.GN', 'math.GR',
+  'math.GT', 'math.HO', 'math.IT', 'math.KT', 'math.LO', 'math.MG', 'math.MP',
+  'math.NA', 'math.NT', 'math.OA', 'math.OC', 'math.PR', 'math.QA', 'math.RA',
+  'math.RT', 'math.SG', 'math.SP', 'math.ST'
+]
+
+export const mathCategories: Category[] = [
+  { id: 'math*', name: 'All Mathematics' },
+  { id: 'math.AC', name: 'Commutative Algebra' },
+  { id: 'math.AG', name: 'Algebraic Geometry' },
+  { id: 'math.AP', name: 'Analysis of PDEs' },
+  { id: 'math.AT', name: 'Algebraic Topology' },
+  { id: 'math.CA', name: 'Classical Analysis and ODEs' },
+  { id: 'math.CO', name: 'Combinatorics' },
+  { id: 'math.CT', name: 'Category Theory' },
+  { id: 'math.CV', name: 'Complex Variables' },
+  { id: 'math.DG', name: 'Differential Geometry' },
+  { id: 'math.DS', name: 'Dynamical Systems' },
+  { id: 'math.FA', name: 'Functional Analysis' },
+  { id: 'math.GM', name: 'General Mathematics' },
+  { id: 'math.GN', name: 'General Topology' },
+  { id: 'math.GR', name: 'Group Theory' },
+  { id: 'math.GT', name: 'Geometric Topology' },
+  { id: 'math.HO', name: 'History and Overview' },
+  { id: 'math.IT', name: 'Information Theory' },
+  { id: 'math.KT', name: 'K-Theory and Homology' },
+  { id: 'math.LO', name: 'Logic' },
+  { id: 'math.MG', name: 'Metric Geometry' },
+  { id: 'math.MP', name: 'Mathematical Physics' },
+  { id: 'math.NA', name: 'Numerical Analysis' },
+  { id: 'math.NT', name: 'Number Theory' },
+  { id: 'math.OA', name: 'Operator Algebras' },
+  { id: 'math.OC', name: 'Optimization and Control' },
+  { id: 'math.PR', name: 'Probability' },
+  { id: 'math.QA', name: 'Quantum Algebra' },
+  { id: 'math.RA', name: 'Rings and Algebras' },
+  { id: 'math.RT', name: 'Representation Theory' },
+  { id: 'math.SG', name: 'Symplectic Geometry' },
+  { id: 'math.SP', name: 'Spectral Theory' },
+  { id: 'math.ST', name: 'Statistics Theory' },
+]
+
+export const mathCategoryColors: Record<string, string> = {
+  'math.AC': '#E91E63',
+  'math.AG': '#9C27B0',
+  'math.AP': '#673AB7',
+  'math.AT': '#3F51B5',
+  'math.CA': '#2196F3',
+  'math.CO': '#03A9F4',
+  'math.CT': '#00BCD4',
+  'math.CV': '#009688',
+  'math.DG': '#4CAF50',
+  'math.DS': '#8BC34A',
+  'math.FA': '#CDDC39',
+  'math.GM': '#FFEB3B',
+  'math.GN': '#FFC107',
+  'math.GR': '#FF9800',
+  'math.GT': '#FF5722',
+  'math.HO': '#795548',
+  'math.IT': '#607D8B',
+  'math.KT': '#E91E63',
+  'math.LO': '#9C27B0',
+  'math.MG': '#673AB7',
+  'math.MP': '#3F51B5',
+  'math.NA': '#2196F3',
+  'math.NT': '#03A9F4',
+  'math.OA': '#00BCD4',
+  'math.OC': '#009688',
+  'math.PR': '#4CAF50',
+  'math.QA': '#8BC34A',
+  'math.RA': '#CDDC39',
+  'math.RT': '#FFEB3B',
+  'math.SG': '#FFC107',
+  'math.SP': '#FF9800',
+  'math.ST': '#FF5722',
+}
+
 // Subject group configuration
 export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
@@ -281,6 +361,14 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     categories: eessCategories.filter(cat => cat.id !== 'eess*'),
     colors: eessCategoryColors,
     color: '#9C27B0'
+  },
+  {
+    id: 'math',
+    name: 'Mathematics',
+    wildcard: 'math*',
+    categories: mathCategories.filter(cat => cat.id !== 'math*'),
+    colors: mathCategoryColors,
+    color: '#E91E63'
   }
 ]
 
@@ -292,6 +380,7 @@ export const ALL_CATEGORIES: Category[] = [
   ...econCategories,
   ...qbioCategories,
   ...eessCategories,
+  ...mathCategories,
 ]
 
 export const ALL_CATEGORY_COLORS: Record<string, string> = {
@@ -301,6 +390,7 @@ export const ALL_CATEGORY_COLORS: Record<string, string> = {
   ...econCategoryColors,
   ...qbioCategoryColors,
   ...eessCategoryColors,
+  ...mathCategoryColors,
 }
 
 // Get subject group color (for root nodes)
@@ -311,6 +401,7 @@ export const GROUP_COLORS: Record<string, string> = {
   'econ*': '#E91E63',
   'q-bio*': '#4CAF50',
   'eess*': '#9C27B0',
+  'math*': '#E91E63',
 }
 
 export const getCategoryColor = (category: string | null): string => {

@@ -270,6 +270,7 @@ const subjectOptions = [
   { id: 'econ', name: 'Economics', color: GROUP_COLORS['econ*'] },
   { id: 'q-bio', name: 'Quantitative Biology', color: GROUP_COLORS['q-bio*'] },
   { id: 'eess', name: 'Electrical Engineering and Systems Science', color: GROUP_COLORS['eess*'] },
+  { id: 'math', name: 'Mathematics', color: GROUP_COLORS['math*'] },
 ]
 
 const providerSelect = computed({
