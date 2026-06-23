@@ -5,7 +5,7 @@ import re
 
 from app.config import get_settings
 from app.db.factory import get_paper_repository, get_paper_embedding_repository
-from app.db.subject_utils import DEFAULT_SUBJECT
+from app.db.subject_utils import DEFAULT_SUBJECT, SUPPORTED_SUBJECTS
 from app.services.arxiv_client import ArxivClient
 from app.services.embedding_service import embedding_service
 
@@ -14,7 +14,6 @@ settings = get_settings()
 
 
 class PaperService:
-    SUPPORTED_SUBJECTS = ['cs', 'q-fin', 'stat']
 
     def __init__(self):
         self.embedding_repo = get_paper_embedding_repository()
@@ -26,7 +25,7 @@ class PaperService:
 
     def _get_category_from_subject(self, subject: str) -> str:
         """Convert subject (e.g., 'cs') to category wildcard (e.g., 'cs*')."""
-        if subject in self.SUPPORTED_SUBJECTS:
+        if subject in SUPPORTED_SUBJECTS:
             return f"{subject}*"
         return "cs*"  # Default fallback
 

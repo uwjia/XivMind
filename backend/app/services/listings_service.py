@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 import asyncio
 
 from app.db.factory import get_listings_repository, get_paper_repository, get_paper_code_repository
-from app.db.subject_utils import DEFAULT_SUBJECT
+from app.db.subject_utils import DEFAULT_SUBJECT, SUPPORTED_SUBJECTS
 from app.services.arxiv_client import ArxivClient
 from app.core.utils import extract_code_urls
 
@@ -18,7 +18,6 @@ class ListingsService:
     """Service for fetching and storing arXiv new listings."""
 
     PAGE_SIZE = 2000
-    SUPPORTED_SUBJECTS = ['cs', 'q-fin', 'stat']
 
     def __init__(self):
         self.paper_code_repo = get_paper_code_repository()
@@ -242,7 +241,7 @@ class ListingsService:
         Returns:
             Dict with counts and status information
         """
-        if subject not in self.SUPPORTED_SUBJECTS:
+        if subject not in SUPPORTED_SUBJECTS:
             logger.warning(f"Unsupported subject '{subject}', falling back to 'cs'")
             subject = 'cs'
 

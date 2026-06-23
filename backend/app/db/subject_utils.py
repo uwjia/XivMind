@@ -1,6 +1,6 @@
 """Subject-related utilities for table naming and subject handling."""
 
-SUPPORTED_SUBJECTS = ['cs', 'q-fin', 'stat']
+SUPPORTED_SUBJECTS = ['cs', 'q-fin', 'stat', 'econ', 'q-bio']
 DEFAULT_SUBJECT = 'cs'
 
 

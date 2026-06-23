@@ -161,6 +161,57 @@ export const statCategoryColors: Record<string, string> = {
   'stat.TH': '#5C6BC0',
 }
 
+// Economics categories
+export const ECON_CATEGORY_IDS: string[] = [
+  'econ.EM', 'econ.GN', 'econ.TH'
+]
+
+export const econCategories: Category[] = [
+  { id: 'econ*', name: 'All Economics' },
+  { id: 'econ.EM', name: 'Econometrics' },
+  { id: 'econ.GN', name: 'General Economics' },
+  { id: 'econ.TH', name: 'Theoretical Economics' },
+]
+
+export const econCategoryColors: Record<string, string> = {
+  'econ.EM': '#E91E63',
+  'econ.GN': '#3F51B5',
+  'econ.TH': '#673AB7',
+}
+
+// Quantitative Biology categories
+export const QBIO_CATEGORY_IDS: string[] = [
+  'q-bio.BM', 'q-bio.CB', 'q-bio.GN', 'q-bio.MN', 'q-bio.NC',
+  'q-bio.OT', 'q-bio.PE', 'q-bio.QM', 'q-bio.SC', 'q-bio.TO'
+]
+
+export const qbioCategories: Category[] = [
+  { id: 'q-bio*', name: 'All Quantitative Biology' },
+  { id: 'q-bio.BM', name: 'Biomolecules' },
+  { id: 'q-bio.CB', name: 'Cell Behavior' },
+  { id: 'q-bio.GN', name: 'Genomics' },
+  { id: 'q-bio.MN', name: 'Molecular Networks' },
+  { id: 'q-bio.NC', name: 'Neurons and Cognition' },
+  { id: 'q-bio.OT', name: 'Other Quantitative Biology' },
+  { id: 'q-bio.PE', name: 'Populations and Evolution' },
+  { id: 'q-bio.QM', name: 'Quantitative Methods' },
+  { id: 'q-bio.SC', name: 'Subcellular Processes' },
+  { id: 'q-bio.TO', name: 'Tissues and Organs' },
+]
+
+export const qbioCategoryColors: Record<string, string> = {
+  'q-bio.BM': '#4CAF50',
+  'q-bio.CB': '#8BC34A',
+  'q-bio.GN': '#CDDC39',
+  'q-bio.MN': '#FFEB3B',
+  'q-bio.NC': '#FFC107',
+  'q-bio.OT': '#78909C',
+  'q-bio.PE': '#FF9800',
+  'q-bio.QM': '#FF5722',
+  'q-bio.SC': '#795548',
+  'q-bio.TO': '#607D8B',
+}
+
 // Subject group configuration
 export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
@@ -186,6 +237,22 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     categories: statCategories.filter(cat => cat.id !== 'stat*'),
     colors: statCategoryColors,
     color: '#00ACC1'
+  },
+  {
+    id: 'econ',
+    name: 'Economics',
+    wildcard: 'econ*',
+    categories: econCategories.filter(cat => cat.id !== 'econ*'),
+    colors: econCategoryColors,
+    color: '#E91E63'
+  },
+  {
+    id: 'q-bio',
+    name: 'Quantitative Biology',
+    wildcard: 'q-bio*',
+    categories: qbioCategories.filter(cat => cat.id !== 'q-bio*'),
+    colors: qbioCategoryColors,
+    color: '#4CAF50'
   }
 ]
 
@@ -194,12 +261,16 @@ export const ALL_CATEGORIES: Category[] = [
   ...categories,
   ...qfinCategories,
   ...statCategories,
+  ...econCategories,
+  ...qbioCategories,
 ]
 
 export const ALL_CATEGORY_COLORS: Record<string, string> = {
   ...categoryColors,
   ...qfinCategoryColors,
   ...statCategoryColors,
+  ...econCategoryColors,
+  ...qbioCategoryColors,
 }
 
 // Get subject group color (for root nodes)
@@ -207,6 +278,8 @@ export const GROUP_COLORS: Record<string, string> = {
   'cs*': '#FFC107',
   'q-fin*': '#1976D2',
   'stat*': '#00ACC1',
+  'econ*': '#E91E63',
+  'q-bio*': '#4CAF50',
 }
 
 export const getCategoryColor = (category: string | null): string => {

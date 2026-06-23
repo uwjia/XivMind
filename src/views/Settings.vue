@@ -8,6 +8,28 @@
 
       <div class="settings-sections">
         <div class="settings-section">
+          <h2 class="section-title">Paper Fetching</h2>
+          <div class="settings-item">
+            <div class="item-info">
+              <h3 class="item-title">Default Subject</h3>
+              <p class="item-description">Subject category to fetch papers from arXiv</p>
+            </div>
+            <div class="subject-selector">
+              <button
+                v-for="subjectOption in subjectOptions"
+                :key="subjectOption.id"
+                class="subject-option"
+                :class="{ active: configStore.defaultSubject === subjectOption.id }"
+                @click="setDefaultSubject(subjectOption.id)"
+              >
+                <span class="subject-color" :style="{ backgroundColor: subjectOption.color }"></span>
+                <span class="subject-name">{{ subjectOption.name }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
           <h2 class="section-title">LLM Configuration</h2>
           <div class="settings-item">
             <div class="item-info">
@@ -191,28 +213,6 @@
         </div>
 
         <div class="settings-section">
-          <h2 class="section-title">Paper Fetching</h2>
-          <div class="settings-item">
-            <div class="item-info">
-              <h3 class="item-title">Default Subject</h3>
-              <p class="item-description">Subject category to fetch papers from arXiv</p>
-            </div>
-            <div class="subject-selector">
-              <button
-                v-for="subjectOption in subjectOptions"
-                :key="subjectOption.id"
-                class="subject-option"
-                :class="{ active: configStore.defaultSubject === subjectOption.id }"
-                @click="setDefaultSubject(subjectOption.id)"
-              >
-                <span class="subject-color" :style="{ backgroundColor: subjectOption.color }"></span>
-                <span class="subject-name">{{ subjectOption.name }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="settings-section">
           <h2 class="section-title">About</h2>
           <div class="settings-item">
             <div class="item-info">
@@ -267,6 +267,8 @@ const subjectOptions = [
   { id: 'cs', name: 'Computer Science', color: GROUP_COLORS['cs*'] },
   { id: 'q-fin', name: 'Quantitative Finance', color: GROUP_COLORS['q-fin*'] },
   { id: 'stat', name: 'Statistics', color: GROUP_COLORS['stat*'] },
+  { id: 'econ', name: 'Economics', color: GROUP_COLORS['econ*'] },
+  { id: 'q-bio', name: 'Quantitative Biology', color: GROUP_COLORS['q-bio*'] },
 ]
 
 const providerSelect = computed({
