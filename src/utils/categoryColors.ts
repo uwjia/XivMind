@@ -312,6 +312,67 @@ export const mathCategoryColors: Record<string, string> = {
   'math.ST': '#FF5722',
 }
 
+// Physics categories (physics.* only)
+export const PHYSICS_CATEGORY_IDS: string[] = [
+  'physics.acc-ph', 'physics.ao-ph', 'physics.app-ph', 'physics.atm-clus',
+  'physics.atom-ph', 'physics.bio-ph', 'physics.chem-ph', 'physics.class-ph',
+  'physics.comp-ph', 'physics.data-an', 'physics.ed-ph', 'physics.flu-dyn',
+  'physics.gen-ph', 'physics.geo-ph', 'physics.hist-ph', 'physics.ins-det',
+  'physics.med-ph', 'physics.optics', 'physics.plasm-ph', 'physics.pop-ph',
+  'physics.soc-ph', 'physics.space-ph'
+]
+
+export const physicsCategories: Category[] = [
+  { id: 'physics*', name: 'All Physics' },
+  { id: 'physics.acc-ph', name: 'Accelerator Physics' },
+  { id: 'physics.ao-ph', name: 'Atmospheric and Oceanic Physics' },
+  { id: 'physics.app-ph', name: 'Applied Physics' },
+  { id: 'physics.atm-clus', name: 'Atomic and Molecular Clusters' },
+  { id: 'physics.atom-ph', name: 'Atomic Physics' },
+  { id: 'physics.bio-ph', name: 'Biological Physics' },
+  { id: 'physics.chem-ph', name: 'Chemical Physics' },
+  { id: 'physics.class-ph', name: 'Classical Physics' },
+  { id: 'physics.comp-ph', name: 'Computational Physics' },
+  { id: 'physics.data-an', name: 'Data Analysis, Statistics and Probability' },
+  { id: 'physics.ed-ph', name: 'Physics Education' },
+  { id: 'physics.flu-dyn', name: 'Fluid Dynamics' },
+  { id: 'physics.gen-ph', name: 'General Physics' },
+  { id: 'physics.geo-ph', name: 'Geophysics' },
+  { id: 'physics.hist-ph', name: 'History and Philosophy of Physics' },
+  { id: 'physics.ins-det', name: 'Instrumentation and Detectors' },
+  { id: 'physics.med-ph', name: 'Medical Physics' },
+  { id: 'physics.optics', name: 'Optics' },
+  { id: 'physics.plasm-ph', name: 'Plasma Physics' },
+  { id: 'physics.pop-ph', name: 'Popular Physics' },
+  { id: 'physics.soc-ph', name: 'Physics and Society' },
+  { id: 'physics.space-ph', name: 'Space Physics' },
+]
+
+export const physicsCategoryColors: Record<string, string> = {
+  'physics.acc-ph': '#E91E63',
+  'physics.ao-ph': '#9C27B0',
+  'physics.app-ph': '#673AB7',
+  'physics.atm-clus': '#3F51B5',
+  'physics.atom-ph': '#2196F3',
+  'physics.bio-ph': '#03A9F4',
+  'physics.chem-ph': '#00BCD4',
+  'physics.class-ph': '#009688',
+  'physics.comp-ph': '#4CAF50',
+  'physics.data-an': '#8BC34A',
+  'physics.ed-ph': '#CDDC39',
+  'physics.flu-dyn': '#FFEB3B',
+  'physics.gen-ph': '#FFC107',
+  'physics.geo-ph': '#FF9800',
+  'physics.hist-ph': '#FF5722',
+  'physics.ins-det': '#795548',
+  'physics.med-ph': '#607D8B',
+  'physics.optics': '#E91E63',
+  'physics.plasm-ph': '#9C27B0',
+  'physics.pop-ph': '#673AB7',
+  'physics.soc-ph': '#3F51B5',
+  'physics.space-ph': '#2196F3',
+}
+
 // Subject group configuration
 export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
@@ -369,6 +430,14 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     categories: mathCategories.filter(cat => cat.id !== 'math*'),
     colors: mathCategoryColors,
     color: '#E91E63'
+  },
+  {
+    id: 'physics',
+    name: 'Physics',
+    wildcard: 'physics*',
+    categories: physicsCategories.filter(cat => cat.id !== 'physics*'),
+    colors: physicsCategoryColors,
+    color: '#2196F3'
   }
 ]
 
@@ -381,6 +450,7 @@ export const ALL_CATEGORIES: Category[] = [
   ...qbioCategories,
   ...eessCategories,
   ...mathCategories,
+  ...physicsCategories,
 ]
 
 export const ALL_CATEGORY_COLORS: Record<string, string> = {
@@ -391,6 +461,7 @@ export const ALL_CATEGORY_COLORS: Record<string, string> = {
   ...qbioCategoryColors,
   ...eessCategoryColors,
   ...mathCategoryColors,
+  ...physicsCategoryColors,
 }
 
 // Get subject group color (for root nodes)
@@ -402,6 +473,7 @@ export const GROUP_COLORS: Record<string, string> = {
   'q-bio*': '#4CAF50',
   'eess*': '#9C27B0',
   'math*': '#E91E63',
+  'physics*': '#2196F3',
 }
 
 export const getCategoryColor = (category: string | null): string => {
