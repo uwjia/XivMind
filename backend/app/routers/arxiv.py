@@ -39,13 +39,13 @@ async def query_papers(
     category: Optional[str] = Query(None, description="arXiv category filter (e.g., 'cs.LG')"),
     start: int = Query(0, ge=0, description="Start index for pagination"),
     max_results: int = Query(50, ge=1, le=5000, description="Maximum papers to return"),
-    fetch_category: str = Query("cs*", description="Category to fetch from arXiv (e.g., 'cs*', 'physics*', or empty for all)"),
+    subject: str = Query('cs', description="Subject to fetch from arXiv (e.g., 'cs', 'q-fin', 'stat')"),
 ):
     """
     Query papers for a specific date.
-    
+
     - If local data exists for the date, returns from local storage
-    - If no local data, fetches papers for that date from arXiv with fetch_category filter, stores them, then returns filtered results
+    - If no local data, fetches papers for that date from arXiv with subject filter, stores them, then returns filtered results
     """
     try:
         result = await _paper_service.query_papers(
@@ -53,7 +53,7 @@ async def query_papers(
             category=category,
             start=start,
             max_results=max_results,
-            fetch_category=fetch_category
+            subject=subject
         )
         return result
     except Exception as e:
@@ -76,10 +76,13 @@ async def get_paper(paper_id: str):
 
 
 @router.get("/author/{author_name:path}/profile")
-async def get_author_profile(author_name: str):
+async def get_author_profile(
+    author_name: str,
+    subject: str = Query("cs", description="Subject category (cs, q-fin, stat)"),
+):
     """
     Get author profile with statistics and visualization data.
-    
+
     Returns:
     - Total papers count
     - Active years range
@@ -87,10 +90,12 @@ async def get_author_profile(author_name: str):
     - Yearly paper counts
     - Top collaborators
     - Top keywords
+
+    subject: Subject category to search in (cs, q-fin, stat)
     """
     try:
         author = unquote(author_name)
-        profile = _author_profile_service.get_author_profile(author)
+        profile = _author_profile_service.get_author_profile(author, subject=subject)
         return profile
     except Exception as e:
         logger.error(f"Error getting author profile: {e}")
@@ -104,6 +109,8 @@ async def get_author_profile(author_name: str):
             "yearly_papers": [],
             "collaborators": [],
             "keywords": [],
+            "title_keywords": [],
+            "subject": subject,
             "error": str(e),
         }
 
@@ -113,13 +120,16 @@ async def get_papers_by_author(
     author_name: str,
     start: int = Query(0, ge=0, description="Start index for pagination"),
     max_results: int = Query(50, ge=1, le=500, description="Maximum papers to return"),
+    subject: str = Query("cs", description="Subject category (cs, q-fin, stat)"),
 ):
     """
     Get papers by author name, sorted by published date (newest first).
-    
+
     The author name should be URL-encoded. For example:
     - "John Smith" -> "/author/John%20Smith"
     - "Hans Raj Tiwary" -> "/author/Hans%20Raj%20Tiwary"
+
+    subject: Subject category to search in (cs, q-fin, stat)
     """
     try:
         author = unquote(author_name)
@@ -127,6 +137,7 @@ async def get_papers_by_author(
             author=author,
             start=start,
             max_results=max_results,
+            subject=subject,
         )
         return result
     except Exception as e:
@@ -137,6 +148,7 @@ async def get_papers_by_author(
             "start": start,
             "max_results": max_results,
             "author": author_name,
+            "subject": subject,
         }
 
 
@@ -148,28 +160,42 @@ async def clear_date_cache(date: str):
 
 
 @router.get("/date-indexes")
-async def get_date_indexes():
-    """Get all date index records."""
-    return {"indexes": _paper_service.get_all_date_indexes()}
+async def get_date_indexes(
+    subject: str = Query('cs', description="Subject category (cs, q-fin, stat)")
+):
+    """
+    Get all date index records for a specific subject.
+
+    Args:
+        subject: Subject category (cs, q-fin, stat). Default is 'cs'.
+    """
+    return {"indexes": _paper_service.get_all_date_indexes(subject), "subject": subject}
 
 
 @router.get("/statistics")
-async def get_statistics():
-    """Get statistics about stored papers."""
-    return _paper_service.get_statistics()
+async def get_statistics(
+    subject: str = Query('cs', description="Subject category (cs, q-fin, stat)")
+):
+    """
+    Get statistics about stored papers for a specific subject.
+
+    Args:
+        subject: Subject category (cs, q-fin, stat). Default is 'cs'.
+    """
+    return _paper_service.get_statistics(subject)
 
 
 @router.post("/fetch/{date}")
 async def fetch_papers_for_date(
     date: str,
-    category: str = Query("cs*", description="Category to fetch from arXiv (e.g., 'cs*', 'physics*', or empty string for all)")
+    subject: str = Query('cs', description="Subject to fetch from arXiv (e.g., 'cs', 'q-fin', 'stat')")
 ):
     """
     Manually fetch and store papers for a specific date.
     Date format: YYYY-MM-DD
-    Category: arXiv category pattern (e.g., 'cs*' for all CS, 'cs.LG' for ML, '' for all)
+    Subject: arXiv subject (e.g., 'cs' for Computer Science, 'q-fin' for Quantitative Finance, 'stat' for Statistics)
     """
-    result = await _paper_service.fetch_papers_for_date(date, category)
+    result = await _paper_service.fetch_papers_for_date(date, subject)
     return result
 
 

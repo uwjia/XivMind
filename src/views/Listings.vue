@@ -217,6 +217,7 @@
       :is-open="isFilterDrawerOpen"
       :selected-category="filterCategory"
       :category-counts="categoryCounts"
+      :total-papers="totalCounts[activeTab]"
       @close="closeFilterDrawer"
       @select="handleFilterCategorySelect"
     />

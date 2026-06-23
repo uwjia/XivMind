@@ -1,5 +1,6 @@
 import { ref, computed, type ComputedRef } from 'vue'
 import { arxivBackendAPI } from '@/services/arxivBackend'
+import { useConfigStore } from '@/stores/config-store'
 
 export interface DateIndex {
   date: string
@@ -47,6 +48,8 @@ let lastFetchTime = 0
 const CACHE_DURATION = 5000
 
 export function useDateIndexes() {
+  const configStore = useConfigStore()
+
   const dateIndexMap = computed(() => {
     const map = new Map<string, number>()
     dateIndexes.value.forEach(idx => {
@@ -126,7 +129,7 @@ export function useDateIndexes() {
 
     try {
       const [dateResult, embeddingResult] = await Promise.all([
-        arxivBackendAPI.getDateIndexes(),
+        arxivBackendAPI.getDateIndexes(configStore.defaultSubject),
         arxivBackendAPI.getEmbeddingIndexes()
       ])
       dateIndexes.value = dateResult
@@ -170,14 +173,14 @@ export function useDateIndexes() {
     if (fetchingDates.value.has(date)) {
       return { success: false, error: 'Already fetching' }
     }
-    
+
     const newSet = new Set(fetchingDates.value)
     newSet.add(date)
     fetchingDates.value = newSet
-    
+
     try {
-      const result = await arxivBackendAPI.fetchPapersForDate(date)
-      
+      const result = await arxivBackendAPI.fetchPapersForDate(date, configStore.defaultSubject)
+
       if (result.success) {
         await refreshDateIndexes()
         return { success: true, count: result.count }

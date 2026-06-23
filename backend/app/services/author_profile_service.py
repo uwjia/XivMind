@@ -4,6 +4,7 @@ from collections import Counter
 from typing import Any, Dict, List
 
 from app.db.base import PaperRepository
+from app.db.subject_utils import DEFAULT_SUBJECT
 from app.services.paper_service import PaperService
 
 logger = logging.getLogger(__name__)
@@ -13,8 +14,8 @@ class AuthorProfileService:
     def __init__(self, paper_service: PaperService):
         self.paper_service = paper_service
 
-    def get_author_profile(self, author: str) -> Dict[str, Any]:
-        result = self.paper_service.query_papers_by_author(author, max_results=1000)
+    def get_author_profile(self, author: str, subject: str = DEFAULT_SUBJECT) -> Dict[str, Any]:
+        result = self.paper_service.query_papers_by_author(author, max_results=1000, subject=subject)
         papers = result.get("papers", [])
         
         if not papers:

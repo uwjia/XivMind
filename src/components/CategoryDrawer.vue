@@ -18,6 +18,7 @@
           <CategoryTree
             :selected-category="selectedCategory"
             :category-counts="categoryCounts"
+            :total-papers="totalPapers"
             @select="(categoryId) => $emit('select', categoryId)"
           />
         </div>
@@ -33,6 +34,7 @@ defineProps<{
   isOpen: boolean
   selectedCategory: string | null
   categoryCounts: Record<string, number>
+  totalPapers?: number  // Actual total papers in the view (for listings)
 }>()
 
 defineEmits<{

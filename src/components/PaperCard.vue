@@ -63,7 +63,7 @@
               <span class="paper-id">{{ paper.id || 'N/A' }}</span>
             </div>
             <div class="paper-categories-section">
-              <span v-for="cat in (paper.categories || []).slice(0, 3)" :key="cat" class="tag" :style="tagStyle(cat)" :title="getCategoryFullName(cat)">{{ getCategoryShortName(cat) }}</span>
+              <span v-for="cat in (paper.categories || []).slice(0, 8)" :key="cat" class="tag" :style="tagStyle(cat)" :title="getCategoryFullName(cat)">{{ getCategoryShortName(cat) }}</span>
             </div>
             <div class="paper-published-section">
               <div class="paper-published">v1 {{ formatDateToUTCString(paper.published) }}</div>

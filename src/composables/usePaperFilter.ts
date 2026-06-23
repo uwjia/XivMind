@@ -4,7 +4,7 @@ import { useConfigStore } from '@/stores/config-store'
 import { useToastStore } from '@/stores/toast-store'
 import { useDateIndexes } from '@/composables/useDateIndexes'
 import type { Paper } from '@/types'
-import { categories } from '@/utils/categoryColors'
+import { categories, CATEGORY_GROUPS } from '@/utils/categoryColors'
 
 const isDatePickerOpen = ref(false)
 const isCategoryPickerOpen = ref(false)
@@ -32,18 +32,27 @@ const allPapers = computed<Paper[]>(() => {
   return paperStore.getFilteredPapers()
 })
 
+// Total papers count for category tree (actual papers in current view)
+const categoryTreeTotalPapers = computed(() => allPapers.value.length)
+
 const handleFilterCategorySelect = (categoryId: string | null) => {
   localFilterCategory.value = categoryId
 }
 
 const filteredPapers = computed<Paper[]>(() => {
   const papers = allPapers.value
-  if (!localFilterCategory.value || localFilterCategory.value === 'cs*') {
+  const defaultWildcard = `${configStore.defaultSubject}*`
+
+  // Check if filter is a subject wildcard (e.g., 'cs*', 'q-fin*', 'stat*')
+  const isSubjectWildcard = CATEGORY_GROUPS.some(g => g.wildcard === localFilterCategory.value)
+
+  if (!localFilterCategory.value || isSubjectWildcard) {
     return papers
   }
   if (localFilterCategory.value === 'other') {
-    const csCategoryIds = categories.map(cat => cat.id)
-    return papers.filter(paper => !csCategoryIds.includes(paper.primaryCategory))
+    const currentGroup = CATEGORY_GROUPS.find(g => g.id === configStore.defaultSubject)
+    const knownCategoryIds = currentGroup ? currentGroup.categories.map(cat => cat.id) : categories.map(cat => cat.id)
+    return papers.filter(paper => !knownCategoryIds.includes(paper.primaryCategory))
   }
   return papers.filter(paper => paper.primaryCategory === localFilterCategory.value)
 })
@@ -120,39 +129,40 @@ const filterDescription = computed(() => {
   const loadPapers = async (page?: number) => {
     const targetPage = page !== undefined ? page : currentPage.value
     const startIndex = targetPage * configStore.maxResults
-    
+
     try {
       console.log('Loading papers...', selectedCategory.value, selectedDate.value, startIndex)
       toastStore.showLoading('Loading papers...')
-      
-      const category = selectedCategory.value === 'all' ? 'cs*' : selectedCategory.value
+
+      const defaultCategory = `${configStore.defaultSubject}*`
+      const category = selectedCategory.value === 'all' ? defaultCategory : selectedCategory.value
       const dateValue = selectedDate.value
-      
+
       let dateForQuery: Date | null = null
       if (dateValue instanceof Date) {
         dateForQuery = dateValue
       } else if (dateValue && typeof dateValue === 'object' && 'startDate' in dateValue && dateValue.startDate) {
         dateForQuery = new Date(dateValue.startDate)
       }
-      
+
       if (dateForQuery && !isNaN(dateForQuery.getTime())) {
         const { startTimestamp, endTimestamp } = getDateTimestamps(dateForQuery)
-        const fetchByDateRange = (startTimestamp: string, endTimestamp: string) => 
+        const fetchByDateRange = (startTimestamp: string, endTimestamp: string) =>
           paperStore.fetchPapersByDateRange(startTimestamp, endTimestamp, category, configStore.maxResults, startIndex)
         await fetchByDateRange(startTimestamp, endTimestamp)
       } else {
         // for case when selectedDate is 'all'
-        const fetchDefault = () => paperStore.fetchTodayPapersBackend({ 
-          category, 
-          maxResults: configStore.maxResults, 
-          start: startIndex 
+        const fetchDefault = () => paperStore.fetchTodayPapersBackend({
+          category,
+          maxResults: configStore.maxResults,
+          start: startIndex
         })
         await fetchDefault()
       }
-      
+
       toastStore.showSuccess('Papers loaded successfully!')
       window.scrollTo({ top: 0, behavior: 'instant' })
-      
+
       console.log('Total papers in store:', paperStore.papers.length)
     } catch (err) {
       console.error('Failed to load papers:', err)
@@ -236,6 +246,7 @@ const filterDescription = computed(() => {
     loading,
     error,
     totalPapers,
+    categoryTreeTotalPapers,
     isDatePickerOpen,
     isCategoryPickerOpen,
     toggleDatePicker,

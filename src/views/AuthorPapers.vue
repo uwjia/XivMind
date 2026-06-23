@@ -147,13 +147,14 @@ const totalPages = computed(() => {
 async function fetchPapers() {
   loading.value = true
   error.value = null
-  
+
   try {
     const start = currentPage.value * pageSize
     const result = await arxivBackendAPI.fetchPapersByAuthor(
       decodedAuthorName.value,
       pageSize,
-      start
+      start,
+      configStore.defaultSubject
     )
     papers.value = result.papers
     total.value = result.total

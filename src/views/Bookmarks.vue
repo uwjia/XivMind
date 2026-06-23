@@ -223,6 +223,7 @@
       :is-open="isDrawerOpen"
       :selected-category="selectedCategory"
       :category-counts="categoryCounts"
+      :total-papers="categoryTreeTotalPapers"
       @close="closeDrawer"
       @select="handleCategorySelect"
     />
@@ -251,6 +252,7 @@ const {
   isDrawerOpen,
   selectedCategory,
   categoryCounts,
+  categoryTreeTotalPapers,
   filteredBookmarks,
   total,
   currentPage,

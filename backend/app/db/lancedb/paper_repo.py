@@ -9,6 +9,7 @@ from lance.dataset import ColumnOrdering
 
 from app.db.base import PaperRepository
 from app.db.lancedb.client import lancedb_client
+from app.db.subject_utils import get_subject_table_name, DEFAULT_SUBJECT
 from app.core.utils import normalize_author_name, safe_json_loads
 
 logger = logging.getLogger(__name__)
@@ -17,23 +18,27 @@ logger = logging.getLogger(__name__)
 class LanceDBPaperRepository(PaperRepository):
     """LanceDB implementation for Paper storage."""
     
-    def __init__(self):
+    def __init__(self, subject: str = DEFAULT_SUBJECT):
+        self._subject = subject
         self._papers_table = None
         self._date_index_table = None
         self._embedding_index_table = None
     
     def _get_papers_table(self):
         if self._papers_table is None:
-            self._papers_table = lancedb_client.get_table("papers")
+            table_name = get_subject_table_name("papers", self._subject)
+            self._papers_table = lancedb_client.get_table(table_name)
         return self._papers_table
     
     def _get_date_index_table(self):
         if self._date_index_table is None:
-            self._date_index_table = lancedb_client.get_table("date_index")
+            table_name = get_subject_table_name("date_index", self._subject)
+            self._date_index_table = lancedb_client.get_table(table_name)
         return self._date_index_table
     
     def _get_embedding_index_table(self):
         if self._embedding_index_table is None:
+            # Embedding index is shared across all subjects for now
             self._embedding_index_table = lancedb_client.get_table("embedding_index")
         return self._embedding_index_table
     

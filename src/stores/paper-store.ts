@@ -74,9 +74,14 @@ export const usePaperStore = defineStore('paper', () => {
       setError(null)
 
       const configStore = useConfigStore()
-      const { category = 'cs*', maxResults = configStore.maxResults, start = 0 } = options
+      const { category, maxResults = configStore.maxResults, start = 0 } = options
 
-      const result = await arxivBackendAPI.fetchTodayPapers({ category, maxResults, start })
+      const result = await arxivBackendAPI.fetchTodayPapers({
+        category,
+        maxResults,
+        start,
+        subject: configStore.defaultSubject
+      })
       setPapers(result.papers)
       setTotalPapers(result.total)
 
@@ -110,7 +115,7 @@ export const usePaperStore = defineStore('paper', () => {
     }
   }
 
-  const fetchPapersByDateRange = async (startDateStr: string, endDateStr: string, category: string = 'cs*', maxResults?: number, start: number = 0) => {
+  const fetchPapersByDateRange = async (startDateStr: string, endDateStr: string, category?: string, maxResults?: number, start: number = 0) => {
     try {
       setLoading(true)
       setError(null)
@@ -121,7 +126,15 @@ export const usePaperStore = defineStore('paper', () => {
 
       const configStore = useConfigStore()
       const actualMaxResults = maxResults || configStore.maxResults
-      const result = await arxivBackendAPI.fetchPapersByDateRange(startDateStr, endDateStr, category, actualMaxResults, start)
+      const actualCategory = category || `${configStore.defaultSubject}*`
+      const result = await arxivBackendAPI.fetchPapersByDateRange(
+        startDateStr,
+        endDateStr,
+        actualCategory,
+        actualMaxResults,
+        start,
+        configStore.defaultSubject
+      )
       setPapers(result.papers)
       setTotalPapers(result.total)
 

@@ -1,9 +1,10 @@
 from app.config import get_settings
+from app.db.subject_utils import DEFAULT_SUBJECT
 
 
 _bookmark_repo = None
 _download_repo = None
-_paper_repo = None
+_paper_repos = {}  # Subject-specific paper repositories
 _paper_embedding_repo = None
 _conversation_repo = None
 _memory_repo = None
@@ -11,7 +12,7 @@ _pdf_annotation_repo = None
 _followed_author_repo = None
 _author_rank_repo = None
 _paper_reader = None
-_listings_repo = None
+_listings_repos = {}  # Subject-specific listings repositories
 _paper_code_repo = None
 
 
@@ -79,25 +80,27 @@ def get_download_repository():
     return _download_repo
 
 
-def get_paper_repository():
-    global _paper_repo
-    if _paper_repo is None:
+def get_paper_repository(subject: str = DEFAULT_SUBJECT):
+    """Get paper repository for specific subject."""
+    global _paper_repos
+    
+    if subject not in _paper_repos:
         settings = get_settings()
         db_type = settings.DATABASE_TYPE.lower()
         
         if db_type == "sqlite":
             from app.db.sqlite.paper_repo import SQLitePaperRepository
-            _paper_repo = SQLitePaperRepository(settings.SQLITE_DB_PATH)
+            _paper_repos[subject] = SQLitePaperRepository(settings.SQLITE_DB_PATH)
         elif db_type == "milvus":
             from app.db.milvus.paper_repo import MilvusPaperRepository
-            _paper_repo = MilvusPaperRepository()
+            _paper_repos[subject] = MilvusPaperRepository()
         elif db_type == "lancedb":
             from app.db.lancedb.paper_repo import LanceDBPaperRepository
-            _paper_repo = LanceDBPaperRepository()
+            _paper_repos[subject] = LanceDBPaperRepository(subject)
         else:
             raise ValueError(f"Unsupported database type: {db_type}")
     
-    return _paper_repo
+    return _paper_repos[subject]
 
 
 def get_paper_embedding_repository():
@@ -226,25 +229,27 @@ def get_author_rank_repository():
     return _author_rank_repo
 
 
-def get_listings_repository():
-    global _listings_repo
-    if _listings_repo is None:
+def get_listings_repository(subject: str = DEFAULT_SUBJECT):
+    """Get listings repository for specific subject."""
+    global _listings_repos
+    
+    if subject not in _listings_repos:
         settings = get_settings()
         db_type = settings.DATABASE_TYPE.lower()
         
         if db_type == "sqlite":
             from app.db.sqlite.listings_repo import SQLiteListingsRepository
-            _listings_repo = SQLiteListingsRepository(settings.SQLITE_DB_PATH)
+            _listings_repos[subject] = SQLiteListingsRepository(settings.SQLITE_DB_PATH)
         elif db_type == "milvus":
             from app.db.milvus.listings_repo import MilvusListingsRepository
-            _listings_repo = MilvusListingsRepository()
+            _listings_repos[subject] = MilvusListingsRepository()
         elif db_type == "lancedb":
             from app.db.lancedb.listings_repo import LanceDBListingsRepository
-            _listings_repo = LanceDBListingsRepository()
+            _listings_repos[subject] = LanceDBListingsRepository(subject)
         else:
             raise ValueError(f"Unsupported database type: {db_type}")
     
-    return _listings_repo
+    return _listings_repos[subject]
 
 
 def get_paper_code_repository():
@@ -269,10 +274,10 @@ def get_paper_code_repository():
 
 
 def reset_repositories():
-    global _bookmark_repo, _download_repo, _paper_repo, _paper_embedding_repo, _conversation_repo, _memory_repo, _pdf_annotation_repo, _followed_author_repo, _author_rank_repo, _paper_reader, _listings_repo, _paper_code_repo
+    global _bookmark_repo, _download_repo, _paper_repos, _paper_embedding_repo, _conversation_repo, _memory_repo, _pdf_annotation_repo, _followed_author_repo, _author_rank_repo, _paper_reader, _listings_repos, _paper_code_repo
     _bookmark_repo = None
     _download_repo = None
-    _paper_repo = None
+    _paper_repos = {}
     _paper_embedding_repo = None
     _conversation_repo = None
     _memory_repo = None
@@ -280,5 +285,5 @@ def reset_repositories():
     _followed_author_repo = None
     _author_rank_repo = None
     _paper_reader = None
-    _listings_repo = None
+    _listings_repos = {}
     _paper_code_repo = None

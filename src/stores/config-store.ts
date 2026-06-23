@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { config as defaultConfig } from '@/config/app'
+import { config as defaultConfig, DEFAULT_SUBJECT, SUPPORTED_SUBJECTS } from '@/config/app'
 
 export const useConfigStore = defineStore('config', () => {
   const maxResults = ref<number>(defaultConfig.maxResults)
   const defaultCategory = ref<string>(defaultConfig.defaultCategory)
+  const defaultSubject = ref<string>(DEFAULT_SUBJECT)
   const defaultDateFilter = ref<string>(defaultConfig.defaultDateFilter)
   const useSimpleCard = ref<boolean>(false)
 
@@ -16,6 +17,13 @@ export const useConfigStore = defineStore('config', () => {
   const setDefaultCategory = (value: string) => {
     defaultCategory.value = value
     localStorage.setItem('defaultCategory', value)
+  }
+
+  const setDefaultSubject = (value: string) => {
+    if (SUPPORTED_SUBJECTS.includes(value)) {
+      defaultSubject.value = value
+      localStorage.setItem('defaultSubject', value)
+    }
   }
 
   const setDefaultDateFilter = (value: string) => {
@@ -31,10 +39,12 @@ export const useConfigStore = defineStore('config', () => {
   const resetToDefaults = () => {
     maxResults.value = defaultConfig.maxResults
     defaultCategory.value = defaultConfig.defaultCategory
+    defaultSubject.value = DEFAULT_SUBJECT
     defaultDateFilter.value = defaultConfig.defaultDateFilter
     useSimpleCard.value = false
     localStorage.setItem('maxResults', defaultConfig.maxResults.toString())
     localStorage.setItem('defaultCategory', defaultConfig.defaultCategory)
+    localStorage.setItem('defaultSubject', DEFAULT_SUBJECT)
     localStorage.setItem('defaultDateFilter', defaultConfig.defaultDateFilter)
     localStorage.setItem('useSimpleCard', 'false')
   }
@@ -48,6 +58,11 @@ export const useConfigStore = defineStore('config', () => {
     const savedCategory = localStorage.getItem('defaultCategory')
     if (savedCategory) {
       defaultCategory.value = savedCategory
+    }
+
+    const savedSubject = localStorage.getItem('defaultSubject')
+    if (savedSubject && SUPPORTED_SUBJECTS.includes(savedSubject)) {
+      defaultSubject.value = savedSubject
     }
 
     const savedDateFilter = localStorage.getItem('defaultDateFilter')
@@ -64,10 +79,12 @@ export const useConfigStore = defineStore('config', () => {
   return {
     maxResults,
     defaultCategory,
+    defaultSubject,
     defaultDateFilter,
     useSimpleCard,
     setMaxResults,
     setDefaultCategory,
+    setDefaultSubject,
     setDefaultDateFilter,
     setUseSimpleCard,
     resetToDefaults,

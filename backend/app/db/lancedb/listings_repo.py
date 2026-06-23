@@ -9,6 +9,7 @@ from lance.dataset import ColumnOrdering
 
 from app.db.base import ListingsRepository
 from app.db.lancedb.client import lancedb_client
+from app.db.subject_utils import get_subject_table_name, DEFAULT_SUBJECT
 from app.core.utils import safe_json_loads
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,8 @@ logger = logging.getLogger(__name__)
 class LanceDBListingsRepository(ListingsRepository):
     """LanceDB implementation for arXiv new listings storage."""
     
-    def __init__(self):
+    def __init__(self, subject: str = DEFAULT_SUBJECT):
+        self._subject = subject
         self._new_submissions_table = None
         self._cross_submissions_table = None
         self._replacement_submissions_table = None
@@ -25,22 +27,26 @@ class LanceDBListingsRepository(ListingsRepository):
     
     def _get_new_submissions_table(self):
         if self._new_submissions_table is None:
-            self._new_submissions_table = lancedb_client.get_table("new_submissions")
+            table_name = get_subject_table_name("new_submissions", self._subject)
+            self._new_submissions_table = lancedb_client.get_table(table_name)
         return self._new_submissions_table
     
     def _get_cross_submissions_table(self):
         if self._cross_submissions_table is None:
-            self._cross_submissions_table = lancedb_client.get_table("cross_submissions")
+            table_name = get_subject_table_name("cross_submissions", self._subject)
+            self._cross_submissions_table = lancedb_client.get_table(table_name)
         return self._cross_submissions_table
     
     def _get_replacement_submissions_table(self):
         if self._replacement_submissions_table is None:
-            self._replacement_submissions_table = lancedb_client.get_table("replacement_submissions")
+            table_name = get_subject_table_name("replacement_submissions", self._subject)
+            self._replacement_submissions_table = lancedb_client.get_table(table_name)
         return self._replacement_submissions_table
     
     def _get_listings_date_index_table(self):
         if self._listings_date_index_table is None:
-            self._listings_date_index_table = lancedb_client.get_table("listings_date_index")
+            table_name = get_subject_table_name("listings_date_index", self._subject)
+            self._listings_date_index_table = lancedb_client.get_table(table_name)
         return self._listings_date_index_table
     
     @staticmethod

@@ -11,6 +11,14 @@ from app.config import get_settings
 logger = logging.getLogger(__name__)
 
 
+class ArxivRateLimitError(Exception):
+    """Exception raised when arXiv API rate limit is exceeded."""
+    
+    def __init__(self, message: str, suggested_wait: int = 300):
+        super().__init__(message)
+        self.suggested_wait = suggested_wait
+
+
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
@@ -34,8 +42,8 @@ class ArxivClient:
         self.settings = get_settings()
         self.max_retries = getattr(self.settings, "ARXIV_MAX_RETRIES", 5)
         self.retry_base_delay = getattr(self.settings, "ARXIV_RETRY_BASE_DELAY", 2.0)
-        self.batch_size = getattr(self.settings, "ARXIV_BATCH_SIZE", 300)
-        self.fetch_delay = getattr(self.settings, "ARXIV_FETCH_DELAY", 10.0)
+        self.batch_size = getattr(self.settings, "ARXIV_BATCH_SIZE", 100)
+        self.fetch_delay = getattr(self.settings, "ARXIV_FETCH_DELAY", 15.0)
 
     def _get_random_headers(self) -> Dict[str, str]:
         """Generate random request headers to avoid rate limiting patterns."""
@@ -84,19 +92,26 @@ class ArxivClient:
                 response.raise_for_status()
                 return response.text
             except httpx.HTTPStatusError as e:
-                if e.response.status_code in (429, 500, 503):
-                    if e.response.status_code == 429:
-                        delay = max(30, self.retry_base_delay * (2 ** attempt) * 3)
-                        logger.warning(
-                            f"arXiv API rate limited (429), waiting {delay}s "
-                            f"(attempt {attempt + 1}/{self.max_retries})"
-                        )
-                    else:
-                        delay = self.retry_base_delay * (2 ** attempt)
-                        logger.warning(
-                            f"arXiv API returned {e.response.status_code}, retrying in {delay}s "
-                            f"(attempt {attempt + 1}/{self.max_retries})"
-                        )
+                if e.response.status_code == 429:
+                    retry_after = e.response.headers.get("Retry-After")
+                    suggested_wait = int(retry_after) if retry_after and retry_after.isdigit() else 300
+                    
+                    logger.error(
+                        f"arXiv API rate limited (429). "
+                        f"Suggested wait: {suggested_wait}s. "
+                        f"Please retry later or reduce request frequency."
+                    )
+                    raise ArxivRateLimitError(
+                        "arXiv API rate limit exceeded. "
+                        f"Please wait {suggested_wait} seconds before retrying.",
+                        suggested_wait=suggested_wait
+                    ) from e
+                elif e.response.status_code in (500, 503):
+                    delay = self.retry_base_delay * (2 ** attempt)
+                    logger.warning(
+                        f"arXiv API returned {e.response.status_code}, retrying in {delay}s "
+                        f"(attempt {attempt + 1}/{self.max_retries})"
+                    )
                     await asyncio.sleep(delay)
                     last_error = e
                 else:
@@ -126,19 +141,26 @@ class ArxivClient:
                 response.raise_for_status()
                 return response.text
             except httpx.HTTPStatusError as e:
-                if e.response.status_code in (429, 500, 503):
-                    if e.response.status_code == 429:
-                        delay = max(30, self.retry_base_delay * (2 ** attempt) * 3)
-                        logger.warning(
-                            f"arXiv API rate limited (429), waiting {delay}s "
-                            f"(attempt {attempt + 1}/{self.max_retries})"
-                        )
-                    else:
-                        delay = self.retry_base_delay * (2 ** attempt)
-                        logger.warning(
-                            f"arXiv API returned {e.response.status_code}, retrying in {delay}s "
-                            f"(attempt {attempt + 1}/{self.max_retries})"
-                        )
+                if e.response.status_code == 429:
+                    retry_after = e.response.headers.get("Retry-After")
+                    suggested_wait = int(retry_after) if retry_after and retry_after.isdigit() else 300
+                    
+                    logger.error(
+                        f"arXiv API rate limited (429). "
+                        f"Suggested wait: {suggested_wait}s. "
+                        f"Please retry later or reduce request frequency."
+                    )
+                    raise ArxivRateLimitError(
+                        "arXiv API rate limit exceeded. "
+                        f"Please wait {suggested_wait} seconds before retrying.",
+                        suggested_wait=suggested_wait
+                    ) from e
+                elif e.response.status_code in (500, 503):
+                    delay = self.retry_base_delay * (2 ** attempt)
+                    logger.warning(
+                        f"arXiv API returned {e.response.status_code}, retrying in {delay}s "
+                        f"(attempt {attempt + 1}/{self.max_retries})"
+                    )
                     await asyncio.sleep(delay)
                     last_error = e
                 else:
@@ -282,7 +304,18 @@ class ArxivClient:
                     )
                 
                 logger.info(f"Fetching {category or 'all'} papers for {date}, start={start}, url={url}")
-                xml_text = await self._fetch_with_retry_url(client, url)
+                
+                try:
+                    xml_text = await self._fetch_with_retry_url(client, url)
+                except ArxivRateLimitError as e:
+                    if all_papers:
+                        logger.warning(
+                            f"Rate limited after fetching {len(all_papers)} papers. "
+                            f"Returning partial results. {e}"
+                        )
+                        return all_papers
+                    raise
+                
                 papers, total = self._parse_response(xml_text)
                 
                 if not papers:

@@ -191,6 +191,28 @@
         </div>
 
         <div class="settings-section">
+          <h2 class="section-title">Paper Fetching</h2>
+          <div class="settings-item">
+            <div class="item-info">
+              <h3 class="item-title">Default Subject</h3>
+              <p class="item-description">Subject category to fetch papers from arXiv</p>
+            </div>
+            <div class="subject-selector">
+              <button
+                v-for="subjectOption in subjectOptions"
+                :key="subjectOption.id"
+                class="subject-option"
+                :class="{ active: configStore.defaultSubject === subjectOption.id }"
+                @click="setDefaultSubject(subjectOption.id)"
+              >
+                <span class="subject-color" :style="{ backgroundColor: subjectOption.color }"></span>
+                <span class="subject-name">{{ subjectOption.name }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
           <h2 class="section-title">About</h2>
           <div class="settings-item">
             <div class="item-info">
@@ -225,6 +247,7 @@ import { useThemeStore } from '@/stores/theme-store'
 import { useSidebarStore } from '@/stores/sidebar-store'
 import { useConfigStore } from '@/stores/config-store'
 import { useLLMStore } from '@/stores/llm-store'
+import { GROUP_COLORS } from '@/utils/categoryColors'
 
 const themeStore = useThemeStore()
 const sidebarStore = useSidebarStore()
@@ -239,6 +262,12 @@ const isSaved = ref(false)
 const isInvalid = computed(() => {
   return tempMaxResults.value < 10 || tempMaxResults.value > 3000
 })
+
+const subjectOptions = [
+  { id: 'cs', name: 'Computer Science', color: GROUP_COLORS['cs*'] },
+  { id: 'q-fin', name: 'Quantitative Finance', color: GROUP_COLORS['q-fin*'] },
+  { id: 'stat', name: 'Statistics', color: GROUP_COLORS['stat*'] },
+]
 
 const providerSelect = computed({
   get: () => llmStore.selectedProvider,
@@ -306,6 +335,15 @@ const expandSidebar = () => {
 
 const collapseSidebar = () => {
   sidebarStore.collapseSidebar()
+}
+
+const setDefaultSubject = (subject: string) => {
+  const currentSubject = configStore.defaultSubject
+  if (currentSubject !== subject) {
+    configStore.setDefaultSubject(subject)
+    // Refresh page to ensure all components reinitialize with new subject
+    window.location.reload()
+  }
 }
 
 const onProviderChange = (event: Event) => {
@@ -581,6 +619,50 @@ onMounted(() => {
 .control-btn svg {
   width: 18px;
   height: 18px;
+}
+
+.subject-selector {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.subject-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.subject-option:hover {
+  border-color: var(--accent-color);
+  background: var(--bg-tertiary);
+}
+
+.subject-option.active {
+  border-color: var(--accent-color);
+  background: var(--accent-color);
+  color: white;
+}
+
+.subject-color {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.subject-name {
+  font-weight: 500;
 }
 
 .max-results-control {

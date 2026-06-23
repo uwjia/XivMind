@@ -6,7 +6,7 @@ import { useToastStore } from '@/stores/toast-store'
 import { useThemeStore } from '@/stores/theme-store'
 import { useDownloadHandler } from '@/composables/useDownloadHandler'
 import { useMarkdown } from '@/composables/useMarkdown'
-import { getCategoryColor, getTagStyle as getTagStyleUtil, categories } from '@/utils/categoryColors'
+import { getCategoryColor, getTagStyle as getTagStyleUtil, categories, CATEGORY_GROUPS } from '@/utils/categoryColors'
 
 export interface BookmarkItem {
   id: string
@@ -49,6 +49,9 @@ export function useBookmarkActions() {
   const pageSize = computed(() => configStore.maxResults)
   const totalPages = computed(() => Math.ceil(total.value / pageSize.value))
 
+  // Total bookmarks count for category tree (actual bookmarks in current view)
+  const categoryTreeTotalPapers = computed(() => bookmarks.value.length)
+
   const categoryCounts = computed(() => {
     const counts: Record<string, number> = {}
     for (const bookmark of bookmarks.value) {
@@ -61,13 +64,22 @@ export function useBookmarkActions() {
   })
 
   const filteredBookmarks = computed(() => {
-    if (!selectedCategory.value || selectedCategory.value === 'cs*') {
+    // Get current subject's wildcard (e.g., 'cs*', 'q-fin*', 'stat*')
+    const currentSubjectWildcard = `${configStore.defaultSubject}*`
+
+    // No filter or subject wildcard selected - show all bookmarks
+    if (!selectedCategory.value || selectedCategory.value === currentSubjectWildcard) {
       return bookmarks.value
     }
+
+    // "Other" category - filter bookmarks whose primary_category is not in current subject
     if (selectedCategory.value === 'other') {
-      const csCategoryIds = categories.map(cat => cat.id)
-      return bookmarks.value.filter(bookmark => !csCategoryIds.includes(bookmark.primary_category || ''))
+      const currentGroup = CATEGORY_GROUPS.find(g => g.id === configStore.defaultSubject)
+      const currentSubjectCategoryIds = currentGroup ? currentGroup.categories.map(cat => cat.id) : categories.map(cat => cat.id)
+      return bookmarks.value.filter(bookmark => !currentSubjectCategoryIds.includes(bookmark.primary_category || ''))
     }
+
+    // Specific category selected - filter by primary_category
     return bookmarks.value.filter(bookmark => bookmark.primary_category === selectedCategory.value)
   })
 
@@ -216,6 +228,7 @@ export function useBookmarkActions() {
     selectedCategory,
     bookmarks,
     categoryCounts,
+    categoryTreeTotalPapers,
     filteredBookmarks,
     total,
     currentPage,

@@ -2,13 +2,15 @@ import { ref, computed, watch } from 'vue'
 import { useToastStore } from '@/stores/toast-store'
 import { useBookmarkStore } from '@/stores/bookmark-store'
 import { useDownloadStore } from '@/stores/download-store'
+import { useConfigStore } from '@/stores/config-store'
 import { listingsAPI } from '@/services/listings'
-import { categories } from '@/utils/categoryColors'
+import { categories, CATEGORY_GROUPS } from '@/utils/categoryColors'
 import type { Paper } from '@/types'
 
 export type ListingTab = 'new' | 'cross' | 'replacement'
 
 export function useListings() {
+  const configStore = useConfigStore()
   const isFetchingListings = ref(false)
   const isLoadingListings = ref(false)
   const listingsError = ref<string | null>(null)
@@ -84,14 +86,26 @@ export function useListings() {
 
   const filteredPapers = computed(() => {
     let papers = getTabPapers(activeTab.value)
-    
-    if (!filterCategory.value || filterCategory.value === 'cs*') {
+
+    // If no filter or filter is the default subject wildcard, return all papers
+    if (!filterCategory.value) {
       return papers
     }
-    if (filterCategory.value === 'other') {
-      const csCategoryIds = categories.map(cat => cat.id)
-      return papers.filter(paper => !csCategoryIds.includes(paper.primaryCategory))
+
+    // Check if filter is a subject wildcard (e.g., 'cs*', 'q-fin*', 'stat*')
+    const isSubjectWildcard = CATEGORY_GROUPS.some(g => g.wildcard === filterCategory.value)
+    if (isSubjectWildcard) {
+      return papers
     }
+
+    // Handle 'other' filter - papers not in any known category of the current subject
+    if (filterCategory.value === 'other') {
+      const currentGroup = CATEGORY_GROUPS.find(g => g.id === configStore.defaultSubject)
+      const knownCategoryIds = currentGroup ? currentGroup.categories.map(cat => cat.id) : categories.map(cat => cat.id)
+      return papers.filter(paper => !knownCategoryIds.includes(paper.primaryCategory))
+    }
+
+    // Filter by specific category
     return papers.filter(paper => paper.primaryCategory === filterCategory.value)
   })
 
@@ -170,7 +184,7 @@ export function useListings() {
     listingsError.value = null
 
     try {
-      const result = await listingsAPI.getLatestListings(date)
+      const result = await listingsAPI.getLatestListings(date, configStore.defaultSubject)
       listingsDate.value = result.date
       newPapers.value = result.new
       crossPapers.value = result.cross
@@ -192,11 +206,11 @@ export function useListings() {
     isFetchingListings.value = true
 
     try {
-      const result = await listingsAPI.fetchNewListings()
+      const result = await listingsAPI.fetchNewListings(configStore.defaultSubject)
 
       if (result.success) {
         toastStore.showSuccess(
-          `Fetched ${result.total_count} papers: ${result.new_count} new, ${result.cross_count} cross, ${result.replacement_count} replacement`
+          `Fetched ${result.total_count} papers from ${result.subject}: ${result.new_count} new, ${result.cross_count} cross, ${result.replacement_count} replacement`
         )
         return { success: true, result }
       } else {

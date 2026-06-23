@@ -5,27 +5,29 @@ import { TransformBackendPaper } from '@/types'
 const LISTINGS_API_BASE = `${API_BASE_URL}/api/listings`
 
 export const listingsAPI = {
-  async fetchNewListings(): Promise<{
+  async fetchNewListings(subject: string = 'cs'): Promise<{
     success: boolean
     date: string
+    subject: string
     new_count: number
     cross_count: number
     replacement_count: number
     total_count: number
     error?: string
   }> {
-    const response = await fetch(`${LISTINGS_API_BASE}/fetch`, {
+    const params = new URLSearchParams({ subject })
+    const response = await fetch(`${LISTINGS_API_BASE}/fetch?${params}`, {
       method: 'POST'
     })
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
-    
+
     return response.json()
   },
 
-  async getListingsIndexes(): Promise<{
+  async getListingsIndexes(subject: string = 'cs'): Promise<{
     indexes: Array<{
       date: string
       new_count: number
@@ -33,13 +35,15 @@ export const listingsAPI = {
       replacement_count: number
       fetched_at: string
     }>
+    subject: string
   }> {
-    const response = await fetch(`${LISTINGS_API_BASE}/indexes`)
-    
+    const params = new URLSearchParams({ subject })
+    const response = await fetch(`${LISTINGS_API_BASE}/indexes?${params}`)
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
-    
+
     return response.json()
   },
 
@@ -47,7 +51,8 @@ export const listingsAPI = {
     date: string,
     listingType: 'new' | 'cross' | 'replacement' = 'new',
     start: number = 0,
-    maxResults: number = 50
+    maxResults: number = 50,
+    subject: string = 'cs'
   ): Promise<{
     papers: Paper[]
     total: number
@@ -55,19 +60,21 @@ export const listingsAPI = {
     listing_type: string
     start: number
     max_results: number
+    subject: string
   }> {
     const params = new URLSearchParams({
       listing_type: listingType,
       start: start.toString(),
-      max_results: maxResults.toString()
+      max_results: maxResults.toString(),
+      subject
     })
-    
+
     const response = await fetch(`${LISTINGS_API_BASE}/${date}?${params}`)
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
-    
+
     const data = await response.json()
     return {
       ...data,
@@ -75,25 +82,29 @@ export const listingsAPI = {
     }
   },
 
-  async getLatestListings(date?: string): Promise<{
+  async getLatestListings(date?: string, subject: string = 'cs'): Promise<{
     date: string
+    subject: string
     new: Paper[]
     cross: Paper[]
     replacement: Paper[]
     auto_refreshed: boolean
     error?: string
   }> {
-    let url = `${LISTINGS_API_BASE}/new`
+    const params = new URLSearchParams()
     if (date) {
-      url += `?date=${date}`
+      params.append('date', date)
     }
-    
+    params.append('subject', subject)
+
+    const url = `${LISTINGS_API_BASE}/new?${params}`
+
     const response = await fetch(url)
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
-    
+
     const data = await response.json()
     return {
       ...data,

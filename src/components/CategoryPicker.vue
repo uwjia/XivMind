@@ -56,7 +56,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { categories, getCategoryColor } from '@/utils/categoryColors'
+import { useConfigStore } from '@/stores/config-store'
+import { CATEGORY_GROUPS, getCategoryColor, GROUP_COLORS } from '@/utils/categoryColors'
 import type { Category } from '@/utils/categoryColors'
 
 const props = defineProps<{
@@ -69,13 +70,37 @@ const emit = defineEmits<{
   'update:isOpen': [value: boolean]
 }>()
 
+const configStore = useConfigStore()
 const searchQuery = ref<string>('')
 
+// Get categories based on configured default subject
+const currentCategories = computed<Category[]>(() => {
+  const group = CATEGORY_GROUPS.find(g => g.id === configStore.defaultSubject)
+  if (group) {
+    // Include the wildcard option (e.g., "All Computer Science")
+    const wildcardCategory: Category = {
+      id: group.wildcard,
+      name: group.name
+    }
+    return [wildcardCategory, ...group.categories]
+  }
+  // Fallback to CS categories
+  const csGroup = CATEGORY_GROUPS.find(g => g.id === 'cs')
+  if (csGroup) {
+    const wildcardCategory: Category = {
+      id: csGroup.wildcard,
+      name: csGroup.name
+    }
+    return [wildcardCategory, ...csGroup.categories]
+  }
+  return []
+})
+
 const filteredCategories = computed<Category[]>(() => {
-  if (!searchQuery.value) return categories
-  
+  if (!searchQuery.value) return currentCategories.value
+
   const query = searchQuery.value.toLowerCase()
-  return categories.filter(cat => 
+  return currentCategories.value.filter(cat =>
     cat.name.toLowerCase().includes(query) ||
     cat.id.toLowerCase().includes(query)
   )

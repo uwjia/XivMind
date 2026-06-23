@@ -3,6 +3,16 @@ export interface Category {
   name: string
 }
 
+export interface CategoryGroup {
+  id: string
+  name: string
+  wildcard: string
+  categories: Category[]
+  colors: Record<string, string>
+  color: string
+}
+
+// Computer Science categories
 export const CATEGORY_IDS: string[] = [
   'cs.AI', 'cs.LG', 'cs.CV', 'cs.AR', 'cs.CL', 'cs.CC', 'cs.CE', 'cs.CG', 'cs.CR', 'cs.CY',
   'cs.DB', 'cs.DC', 'cs.DL', 'cs.DM', 'cs.DS', 'cs.ET', 'cs.FL', 'cs.GL', 'cs.GR', 'cs.GT',
@@ -96,9 +106,116 @@ export const categoryColors: Record<string, string> = {
   'cs.SY': '#4DD0E1',
 }
 
+// Quantitative Finance categories
+export const QFIN_CATEGORY_IDS: string[] = [
+  'q-fin.CP', 'q-fin.EC', 'q-fin.GN', 'q-fin.MF', 'q-fin.PM',
+  'q-fin.PR', 'q-fin.RM', 'q-fin.ST', 'q-fin.TR'
+]
+
+export const qfinCategories: Category[] = [
+  { id: 'q-fin*', name: 'All Quantitative Finance' },
+  { id: 'q-fin.CP', name: 'Computational Finance' },
+  { id: 'q-fin.EC', name: 'Economics' },
+  { id: 'q-fin.GN', name: 'General Finance' },
+  { id: 'q-fin.MF', name: 'Mathematical Finance' },
+  { id: 'q-fin.PM', name: 'Portfolio Management' },
+  { id: 'q-fin.PR', name: 'Pricing of Securities' },
+  { id: 'q-fin.RM', name: 'Risk Management' },
+  { id: 'q-fin.ST', name: 'Statistical Finance' },
+  { id: 'q-fin.TR', name: 'Trading and Market Microstructure' },
+]
+
+export const qfinCategoryColors: Record<string, string> = {
+  'q-fin.CP': '#1976D2',
+  'q-fin.EC': '#0da5e0ff',
+  'q-fin.GN': '#388E3C',
+  'q-fin.MF': '#F57C00',
+  'q-fin.PM': '#7B1FA2',
+  'q-fin.PR': '#D32F2F',
+  'q-fin.RM': '#C2185B',
+  'q-fin.ST': '#00796B',
+  'q-fin.TR': '#5D4037',
+}
+
+// Statistics categories
+export const STAT_CATEGORY_IDS: string[] = [
+  'stat.AP', 'stat.CO', 'stat.ME', 'stat.ML', 'stat.OT', 'stat.TH'
+]
+
+export const statCategories: Category[] = [
+  { id: 'stat*', name: 'All Statistics' },
+  { id: 'stat.AP', name: 'Applications' },
+  { id: 'stat.CO', name: 'Computation' },
+  { id: 'stat.ME', name: 'Methodology' },
+  { id: 'stat.ML', name: 'Machine Learning' },
+  { id: 'stat.OT', name: 'Other Statistics' },
+  { id: 'stat.TH', name: 'Statistics Theory' },
+]
+
+export const statCategoryColors: Record<string, string> = {
+  'stat.AP': '#00ACC1',
+  'stat.CO': '#8BC34A',
+  'stat.ME': '#FFA726',
+  'stat.ML': '#9C27B0',
+  'stat.OT': '#78909C',
+  'stat.TH': '#5C6BC0',
+}
+
+// Subject group configuration
+export const CATEGORY_GROUPS: CategoryGroup[] = [
+  {
+    id: 'cs',
+    name: 'Computer Science',
+    wildcard: 'cs*',
+    categories: categories.filter(cat => cat.id !== 'cs*'),
+    colors: categoryColors,
+    color: '#FFC107'
+  },
+  {
+    id: 'q-fin',
+    name: 'Quantitative Finance',
+    wildcard: 'q-fin*',
+    categories: qfinCategories.filter(cat => cat.id !== 'q-fin*'),
+    colors: qfinCategoryColors,
+    color: '#1976D2'
+  },
+  {
+    id: 'stat',
+    name: 'Statistics',
+    wildcard: 'stat*',
+    categories: statCategories.filter(cat => cat.id !== 'stat*'),
+    colors: statCategoryColors,
+    color: '#00ACC1'
+  }
+]
+
+// All categories merged
+export const ALL_CATEGORIES: Category[] = [
+  ...categories,
+  ...qfinCategories,
+  ...statCategories,
+]
+
+export const ALL_CATEGORY_COLORS: Record<string, string> = {
+  ...categoryColors,
+  ...qfinCategoryColors,
+  ...statCategoryColors,
+}
+
+// Get subject group color (for root nodes)
+export const GROUP_COLORS: Record<string, string> = {
+  'cs*': '#FFC107',
+  'q-fin*': '#1976D2',
+  'stat*': '#00ACC1',
+}
+
 export const getCategoryColor = (category: string | null): string => {
   if (!category) return '#9E9E9E'
-  return categoryColors[category] || '#9E9E9E'
+  
+  // Check if it's a subject wildcard
+  if (GROUP_COLORS[category]) return GROUP_COLORS[category]
+  
+  return ALL_CATEGORY_COLORS[category] || '#9E9E9E'
 }
 
 export const getTagStyle = (category: string, isMinimal: boolean = false): Record<string, string> => {
@@ -119,12 +236,36 @@ export const getTagStyle = (category: string, isMinimal: boolean = false): Recor
 
 export const getCategoryFullName = (category: string): string => {
     if (!category) return 'Unknown Category'
-    const categoryData = categories.find(cat => cat.id === category)
+    const categoryData = ALL_CATEGORIES.find(cat => cat.id === category)
     return categoryData?.name || category
 }
 
 export const getCategoryShortName = (category: string): string => {
     if (!category) return 'CS'
+    // Handle wildcard
+    if (category.endsWith('*')) {
+      return category.replace('*', '').toUpperCase()
+    }
     const parts = category.split('.')
     return parts[parts.length - 1]?.toUpperCase() || category.toUpperCase()
+}
+
+// Get subject group
+export const getCategoryGroup = (category: string): CategoryGroup | undefined => {
+  // Handle wildcard
+  if (category.endsWith('*')) {
+    const groupId = category.replace('*', '')
+    return CATEGORY_GROUPS.find(g => g.id === groupId)
+  }
+  // Handle specific category
+  const prefix = category.split('.')[0]
+  return CATEGORY_GROUPS.find(g => g.id === prefix)
+}
+
+// Check if category belongs to known subject
+export const isKnownCategory = (category: string): boolean => {
+  if (category.endsWith('*')) {
+    return CATEGORY_GROUPS.some(g => g.wildcard === category)
+  }
+  return ALL_CATEGORIES.some(cat => cat.id === category)
 }

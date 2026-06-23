@@ -170,6 +170,7 @@
       :is-open="isFilterDrawerOpen"
       :selected-category="localFilterCategory"
       :category-counts="categoryCounts"
+      :total-papers="categoryTreeTotalPapers"
       @close="closeFilterDrawer"
       @select="handleFilterCategorySelect"
     />
@@ -207,6 +208,7 @@ const {
   loading,
   error,
   totalPapers,
+  categoryTreeTotalPapers,
   isDatePickerOpen,
   isCategoryPickerOpen,
   toggleDatePicker,

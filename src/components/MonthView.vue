@@ -208,7 +208,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useDateIndexes, useDayTooltip } from '@/composables/useDateIndexes'
+import { useToastStore } from '@/stores/toast-store'
 import DayTooltip from '@/components/DayTooltip.vue'
+
+const toastStore = useToastStore()
 
 interface DayInfo {
   date: string | null
@@ -347,11 +350,25 @@ function closeTooltip() {
 }
 
 async function handleFetchDate(date: string) {
-  await fetchDate(date)
+  toastStore.showLoading(`Fetching papers for ${date}...`)
+  const result = await fetchDate(date)
+  
+  if (result.success) {
+    toastStore.showSuccess(`Fetched ${result.count} papers for ${date}`)
+  } else {
+    toastStore.showError(result.error || `Failed to fetch papers for ${date}`)
+  }
 }
 
 async function handleGenerateEmbedding(date: string, hasEmbedding: boolean = false) {
-  await generateEmbedding(date, hasEmbedding)
+  toastStore.showLoading(`Generating embeddings for ${date}...`)
+  const result = await generateEmbedding(date, hasEmbedding)
+  
+  if (result.success) {
+    toastStore.showSuccess(`Generated ${result.generated_count} embeddings for ${date}`)
+  } else {
+    toastStore.showError(result.error || `Failed to generate embeddings for ${date}`)
+  }
 }
 </script>
 

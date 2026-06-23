@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 import asyncio
 
 from app.db.factory import get_listings_repository, get_paper_repository, get_paper_code_repository
+from app.db.subject_utils import DEFAULT_SUBJECT
 from app.services.arxiv_client import ArxivClient
 from app.core.utils import extract_code_urls
 
@@ -15,31 +16,44 @@ logger = logging.getLogger(__name__)
 
 class ListingsService:
     """Service for fetching and storing arXiv new listings."""
-    
-    LISTINGS_URL = "https://arxiv.org/list/cs/new"
+
     PAGE_SIZE = 2000
-    
+    SUPPORTED_SUBJECTS = ['cs', 'q-fin', 'stat']
+
     def __init__(self):
-        self.listings_repo = get_listings_repository()
-        self.paper_repo = get_paper_repository()
         self.paper_code_repo = get_paper_code_repository()
         self.arxiv_client = ArxivClient()
+
+    def _get_listings_repo(self, subject: str = DEFAULT_SUBJECT):
+        """Get listings repository for specific subject."""
+        return get_listings_repository(subject)
+
+    def _get_paper_repo(self, subject: str = DEFAULT_SUBJECT):
+        """Get paper repository for specific subject."""
+        return get_paper_repository(subject)
+
+    def _get_listings_url(self, subject: str = 'cs') -> str:
+        """Get the arXiv new listings URL for a specific subject."""
+        return f"https://arxiv.org/list/{subject}/new"
     
-    async def fetch_listings_page(self, skip: int = 0) -> str:
+    async def fetch_listings_page(self, subject: str = 'cs', skip: int = 0) -> str:
         """
         Fetch the arXiv new listings page HTML.
-        
+
         Args:
+            subject: Subject category (cs, q-fin, stat)
             skip: Number of entries to skip (for pagination)
         """
-        url = self.LISTINGS_URL
+        url = self._get_listings_url(subject)
         if skip > 0:
-            url = f"{self.LISTINGS_URL}?skip={skip}&show={self.PAGE_SIZE}"
-        
+            url = f"{url}?skip={skip}&show={self.PAGE_SIZE}"
+
+        logger.info(f"Fetching listings page: {url}")
         headers = self.arxiv_client._get_random_headers()
         async with httpx.AsyncClient(timeout=60.0, headers=headers) as client:
             response = await client.get(url)
             response.raise_for_status()
+            logger.info(f"Successfully fetched listings page: {url} (size: {len(response.text)} bytes)")
             return response.text
     
     def parse_listings_page(self, html: str) -> Dict[str, Any]:
@@ -193,6 +207,7 @@ class ListingsService:
                 papers.extend(batch_papers)
             except Exception as e:
                 logger.error(f"Failed to fetch batch {i//batch_size}: {e}")
+                raise
             await asyncio.sleep(5.2)
         return papers
     
@@ -213,104 +228,114 @@ class ListingsService:
         papers, _ = self.arxiv_client._parse_response(response_text)
         return papers
     
-    async def fetch_and_store_listings(self) -> Dict[str, Any]:
+    async def fetch_and_store_listings(self, subject: str = 'cs') -> Dict[str, Any]:
         """
         Fetch arXiv new listings page, parse it, and store the papers.
-        
+
         Supports pagination when total_count > PAGE_SIZE.
         For each listing type, first checks if papers already exist in the papers table.
         Only fetches details for papers that don't exist.
-        
+
+        Args:
+            subject: Subject category to fetch (cs, q-fin, stat). Default is 'cs'.
+
         Returns:
             Dict with counts and status information
         """
+        if subject not in self.SUPPORTED_SUBJECTS:
+            logger.warning(f"Unsupported subject '{subject}', falling back to 'cs'")
+            subject = 'cs'
+
         try:
-            html = await self.fetch_listings_page(skip=0)
-            
+            html = await self.fetch_listings_page(subject=subject, skip=0)
+
             listings = self.parse_listings_page(html)
-            
+
             listings_date = listings.get('date')
             if not listings_date:
                 listings_date = datetime.utcnow().strftime('%Y-%m-%d')
                 logger.warning(f"No date found in listings page, using today: {listings_date}")
-            
+
             total_count = listings.get('total_count', 0)
-            logger.info(f"Total papers on arXiv: {total_count}")
-            
+            logger.info(f"Total papers on arXiv for {subject}: {total_count}")
+
             if total_count > self.PAGE_SIZE:
                 num_pages = (total_count + self.PAGE_SIZE - 1) // self.PAGE_SIZE
                 logger.info(f"Need to fetch {num_pages} pages for {total_count} papers")
-                
+
                 for page in range(1, num_pages):
                     skip = page * self.PAGE_SIZE
                     logger.info(f"Fetching page {page + 1}/{num_pages}, skip={skip}")
-                    
+
                     try:
-                        page_html = await self.fetch_listings_page(skip=skip)
+                        page_html = await self.fetch_listings_page(subject=subject, skip=skip)
                         page_listings = self.parse_listings_page(page_html)
-                        
+
                         listings['new'].extend(page_listings.get('new', []))
                         listings['cross'].extend(page_listings.get('cross', []))
                         listings['replacement'].extend(page_listings.get('replacement', []))
                     except Exception as e:
                         logger.error(f"Failed to fetch page {page + 1}: {e}")
-            
+
             logger.info(f"Total papers after pagination: new={len(listings['new'])}, cross={len(listings['cross'])}, replacement={len(listings['replacement'])}")
-            
-            new_papers = await self._process_listing_type(listings['new'])
-            cross_papers = await self._process_listing_type(listings['cross'])
-            replacement_papers = await self._process_listing_type_replacement(listings['replacement'])
-            
-            new_count = self.listings_repo.insert_new_submissions_batch(new_papers, listings_date)
-            cross_count = self.listings_repo.insert_cross_submissions_batch(cross_papers, listings_date)
-            replacement_count = self.listings_repo.insert_replacement_submissions_batch(replacement_papers, listings_date)
-            
+
+            new_papers = await self._process_listing_type(listings['new'], subject)
+            cross_papers = await self._process_listing_type(listings['cross'], subject)
+            replacement_papers = await self._process_listing_type_replacement(listings['replacement'], subject)
+
+            listings_repo = self._get_listings_repo(subject)
+            new_count = listings_repo.insert_new_submissions_batch(new_papers, listings_date)
+            cross_count = listings_repo.insert_cross_submissions_batch(cross_papers, listings_date)
+            replacement_count = listings_repo.insert_replacement_submissions_batch(replacement_papers, listings_date)
+
             if new_count > 0 or cross_count > 0 or replacement_count > 0:
-                self.listings_repo.insert_listings_date_index(
+                listings_repo.insert_listings_date_index(
                     date=listings_date,
                     new_count=new_count,
                     cross_count=cross_count,
                     replacement_count=replacement_count
                 )
-            
+
             return {
                 "success": True,
                 "date": listings_date,
+                "subject": subject,
                 "new_count": new_count,
                 "cross_count": cross_count,
                 "replacement_count": replacement_count,
                 "total_count": new_count + cross_count + replacement_count,
             }
-        
+
         except Exception as e:
             logger.error(f"Failed to fetch and store listings: {e}")
             return {
                 "success": False,
                 "error": str(e),
+                "subject": subject,
                 "new_count": 0,
                 "cross_count": 0,
                 "replacement_count": 0,
                 "total_count": 0,
             }
     
-    def _has_cs_category(self, paper: Dict[str, Any]) -> bool:
-        """Check if paper has any CS category."""
+    def _has_subject_category(self, paper: Dict[str, Any], subject: str = 'cs') -> bool:
+        """Check if paper has any category for the given subject."""
         categories = paper.get('categories', [])
         if isinstance(categories, str):
             categories = categories.split()
-        return any(cat.startswith('cs.') for cat in categories)
-    
-    def _filter_cs_papers(self, papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Filter papers to only include those with CS category."""
-        filtered = [p for p in papers if self._has_cs_category(p)]
+        return any(cat.startswith(f'{subject}.') for cat in categories)
+
+    def _filter_subject_papers(self, papers: List[Dict[str, Any]], subject: str = 'cs') -> List[Dict[str, Any]]:
+        """Filter papers to only include those with the given subject category."""
+        filtered = [p for p in papers if self._has_subject_category(p, subject)]
         if len(filtered) < len(papers):
-            logger.info(f"Filtered out {len(papers) - len(filtered)} non-CS papers")
+            logger.info(f"Filtered out {len(papers) - len(filtered)} non-{subject} papers")
         return filtered
     
-    async def _process_listing_type(self, paper_ids: List[str]) -> List[Dict[str, Any]]:
+    async def _process_listing_type(self, paper_ids: List[str], subject: str = 'cs') -> List[Dict[str, Any]]:
         """
         Process a listing type (new/cross).
-        
+
         1. Batch check which papers already exist in papers table
         2. Fetch details only for papers that don't exist
         3. Store new papers to papers table
@@ -319,76 +344,79 @@ class ListingsService:
         """
         if not paper_ids:
             return []
-        
+
+        paper_repo = self._get_paper_repo(subject)
         existing_papers = []
         existing_ids = set()
-        
+
         try:
-            existing_papers = self.paper_repo.get_papers_by_ids(paper_ids)
+            existing_papers = paper_repo.get_papers_by_ids(paper_ids)
             existing_ids = {p.get('id') for p in existing_papers if p.get('id')}
             logger.info(f"Batch query found {len(existing_papers)} existing papers")
         except Exception as e:
             logger.warning(f"Failed to batch query papers: {e}, falling back to individual queries")
             for paper_id in paper_ids:
                 try:
-                    existing_paper = self.paper_repo.get_paper_by_id(paper_id)
+                    existing_paper = paper_repo.get_paper_by_id(paper_id)
                     if existing_paper:
                         existing_papers.append(existing_paper)
                         existing_ids.add(paper_id)
                 except Exception:
                     pass
-        
+
         new_paper_ids = [pid for pid in paper_ids if pid not in existing_ids]
-        
+
         logger.info(f"Found {len(existing_papers)} existing papers from papers table, {len(new_paper_ids)} new papers to fetch")
-        
+
         new_papers = await self.fetch_paper_details(new_paper_ids)
-        
+
         if new_papers:
             try:
-                cs_new_papers = self._filter_cs_papers(new_papers)
-                inserted = self.paper_repo.upsert_papers_batch(cs_new_papers)
+                subject_new_papers = self._filter_subject_papers(new_papers, subject)
+                inserted = paper_repo.upsert_papers_batch(subject_new_papers)
                 logger.info(f"Inserted {inserted} new papers to papers table")
-                
-                self._update_date_index_for_new_papers(cs_new_papers)
-                self._extract_and_store_code_urls(cs_new_papers)
+
+                self._update_date_index_for_new_papers(subject_new_papers, subject)
+                self._extract_and_store_code_urls(subject_new_papers)
             except Exception as e:
                 logger.error(f"Failed to insert new papers to papers table: {e}")
-        
+
         all_papers = existing_papers + new_papers
-        
+
         return all_papers
-    
-    async def _process_listing_type_replacement(self, paper_ids: List[str]) -> List[Dict[str, Any]]:
+
+    async def _process_listing_type_replacement(self, paper_ids: List[str], subject: str = 'cs') -> List[Dict[str, Any]]:
         """
         Process a listing type (replacement).
-        
+
         1. Fetch details for replacement papers
         2. upsert replacement papers to papers table
         """
         if not paper_ids:
             return []
-        
+
+        paper_repo = self._get_paper_repo(subject)
         new_papers = await self.fetch_paper_details(paper_ids)
-        
+
         if new_papers:
             try:
-                cs_new_papers = self._filter_cs_papers(new_papers)
-                inserted = self.paper_repo.upsert_papers_batch(cs_new_papers)
+                subject_new_papers = self._filter_subject_papers(new_papers, subject)
+                inserted = paper_repo.upsert_papers_batch(subject_new_papers)
                 logger.info(f"Upserted {inserted} replacement papers to papers table")
-                self._extract_and_store_code_urls(cs_new_papers)
+                self._extract_and_store_code_urls(subject_new_papers)
             except Exception as e:
                 logger.error(f"Failed to upsert replacement papers to papers table: {e}")
         
         return new_papers
     
-    def _update_date_index_for_new_papers(self, new_papers: List[Dict[str, Any]]) -> None:
+    def _update_date_index_for_new_papers(self, new_papers: List[Dict[str, Any]], subject: str = DEFAULT_SUBJECT) -> None:
         """
         Update date_index for newly inserted papers.
         
         For each paper's submission date, if the date exists in date_index,
         increment the total_count.
         """
+        paper_repo = self._get_paper_repo(subject)
         date_counts: Dict[str, int] = {}
         
         for paper in new_papers:
@@ -404,33 +432,36 @@ class ListingsService:
         
         for date_str, count in date_counts.items():
             try:
-                existing_index = self.paper_repo.get_date_index(date_str)
+                existing_index = paper_repo.get_date_index(date_str)
                 
                 if existing_index:
                     new_total = existing_index.get('total_count', 0) + count
-                    self.paper_repo.insert_date_index(date_str, new_total)
+                    paper_repo.insert_date_index(date_str, new_total)
                     logger.info(f"Updated date_index for {date_str}: +{count} papers, total={new_total}")
             except Exception as e:
                 logger.error(f"Failed to update date_index for {date_str}: {e}")
     
-    def get_listings_indexes(self) -> List[Dict[str, Any]]:
+    def get_listings_indexes(self, subject: str = DEFAULT_SUBJECT) -> List[Dict[str, Any]]:
         """Get all listings date indexes."""
-        return self.listings_repo.get_listings_date_indexes()
+        listings_repo = self._get_listings_repo(subject)
+        return listings_repo.get_listings_date_indexes()
     
     def get_listings_by_date(
         self,
         date: str,
         listing_type: str = "new",
         start: int = 0,
-        max_results: int = 50
+        max_results: int = 50,
+        subject: str = DEFAULT_SUBJECT
     ) -> Dict[str, Any]:
         """Get listings by date and type with pagination."""
+        listings_repo = self._get_listings_repo(subject)
         if listing_type == "new":
-            papers, total = self.listings_repo.get_new_submissions(date, start, max_results)
+            papers, total = listings_repo.get_new_submissions(date, start, max_results)
         elif listing_type == "cross":
-            papers, total = self.listings_repo.get_cross_submissions(date, start, max_results)
+            papers, total = listings_repo.get_cross_submissions(date, start, max_results)
         elif listing_type == "replacement":
-            papers, total = self.listings_repo.get_replacement_submissions(date, start, max_results)
+            papers, total = listings_repo.get_replacement_submissions(date, start, max_results)
         else:
             papers, total = [], 0
         
@@ -441,74 +472,97 @@ class ListingsService:
             "listing_type": listing_type,
             "start": start,
             "max_results": max_results,
+            "subject": subject,
         }
     
-    async def get_latest_listings(self, date: str = None) -> Dict[str, Any]:
+    async def get_latest_listings(self, date: str = None, subject: str = 'cs') -> Dict[str, Any]:
         """
         Get the latest day's listings for all three types with auto-refresh.
-        
+
         If date is specified, return papers for that date without auto-refresh.
-        If date is not specified and listings_date_index is empty or the latest date 
+        If date is not specified and listings_date_index is empty or the latest date
         is more than 12 hours old, automatically calls fetch_and_store_listings.
-        
+
         Args:
             date: Optional date string (YYYY-MM-DD). If specified, query that date directly.
-        
+            subject: Subject category to fetch (cs, q-fin, stat). Default is 'cs'.
+
         Returns:
             {
                 "date": "2026-04-13",
+                "subject": "cs",
                 "new": [...],
                 "cross": [...],
                 "replacement": [...],
                 "auto_refreshed": true
             }
         """
+        listings_repo = self._get_listings_repo(subject)
+        logger.info(f"Getting latest listings for subject: {subject}, date: {date or 'latest'}")
         auto_refreshed = False
-        
+
         if date:
-            new_papers, _ = self.listings_repo.get_new_submissions(date, 0, 10000)
-            cross_papers, _ = self.listings_repo.get_cross_submissions(date, 0, 10000)
-            replacement_papers, _ = self.listings_repo.get_replacement_submissions(date, 0, 10000)
-            
+            new_papers, _ = listings_repo.get_new_submissions(date, 0, 10000)
+            cross_papers, _ = listings_repo.get_cross_submissions(date, 0, 10000)
+            replacement_papers, _ = listings_repo.get_replacement_submissions(date, 0, 10000)
+
             return {
                 "date": date,
+                "subject": subject,
                 "new": new_papers,
                 "cross": cross_papers,
                 "replacement": replacement_papers,
                 "auto_refreshed": False,
             }
-        
-        latest_index = self.listings_repo.get_latest_listings_date_index()
-        
+
+        latest_index = listings_repo.get_latest_listings_date_index()
+
         need_refresh = False
         if not latest_index:
-            logger.info("No listings found, will fetch new data")
+            logger.info(f"No listings found for subject '{subject}', will fetch new data")
             need_refresh = True
-        
+
         if need_refresh:
-            result = await self.fetch_and_store_listings()
+            logger.info(f"Fetching new listings for subject: {subject}")
+            result = await self.fetch_and_store_listings(subject)
             if result.get('success'):
                 auto_refreshed = True
-                latest_index = self.listings_repo.get_latest_listings_date_index()
-        
+                logger.info(f"Successfully fetched {result.get('total_count', 0)} papers for subject '{subject}'")
+                latest_index = listings_repo.get_latest_listings_date_index()
+            else:
+                logger.error(f"Failed to fetch listings for subject '{subject}': {result.get('error')}")
+                return {
+                    "date": "",
+                    "subject": subject,
+                    "new": [],
+                    "cross": [],
+                    "replacement": [],
+                    "auto_refreshed": False,
+                    "error": result.get('error', 'Failed to fetch listings')
+                }
+
         if not latest_index:
+            logger.warning(f"No listings index found after refresh for subject '{subject}'")
             return {
                 "date": "",
+                "subject": subject,
                 "new": [],
                 "cross": [],
                 "replacement": [],
                 "auto_refreshed": auto_refreshed,
                 "error": "Failed to fetch listings"
             }
-        
+
         listings_date = latest_index.get('date', '')
-        
-        new_papers, _ = self.listings_repo.get_new_submissions(listings_date, 0, 10000)
-        cross_papers, _ = self.listings_repo.get_cross_submissions(listings_date, 0, 10000)
-        replacement_papers, _ = self.listings_repo.get_replacement_submissions(listings_date, 0, 10000)
-        
+        logger.info(f"Returning listings for date: {listings_date}, subject: {subject}")
+
+        new_papers, _ = listings_repo.get_new_submissions(listings_date, 0, 10000)
+        cross_papers, _ = listings_repo.get_cross_submissions(listings_date, 0, 10000)
+        replacement_papers, _ = listings_repo.get_replacement_submissions(listings_date, 0, 10000)
+
         return {
             "date": listings_date,
+            "subject": subject,
             "new": new_papers,
             "cross": cross_papers,
             "replacement": replacement_papers,
@@ -589,13 +643,14 @@ class ListingsService:
             return {}
         return self.paper_code_repo.get_codes_by_paper_ids(paper_ids)
     
-    def get_papers_with_code_by_date(self, date: str) -> Dict[str, Any]:
+    def get_papers_with_code_by_date(self, date: str, subject: str = DEFAULT_SUBJECT) -> Dict[str, Any]:
         """
         Get papers with code repositories for a specific date.
-        
+
         Args:
             date: Date string (YYYY-MM-DD).
-        
+            subject: Subject category (cs, q-fin, stat).
+
         Returns:
             {
                 "date": "2026-04-22",
@@ -604,9 +659,10 @@ class ListingsService:
                 "replacement": [...]
             }
         """
-        new_papers, _ = self.listings_repo.get_new_submissions(date, 0, 10000)
-        cross_papers, _ = self.listings_repo.get_cross_submissions(date, 0, 10000)
-        replacement_papers, _ = self.listings_repo.get_replacement_submissions(date, 0, 10000)
+        listings_repo = self._get_listings_repo(subject)
+        new_papers, _ = listings_repo.get_new_submissions(date, 0, 10000)
+        cross_papers, _ = listings_repo.get_cross_submissions(date, 0, 10000)
+        replacement_papers, _ = listings_repo.get_replacement_submissions(date, 0, 10000)
         
         all_papers = new_papers + cross_papers + replacement_papers
         all_paper_ids = [p.get('id') for p in all_papers if p.get('id')]

@@ -5,6 +5,7 @@ import re
 
 from app.config import get_settings
 from app.db.factory import get_paper_repository, get_paper_embedding_repository
+from app.db.subject_utils import DEFAULT_SUBJECT
 from app.services.arxiv_client import ArxivClient
 from app.services.embedding_service import embedding_service
 
@@ -13,10 +14,21 @@ settings = get_settings()
 
 
 class PaperService:
+    SUPPORTED_SUBJECTS = ['cs', 'q-fin', 'stat']
+
     def __init__(self):
-        self.paper_repo = get_paper_repository()
         self.embedding_repo = get_paper_embedding_repository()
         self.arxiv_client = ArxivClient()
+
+    def _get_paper_repo(self, subject: str = DEFAULT_SUBJECT):
+        """Get paper repository for specific subject."""
+        return get_paper_repository(subject)
+
+    def _get_category_from_subject(self, subject: str) -> str:
+        """Convert subject (e.g., 'cs') to category wildcard (e.g., 'cs*')."""
+        if subject in self.SUPPORTED_SUBJECTS:
+            return f"{subject}*"
+        return "cs*"  # Default fallback
 
     def _normalize_date(self, date_str: str) -> str:
         """
@@ -47,28 +59,29 @@ class PaperService:
         except ValueError:
             return False
 
-    async def _fetch_and_store_papers(self, date: str, category: str) -> Dict[str, Any]:
+    async def _fetch_and_store_papers(self, date: str, category: str, subject: str = DEFAULT_SUBJECT) -> Dict[str, Any]:
         """
-        Fetch papers from arXiv and store them.
+        Fetch papers from arXiv and store them in subject-specific table.
         
         Returns:
             Dict with 'count' and 'inserted' keys, or 'error' on failure.
         """
+        paper_repo = self._get_paper_repo(subject)
         try:
-            logger.info(f"Fetching {category or 'all'} papers for {date}")
+            logger.info(f"Fetching {category or 'all'} papers for {date} (subject: {subject})")
             papers = await self.arxiv_client.fetch_all_papers_for_date(date, category)
             
             if papers:
-                inserted = self.paper_repo.upsert_papers_batch(papers)
-                logger.info(f"Upserted {inserted} papers for {date}")
-                self.paper_repo.insert_date_index(date, len(papers))
+                inserted = paper_repo.upsert_papers_batch(papers)
+                logger.info(f"Upserted {inserted} papers for {date} (subject: {subject})")
+                paper_repo.insert_date_index(date, len(papers))
                 return {"count": len(papers), "inserted": inserted}
             else:
-                self.paper_repo.insert_date_index(date, 0)
+                paper_repo.insert_date_index(date, 0)
                 return {"count": 0, "inserted": 0}
         except Exception as e:
-            logger.error(f"Failed to fetch papers for {date}: {e}")
-            self.paper_repo.insert_date_index(date, 0)
+            logger.error(f"Failed to fetch papers for {date} (subject: {subject}): {e}")
+            paper_repo.insert_date_index(date, 0)
             return {"count": 0, "inserted": 0, "error": str(e)}
 
     async def query_papers(
@@ -77,19 +90,22 @@ class PaperService:
         category: Optional[str] = None,
         start: int = 0,
         max_results: int = 50,
-        fetch_category: str = "cs*"
+        subject: str = DEFAULT_SUBJECT
     ) -> Dict[str, Any]:
         """
         Query papers for a specific date.
-        
+
         Strategy:
         1. Normalize the date format
         2. Check if the date is in the future (return empty result)
         3. Check if we have data for this date
-        4. If not, fetch papers for this date from arXiv with fetch_category filter
+        4. If not, fetch papers for this date from arXiv with subject filter
         5. Store all papers
         6. Filter by category and return with pagination
         """
+        paper_repo = self._get_paper_repo(subject)
+        fetch_category = self._get_category_from_subject(subject)
+
         try:
             normalized_date = self._normalize_date(date)
         except ValueError as e:
@@ -100,7 +116,7 @@ class PaperService:
                 "start": start,
                 "max_results": max_results,
             }
-        
+
         if self._is_future_date(normalized_date):
             logger.warning(f"Requested date {normalized_date} is in the future, returning empty result")
             return {
@@ -109,20 +125,28 @@ class PaperService:
                 "start": start,
                 "max_results": max_results,
             }
-        
-        date_info = self.paper_repo.get_date_index(normalized_date)
-        
+
+        date_info = paper_repo.get_date_index(normalized_date)
+
         if not date_info or date_info.get("total_count", 0) == 0:
-            logger.info(f"No local data for {normalized_date}, fetching from arXiv with category {fetch_category}")
-            await self._fetch_and_store_papers(normalized_date, fetch_category)
-        
-        papers, total = self.paper_repo.query_papers_by_date(
+            logger.info(f"No local data for {normalized_date} (subject: {subject}), fetching from arXiv with category {fetch_category}")
+            result = await self._fetch_and_store_papers(normalized_date, fetch_category, subject)
+            if "error" in result:
+                return {
+                    "papers": [],
+                    "total": 0,
+                    "start": start,
+                    "max_results": max_results,
+                    "error": result["error"],
+                }
+
+        papers, total = paper_repo.query_papers_by_date(
             date=normalized_date,
             category=category,
             start=start,
             max_results=max_results
         )
-        
+
         return {
             "papers": papers,
             "total": total,
@@ -130,28 +154,35 @@ class PaperService:
             "max_results": max_results,
         }
 
-    def get_paper_by_id(self, paper_id: str) -> Optional[Dict[str, Any]]:
+    def get_paper_by_id(self, paper_id: str, subject: str = DEFAULT_SUBJECT) -> Optional[Dict[str, Any]]:
         """Get a single paper by ID."""
-        return self.paper_repo.get_paper_by_id(paper_id)
+        paper_repo = self._get_paper_repo(subject)
+        return paper_repo.get_paper_by_id(paper_id)
 
-    def get_papers_by_ids(self, paper_ids: List[str]) -> List[Dict[str, Any]]:
+    def get_papers_by_ids(self, paper_ids: List[str], subject: str = DEFAULT_SUBJECT) -> List[Dict[str, Any]]:
         """Get multiple papers by their IDs."""
-        return self.paper_repo.get_papers_by_ids(paper_ids)
+        paper_repo = self._get_paper_repo(subject)
+        return paper_repo.get_papers_by_ids(paper_ids)
 
-    def clear_date_index(self, date: str) -> None:
+    def clear_date_index(self, date: str, subject: str = DEFAULT_SUBJECT) -> None:
         """Clear date index for a specific date."""
+        paper_repo = self._get_paper_repo(subject)
         normalized_date = self._normalize_date(date)
-        self.paper_repo.delete_date_index(normalized_date)
+        paper_repo.delete_date_index(normalized_date)
 
-    def clear_all_date_index(self) -> None:
+    def clear_all_date_index(self, subject: str = DEFAULT_SUBJECT) -> None:
         """Clear all date index cache."""
-        self.paper_repo.delete_all_date_index()
+        paper_repo = self._get_paper_repo(subject)
+        paper_repo.delete_all_date_index()
 
-    async def fetch_papers_for_date(self, date: str, category: str = "cs*") -> Dict[str, Any]:
+    async def fetch_papers_for_date(self, date: str, subject: str = DEFAULT_SUBJECT) -> Dict[str, Any]:
         """
         Manually fetch and store papers for a specific date.
         Returns the result of the fetch operation.
         """
+        paper_repo = self._get_paper_repo(subject)
+        category = self._get_category_from_subject(subject)
+
         try:
             normalized_date = self._normalize_date(date)
         except ValueError as e:
@@ -159,45 +190,51 @@ class PaperService:
             return {
                 "success": False,
                 "date": date,
+                "subject": subject,
                 "count": 0,
                 "error": str(e),
             }
-        
+
         if self._is_future_date(normalized_date):
             return {
                 "success": False,
                 "date": normalized_date,
+                "subject": subject,
                 "count": 0,
                 "error": "Cannot fetch papers for future dates",
             }
-        
-        self.paper_repo.delete_date_index(normalized_date)
-        
-        result = await self._fetch_and_store_papers(normalized_date, category)
-        
+
+        paper_repo.delete_date_index(normalized_date)
+
+        result = await self._fetch_and_store_papers(normalized_date, category, subject)
+
         if "error" in result:
             return {
                 "success": False,
                 "date": normalized_date,
+                "subject": subject,
                 "count": result["count"],
                 "error": result["error"],
             }
-        
+
         return {
             "success": True,
             "date": normalized_date,
+            "subject": subject,
             "count": result["count"],
         }
 
-    def get_all_date_indexes(self) -> List[Dict[str, Any]]:
+    def get_all_date_indexes(self, subject: str = DEFAULT_SUBJECT) -> List[Dict[str, Any]]:
         """Get all date index records."""
-        return self.paper_repo.get_all_date_indexes()
+        paper_repo = self._get_paper_repo(subject)
+        return paper_repo.get_all_date_indexes()
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self, subject: str = DEFAULT_SUBJECT) -> Dict[str, Any]:
         """Get statistics about stored papers."""
-        indexes = self.paper_repo.get_all_date_indexes()
+        paper_repo = self._get_paper_repo(subject)
+        indexes = paper_repo.get_all_date_indexes()
         total_days = len([i for i in indexes if i.get("total_count", 0) > 0])
-        total_papers = self.paper_repo.get_total_paper_count()
+        total_papers = paper_repo.get_total_paper_count()
         total_embeddings = self.embedding_repo.count_embeddings()
         
         return {
@@ -205,6 +242,7 @@ class PaperService:
             "total_papers": total_papers,
             "total_embeddings": total_embeddings,
             "indexes": indexes,
+            "subject": subject,
         }
 
     async def search_papers_semantic(
@@ -214,6 +252,7 @@ class PaperService:
         category: Optional[str] = None,
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
+        subject: str = DEFAULT_SUBJECT,
     ) -> Dict[str, Any]:
         """
         Search papers using semantic similarity.
@@ -224,16 +263,18 @@ class PaperService:
             category: Optional category filter
             date_from: Optional start date filter
             date_to: Optional end date filter
+            subject: Subject to search in
         
         Returns:
             Dict with papers and metadata
         """
+        paper_repo = self._get_paper_repo(subject)
         try:
             query_embedding, model_name = embedding_service.encode(query)
             
             candidate_ids = None
             if category or date_from or date_to:
-                candidate_ids = self.paper_repo.get_paper_ids_by_filters(
+                candidate_ids = paper_repo.get_paper_ids_by_filters(
                     category=category,
                     date_from=date_from,
                     date_to=date_to,
@@ -263,7 +304,7 @@ class PaperService:
                 }
             
             paper_ids = [p["paper_id"] for p in similar_papers]
-            papers = self.paper_repo.get_papers_by_ids(paper_ids)
+            papers = paper_repo.get_papers_by_ids(paper_ids)
             
             paper_map = {p["id"]: p for p in papers}
             results = []
@@ -293,6 +334,7 @@ class PaperService:
         self,
         paper_id: str,
         top_k: int = 5,
+        subject: str = DEFAULT_SUBJECT,
     ) -> Dict[str, Any]:
         """
         Get papers similar to a given paper.
@@ -300,15 +342,17 @@ class PaperService:
         Args:
             paper_id: Paper ID to find similar papers for
             top_k: Number of similar papers to return
+            subject: Subject to search in
         
         Returns:
             Dict with similar papers
         """
+        paper_repo = self._get_paper_repo(subject)
         try:
             embedding_data = self.embedding_repo.get_embedding(paper_id)
             
             if not embedding_data:
-                paper = self.paper_repo.get_paper_by_id(paper_id)
+                paper = paper_repo.get_paper_by_id(paper_id)
                 if not paper:
                     return {
                         "papers": [],
@@ -346,7 +390,7 @@ class PaperService:
                 }
             
             paper_ids = [p["paper_id"] for p in similar_papers]
-            papers = self.paper_repo.get_papers_by_ids(paper_ids)
+            papers = paper_repo.get_papers_by_ids(paper_ids)
             
             paper_map = {p["id"]: p for p in papers}
             results = []
@@ -376,6 +420,7 @@ class PaperService:
         date_to: Optional[str] = None,
         force: bool = False,
         batch_size: int = 100,
+        subject: str = DEFAULT_SUBJECT,
     ) -> Dict[str, Any]:
         """
         Generate embeddings for papers.
@@ -386,12 +431,14 @@ class PaperService:
             date_to: End date for range
             force: Regenerate embeddings even if they exist
             batch_size: Number of papers to process at once
+            subject: Subject to generate embeddings for
         
         Returns:
             Dict with generation statistics
         """
+        paper_repo = self._get_paper_repo(subject)
         try:
-            paper_ids = self.paper_repo.get_paper_ids_by_date_range(
+            paper_ids = paper_repo.get_paper_ids_by_date_range(
                 date=date,
                 date_from=date_from,
                 date_to=date_to,
@@ -410,7 +457,7 @@ class PaperService:
                     }
             
             if not paper_ids:
-                total_papers = self.paper_repo.get_total_paper_count()
+                total_papers = paper_repo.get_total_paper_count()
                 return {
                     "success": True,
                     "generated_count": 0,
@@ -424,7 +471,7 @@ class PaperService:
             
             for i in range(0, len(paper_ids), batch_size):
                 batch_ids = paper_ids[i:i + batch_size]
-                papers = self.paper_repo.get_papers_by_ids(batch_ids)
+                papers = paper_repo.get_papers_by_ids(batch_ids)
                 
                 texts = [
                     f"Title: {p.get('title', '')}\nAbstract: {p.get('abstract', '')}"
@@ -462,7 +509,7 @@ class PaperService:
                     errors += len(batch_ids)
             
             if generated > 0 and date:
-                self.paper_repo.insert_embedding_index(
+                paper_repo.insert_embedding_index(
                     date=date,
                     total_count=generated,
                     model_name=model_name
@@ -486,19 +533,22 @@ class PaperService:
                 "error": str(e),
             }
     
-    def get_embedding_indexes(self) -> List[Dict[str, Any]]:
+    def get_embedding_indexes(self, subject: str = DEFAULT_SUBJECT) -> List[Dict[str, Any]]:
         """Get all embedding indexes."""
-        return self.paper_repo.get_all_embedding_indexes()
+        paper_repo = self._get_paper_repo(subject)
+        return paper_repo.get_all_embedding_indexes()
     
-    def get_embedding_index(self, date: str) -> Optional[Dict[str, Any]]:
+    def get_embedding_index(self, date: str, subject: str = DEFAULT_SUBJECT) -> Optional[Dict[str, Any]]:
         """Get embedding index for a specific date."""
-        return self.paper_repo.get_embedding_index(date)
+        paper_repo = self._get_paper_repo(subject)
+        return paper_repo.get_embedding_index(date)
 
     def query_papers_by_author(
         self,
         author: str,
         start: int = 0,
         max_results: int = 50,
+        subject: str = DEFAULT_SUBJECT,
     ) -> Dict[str, Any]:
         """
         Query papers by author name.
@@ -507,11 +557,13 @@ class PaperService:
             author: Author name to search for
             start: Pagination start index
             max_results: Maximum number of results to return
+            subject: Subject to search in
         
         Returns:
             Dict with papers and metadata
         """
-        papers, total = self.paper_repo.get_papers_by_author(
+        paper_repo = self._get_paper_repo(subject)
+        papers, total = paper_repo.get_papers_by_author(
             author=author,
             start=start,
             max_results=max_results,
@@ -535,6 +587,7 @@ class PaperService:
         max_results: int = 50,
         title_only: bool = False,
         exact_phrase: bool = False,
+        subject: str = DEFAULT_SUBJECT,
     ) -> Dict[str, Any]:
         """
         Search papers by keyword in title and abstract.
@@ -548,11 +601,13 @@ class PaperService:
             max_results: Maximum number of results to return
             title_only: If True, search only in title, not in abstract
             exact_phrase: If True, match exact phrase instead of splitting
+            subject: Subject to search in
         
         Returns:
             Dict with papers and metadata
         """
-        papers, total = self.paper_repo.search_papers(
+        paper_repo = self._get_paper_repo(subject)
+        papers, total = paper_repo.search_papers(
             query=query,
             category=category,
             date_from=date_from,
