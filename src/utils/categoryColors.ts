@@ -212,6 +212,26 @@ export const qbioCategoryColors: Record<string, string> = {
   'q-bio.TO': '#607D8B',
 }
 
+// Electrical Engineering and Systems Science categories
+export const EESS_CATEGORY_IDS: string[] = [
+  'eess.AS', 'eess.IV', 'eess.SP', 'eess.SY'
+]
+
+export const eessCategories: Category[] = [
+  { id: 'eess*', name: 'All Electrical Engineering and Systems Science' },
+  { id: 'eess.AS', name: 'Audio and Speech Processing' },
+  { id: 'eess.IV', name: 'Image and Video Processing' },
+  { id: 'eess.SP', name: 'Signal Processing' },
+  { id: 'eess.SY', name: 'Systems and Control' },
+]
+
+export const eessCategoryColors: Record<string, string> = {
+  'eess.AS': '#9C27B0',
+  'eess.IV': '#E91E63',
+  'eess.SP': '#00BCD4',
+  'eess.SY': '#3F51B5',
+}
+
 // Subject group configuration
 export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
@@ -253,6 +273,14 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     categories: qbioCategories.filter(cat => cat.id !== 'q-bio*'),
     colors: qbioCategoryColors,
     color: '#4CAF50'
+  },
+  {
+    id: 'eess',
+    name: 'Electrical Engineering and Systems Science',
+    wildcard: 'eess*',
+    categories: eessCategories.filter(cat => cat.id !== 'eess*'),
+    colors: eessCategoryColors,
+    color: '#9C27B0'
   }
 ]
 
@@ -263,6 +291,7 @@ export const ALL_CATEGORIES: Category[] = [
   ...statCategories,
   ...econCategories,
   ...qbioCategories,
+  ...eessCategories,
 ]
 
 export const ALL_CATEGORY_COLORS: Record<string, string> = {
@@ -271,6 +300,7 @@ export const ALL_CATEGORY_COLORS: Record<string, string> = {
   ...statCategoryColors,
   ...econCategoryColors,
   ...qbioCategoryColors,
+  ...eessCategoryColors,
 }
 
 // Get subject group color (for root nodes)
@@ -280,6 +310,7 @@ export const GROUP_COLORS: Record<string, string> = {
   'stat*': '#00ACC1',
   'econ*': '#E91E63',
   'q-bio*': '#4CAF50',
+  'eess*': '#9C27B0',
 }
 
 export const getCategoryColor = (category: string | null): string => {
