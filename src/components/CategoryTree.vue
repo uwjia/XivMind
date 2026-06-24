@@ -74,7 +74,6 @@ import {
   CATEGORY_GROUPS,
   getCategoryShortName,
   getCategoryColor,
-  isKnownCategory,
   type CategoryGroup,
 } from '@/utils/categoryColors'
 

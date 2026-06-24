@@ -47,6 +47,7 @@ interface FetchOptions {
   sortBy?: string
   sortOrder?: string
   start?: number
+  subject?: string
 }
 
 export const arxivAPI = {

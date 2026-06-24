@@ -3,9 +3,11 @@
 # ============================================
 FROM python:3.12-slim
 
+# Read version from version.py
+ARG APP_VERSION
 LABEL maintainer="XivMind"
 LABEL description="XivMind - arXiv Paper Management System (CPU)"
-LABEL version="0.7.0"
+LABEL version="${APP_VERSION}"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

@@ -8,6 +8,8 @@ services:
     build:
       context: ../..
       dockerfile: docker/Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-0.7.1}
     image: xivmind:latest
     container_name: xivmind
     restart: unless-stopped

@@ -8,6 +8,8 @@ services:
     build:
       context: ../..
       dockerfile: docker/Dockerfile.gpu
+      args:
+        APP_VERSION: ${APP_VERSION:-0.7.1}
     image: xivmind:gpu
     container_name: xivmind-gpu
     restart: unless-stopped

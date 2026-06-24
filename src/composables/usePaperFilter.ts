@@ -41,7 +41,6 @@ const handleFilterCategorySelect = (categoryId: string | null) => {
 
 const filteredPapers = computed<Paper[]>(() => {
   const papers = allPapers.value
-  const defaultWildcard = `${configStore.defaultSubject}*`
 
   // Check if filter is a subject wildcard (e.g., 'cs*', 'q-fin*', 'stat*')
   const isSubjectWildcard = CATEGORY_GROUPS.some(g => g.wildcard === localFilterCategory.value)

@@ -4,9 +4,11 @@
 # Using NVIDIA NGC PyTorch with CUDA 12.8
 FROM pytorch/pytorch:2.8.0-cuda12.8-cudnn9-runtime
 
+# Read version from version.py
+ARG APP_VERSION
 LABEL maintainer="XivMind"
 LABEL description="XivMind - arXiv Paper Management System (GPU)"
-LABEL version="0.7.0"
+LABEL version="${APP_VERSION}"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

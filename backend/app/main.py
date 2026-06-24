@@ -4,6 +4,7 @@ from fastapi.openapi.docs import get_redoc_html
 from fastapi.staticfiles import StaticFiles
 from app.routers import arxiv, bookmarks, downloads, skills, llm, graph, subagents, memory, conversation, team, pdf_annotations, followed_authors, author_analysis, paper_analysis, daily_analysis, listings, remote_proxy
 from app.services import download_service
+from app.version import APP_VERSION
 from app.config import get_settings
 from contextlib import asynccontextmanager
 import os
@@ -76,7 +77,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="XivMind API",
     description="Backend API for XivMind - Paper Management System",
-    version="0.7.0",
+    version=APP_VERSION,
     lifespan=lifespan,
     redoc_url=None,
 )
@@ -114,7 +115,7 @@ app.include_router(remote_proxy.router)
 
 @app.get("/")
 async def root():
-    return {"message": "XivMind API is running", "version": "0.7.0"}
+    return {"message": "XivMind API is running", "version": APP_VERSION}
 
 
 @app.get("/health")

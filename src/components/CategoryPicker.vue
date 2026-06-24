@@ -57,7 +57,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useConfigStore } from '@/stores/config-store'
-import { CATEGORY_GROUPS, getCategoryColor, GROUP_COLORS } from '@/utils/categoryColors'
+import { CATEGORY_GROUPS, getCategoryColor } from '@/utils/categoryColors'
 import type { Category } from '@/utils/categoryColors'
 
 const props = defineProps<{

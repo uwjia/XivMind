@@ -1,7 +1,7 @@
 {
   "name": "xivmind",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "XivMind - AI-powered arXiv Paper Management System",
   "author": "XivMind Team",
   "main": "dist-electron/main.js",

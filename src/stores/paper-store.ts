@@ -9,6 +9,7 @@ interface FetchOptions {
   category?: string
   maxResults?: number
   start?: number
+  subject?: string
 }
 
 export const usePaperStore = defineStore('paper', () => {

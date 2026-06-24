@@ -105,6 +105,7 @@ export interface FetchOptions {
   maxResults?: number;
   start?: number;
   sortBy?: string;
+  subject?: string;
 }
 
 // Route params type definition
