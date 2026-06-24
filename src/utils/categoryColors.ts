@@ -10,6 +10,7 @@ export interface CategoryGroup {
   categories: Category[]
   colors: Record<string, string>
   color: string
+  icon: string  // SVG path for subject icon
 }
 
 // Computer Science categories
@@ -381,7 +382,9 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     wildcard: 'cs*',
     categories: categories.filter(cat => cat.id !== 'cs*'),
     colors: categoryColors,
-    color: '#FFC107'
+    color: '#2196F3',
+    // Computer monitor icon (hollow style)
+    icon: 'M4 6h16v10H4zM6 4h12c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM8 20h8M12 16v4'
   },
   {
     id: 'q-fin',
@@ -389,7 +392,9 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     wildcard: 'q-fin*',
     categories: qfinCategories.filter(cat => cat.id !== 'q-fin*'),
     colors: qfinCategoryColors,
-    color: '#1976D2'
+    color: '#7f0aadff',
+    // Stock chart trend line (hollow style)
+    icon: 'M3 3v18h18M7 14l3-4 3 2 4-6'
   },
   {
     id: 'stat',
@@ -397,7 +402,9 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     wildcard: 'stat*',
     categories: statCategories.filter(cat => cat.id !== 'stat*'),
     colors: statCategoryColors,
-    color: '#00ACC1'
+    color: '#00ACC1',
+    // Bell curve / normal distribution (hollow style)
+    icon: 'M3 17h18M5 17c0-8 3-13 7-13s7 5 7 13'
   },
   {
     id: 'econ',
@@ -405,7 +412,9 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     wildcard: 'econ*',
     categories: econCategories.filter(cat => cat.id !== 'econ*'),
     colors: econCategoryColors,
-    color: '#E91E63'
+    color: '#E91E63',
+    // Dollar sign (hollow style)
+    icon: 'M12 1v22M8 6h8c1.1 0 2 .9 2 2s-.9 2-2 2H8c-1.1 0-2-.9-2-2s.9-2 2-2zM8 14h10c1.1 0 2 .9 2 2s-.9 2-2 2H8c-1.1 0-2-.9-2-2s.9-2 2-2z'
   },
   {
     id: 'q-bio',
@@ -413,7 +422,9 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     wildcard: 'q-bio*',
     categories: qbioCategories.filter(cat => cat.id !== 'q-bio*'),
     colors: qbioCategoryColors,
-    color: '#4CAF50'
+    color: '#4CAF50',
+    // DNA helix (hollow style)
+    icon: 'M4 4c2 0 4 2 4 4s-2 4-4 4M12 4c2 0 4 2 4 4s-2 4-4 4M4 12c2 0 4 2 4 4s-2 4-4 4M12 12c2 0 4 2 4 4s-2 4-4 4M8 8h8M8 16h8'
   },
   {
     id: 'eess',
@@ -421,7 +432,9 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     wildcard: 'eess*',
     categories: eessCategories.filter(cat => cat.id !== 'eess*'),
     colors: eessCategoryColors,
-    color: '#9C27B0'
+    color: '#9C27B0',
+    // Circuit chip (hollow style)
+    icon: 'M6 6h12v12H6zM6 6l-4 0M6 12l-4 0M6 18l-4 0M18 6l4 0M18 12l4 0M18 18l4 0M6 6l0-4M12 6l0-4M18 6l0-4M6 18l0 4M12 18l0 4M18 18l0 4'
   },
   {
     id: 'math',
@@ -429,7 +442,9 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     wildcard: 'math*',
     categories: mathCategories.filter(cat => cat.id !== 'math*'),
     colors: mathCategoryColors,
-    color: '#E91E63'
+    color: '#E91E63',
+    // Integral symbol (hollow style)
+    icon: 'M4 4c0 3 1 5 2 8s2 5 2 8M20 4c0 3-1 5-2 8s-2 5-2 8M8 8h8M8 16h8'
   },
   {
     id: 'physics',
@@ -437,7 +452,9 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     wildcard: 'physics*',
     categories: physicsCategories.filter(cat => cat.id !== 'physics*'),
     colors: physicsCategoryColors,
-    color: '#2196F3'
+    color: '#1976D2',
+    // Atom with orbits (hollow style)
+    icon: 'M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0M12 2c5 5 5 17 0 22M12 2c-5 5-5 17 0 22M2 12c5-5 17-5 22 0M2 12c5 5 17 5 22 0'
   }
 ]
 

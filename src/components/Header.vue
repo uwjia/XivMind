@@ -43,6 +43,27 @@
           </svg>
           <span v-if="noteCount > 0" class="note-badge">{{ noteCount }}</span>
         </button>
+        <div class="subject-switch-wrapper">
+          <button class="subject-switch-btn" @click="toggleSubjectDropdown" :title="`Current Subject: ${currentSubjectInfo.name}`">
+            <svg viewBox="0 0 24 24" class="subject-icon" fill="none" :stroke="isIconColorful ? currentSubjectInfo.color : 'currentColor'">
+              <path :d="currentSubjectInfo.icon" />
+            </svg>
+          </button>
+          <div v-if="showSubjectDropdown" class="subject-dropdown">
+            <button
+              v-for="option in subjectOptions"
+              :key="option.id"
+              class="subject-option"
+              :class="{ active: currentSubject === option.id }"
+              @click="setDefaultSubject(option.id)"
+            >
+              <svg viewBox="0 0 24 24" class="option-icon" :stroke="isIconColorful ? option.color : 'currentColor'" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path :d="option.icon" />
+              </svg>
+              <span class="option-name">{{ option.name }}</span>
+            </button>
+          </div>
+        </div>
         <button class="icon-style-btn" @click="toggleIconStyle" :title="isIconColorful ? 'Switch to Minimal Icons' : 'Switch to Colorful Icons'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="6" cy="6" r="3" fill="var(--icon-style-dot-1)"/>
@@ -60,12 +81,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useSidebarStore } from '@/stores/sidebar-store'
 import { useNoteStore } from '@/stores/note-store'
 import { useThemeStore } from '@/stores/theme-store'
 import { useReadingHistoryStore } from '@/stores/reading-history-store'
 import { useSearchPanelStore } from '@/stores/search-panel-store'
+import { useSubjectSwitch } from '@/composables/useSubjectSwitch'
 import { ROUTES } from '@/constants/routes'
 import NotePanel from '@/components/note/NotePanel.vue'
 import ReadingHistoryPanel from '@/components/reading-history/ReadingHistoryPanel.vue'
@@ -76,6 +98,7 @@ const noteStore = useNoteStore()
 const themeStore = useThemeStore()
 const historyStore = useReadingHistoryStore()
 const searchPanelStore = useSearchPanelStore()
+const { subjectOptions, currentSubject, currentSubjectInfo, setDefaultSubject } = useSubjectSwitch()
 
 const isCollapsed = computed(() => sidebarStore.effectiveCollapsed)
 const noteCount = computed(() => noteStore.notes.length)
@@ -83,6 +106,7 @@ const noteBtnRef = ref<HTMLElement | null>(null)
 const historyBtnRef = ref<HTMLElement | null>(null)
 const searchBtnRef = ref<HTMLElement | null>(null)
 const isIconColorful = computed(() => themeStore.iconStyle === 'colorful')
+const showSubjectDropdown = ref(false)
 
 const toggleSidebar = () => {
   sidebarStore.toggleSidebar()
@@ -149,6 +173,29 @@ const toggleIconStyle = () => {
   themeStore.toggleIconStyle()
 }
 
+const toggleSubjectDropdown = () => {
+  showSubjectDropdown.value = !showSubjectDropdown.value
+}
+
+const closeSubjectDropdown = () => {
+  showSubjectDropdown.value = false
+}
+
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.subject-switch-wrapper')) {
+    closeSubjectDropdown()
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
 defineExpose({
   noteBtnRef,
   historyBtnRef,
@@ -167,7 +214,6 @@ defineExpose({
   border-bottom: 1px solid var(--border-color);
   z-index: 1000;
   box-shadow: var(--shadow-sm);
-  overflow: hidden;
 }
 
 .header-container {
@@ -357,6 +403,82 @@ defineExpose({
 .icon-style-btn svg {
   width: 20px;
   height: 20px;
+}
+
+.subject-switch-wrapper {
+  position: relative;
+}
+
+.subject-switch-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.subject-switch-btn:hover {
+  background: var(--bg-tertiary);
+}
+
+.subject-icon {
+  width: 20px;
+  height: 20px;
+  transition: var(--transition);
+}
+
+.subject-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  z-index: 1001;
+  padding: 8px;
+}
+
+.subject-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.subject-option:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.subject-option.active {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.option-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.option-name {
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {

@@ -22,7 +22,9 @@
                 :class="{ active: configStore.defaultSubject === subjectOption.id }"
                 @click="setDefaultSubject(subjectOption.id)"
               >
-                <span class="subject-color" :style="{ backgroundColor: subjectOption.color }"></span>
+                <svg viewBox="0 0 24 24" class="subject-icon" :stroke="subjectOption.color" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path :d="subjectOption.icon" />
+                </svg>
                 <span class="subject-name">{{ subjectOption.name }}</span>
               </button>
             </div>
@@ -247,12 +249,13 @@ import { useThemeStore } from '@/stores/theme-store'
 import { useSidebarStore } from '@/stores/sidebar-store'
 import { useConfigStore } from '@/stores/config-store'
 import { useLLMStore } from '@/stores/llm-store'
-import { GROUP_COLORS } from '@/utils/categoryColors'
+import { useSubjectSwitch } from '@/composables/useSubjectSwitch'
 
 const themeStore = useThemeStore()
 const sidebarStore = useSidebarStore()
 const configStore = useConfigStore()
 const llmStore = useLLMStore()
+const { subjectOptions, setDefaultSubject } = useSubjectSwitch()
 
 const isDark = computed(() => themeStore.isDark)
 const isCollapsed = computed(() => sidebarStore.effectiveCollapsed)
@@ -262,17 +265,6 @@ const isSaved = ref(false)
 const isInvalid = computed(() => {
   return tempMaxResults.value < 10 || tempMaxResults.value > 3000
 })
-
-const subjectOptions = [
-  { id: 'cs', name: 'Computer Science', color: GROUP_COLORS['cs*'] },
-  { id: 'q-fin', name: 'Quantitative Finance', color: GROUP_COLORS['q-fin*'] },
-  { id: 'stat', name: 'Statistics', color: GROUP_COLORS['stat*'] },
-  { id: 'econ', name: 'Economics', color: GROUP_COLORS['econ*'] },
-  { id: 'q-bio', name: 'Quantitative Biology', color: GROUP_COLORS['q-bio*'] },
-  { id: 'eess', name: 'Electrical Engineering and Systems Science', color: GROUP_COLORS['eess*'] },
-  { id: 'math', name: 'Mathematics', color: GROUP_COLORS['math*'] },
-  { id: 'physics', name: 'Physics', color: GROUP_COLORS['physics*'] },
-]
 
 const providerSelect = computed({
   get: () => llmStore.selectedProvider,
@@ -340,15 +332,6 @@ const expandSidebar = () => {
 
 const collapseSidebar = () => {
   sidebarStore.collapseSidebar()
-}
-
-const setDefaultSubject = (subject: string) => {
-  const currentSubject = configStore.defaultSubject
-  if (currentSubject !== subject) {
-    configStore.setDefaultSubject(subject)
-    // Refresh page to ensure all components reinitialize with new subject
-    window.location.reload()
-  }
 }
 
 const onProviderChange = (event: Event) => {
@@ -659,10 +642,9 @@ onMounted(() => {
   color: white;
 }
 
-.subject-color {
+.subject-icon {
   width: 18px;
   height: 18px;
-  border-radius: 4px;
   flex-shrink: 0;
 }
 
